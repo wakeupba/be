@@ -44,7 +44,7 @@ export function CalendarMock() {
         <span className="absolute inset-y-0 w-px bg-line-soft" style={{ left: GUTTER }} aria-hidden />
 
         {/* hour rules with labels sitting just above, like the real thing */}
-        {['1 PM', '2 PM', '3 PM'].map((hour, index) => (
+        {['1 PM', '2 PM', '3 PM', '4 PM'].map((hour, index) => (
           <div key={hour}>
             <span
               className="absolute h-px bg-line-soft"

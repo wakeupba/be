@@ -8,7 +8,7 @@
 
 const GCAL_BLUE = '#039be5';
 const GCAL_TOMATO = '#d50000';
-const HIGHLIGHT = 'Board review';
+const HIGHLIGHTS = new Set(['Interview', 'Board review']);
 
 /* [title, top, height, indent]: indent staggers chips sideways in the messy
  * variant; the tidy variant restacks everything straight and full width */
@@ -22,7 +22,8 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
     date: '14',
     chips: [
       ['Sprint sync', 4, 22, 0],
-      ['Interview', 24, 30, 2],
+      ['Interview', 24, 30, 2], // highlighted in the tidy variant
+
       ['All hands', 52, 26, 1],
       ['Budget review', 76, 22, 3],
       ['Sales call', 96, 30, 0],
@@ -47,7 +48,8 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
     date: '16',
     chips: [
       ['Planning', 8, 30, 1],
-      [HIGHLIGHT, 36, 22, 0],
+      ['Board review', 36, 22, 0], // highlighted in the tidy variant
+
       ['Customer call', 56, 28, 3],
       ['Design crit', 82, 20, 1],
       ['Late sync', 100, 30, 2],
@@ -87,16 +89,13 @@ export function WeekArt({ tidy = false }: { tidy?: boolean }) {
               {day.chips.map(([title, top, height, indent]) => {
                 const chipTop = tidy ? stackedTop : top;
                 if (tidy) stackedTop += height + 3;
-                const isHighlighted = tidy && title === HIGHLIGHT;
+                const isHighlighted = tidy && HIGHLIGHTS.has(title);
+                const color = isHighlighted ? GCAL_TOMATO : GCAL_BLUE;
                 return (
                   <div
                     key={title}
                     className={`absolute ${tidy ? 'left-1 right-1' : INDENTS[indent]} truncate rounded-[3px] px-1.5 py-0.5 text-[9px] font-medium leading-tight text-white ${tidy ? '' : 'ring-1 ring-white'}`}
-                    style={{
-                      top: chipTop,
-                      height,
-                      backgroundColor: isHighlighted ? GCAL_TOMATO : GCAL_BLUE,
-                    }}
+                    style={{ top: chipTop, height, backgroundColor: color }}
                   >
                     {title}
                   </div>

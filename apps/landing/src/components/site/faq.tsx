@@ -1,3 +1,4 @@
+import { Reveal } from '@/components/motion/reveal';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const FAQS = [
@@ -35,20 +36,22 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="border-b border-line-soft">
-      <div className="mx-auto max-w-5xl border-x border-line-soft px-6 py-16 sm:py-20">
-        <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">FAQ</p>
-        <h2 className="mt-3 max-w-md text-2xl font-semibold tracking-tight sm:text-3xl">
-          The questions worth asking.
-        </h2>
-        <Accordion type="single" collapsible className="mt-8 max-w-2xl">
-          {FAQS.map((faq) => (
-            <AccordionItem key={faq.question} value={faq.question}>
-              <AccordionTrigger>{faq.question}</AccordionTrigger>
-              <AccordionContent>{faq.answer}</AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+    <section id="faq" className="bg-paper">
+      <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+        <div className="mx-auto grid max-w-4xl gap-12 lg:grid-cols-[1fr_1.6fr]">
+          <Reveal>
+            <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">FAQ</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight">The questions worth asking.</h2>
+          </Reveal>
+          <Accordion type="single" collapsible>
+            {FAQS.map((faq) => (
+              <AccordionItem key={faq.question} value={faq.question} className="border-line">
+                <AccordionTrigger>{faq.question}</AccordionTrigger>
+                <AccordionContent>{faq.answer}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
       </div>
     </section>
   );

@@ -6,12 +6,12 @@ const APP_URL = 'https://app.wakeupba.be';
 export function Footer() {
   return (
     <footer>
-      <div className="mx-auto max-w-5xl border-x border-line-soft px-6">
-        <div className="flex flex-col items-start justify-between gap-8 py-14 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Your next important meeting is coming.</h2>
-            <p className="mt-2 text-[15px] text-muted">Color it red. We will do the rest.</p>
-          </div>
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="flex flex-col items-center gap-6 py-24 text-center sm:py-28">
+          <h2 className="max-w-md text-3xl font-semibold tracking-tight sm:text-4xl">
+            Your next important meeting is coming.
+          </h2>
+          <p className="text-[15px] text-muted">Color it red. We will do the rest.</p>
           <ButtonLink href={APP_URL} size="lg">
             Start free
           </ButtonLink>
@@ -46,7 +46,7 @@ export function Footer() {
           </nav>
         </div>
         <p className="border-t border-line-soft py-6 font-mono text-[12px] leading-relaxed text-muted-2">
-          AGPL-3.0. Read-only calendar access. Calls come from one permanent number you save once.
+          AGPL-3.0 open source. Read-only calendar access. Calls come from one permanent number you save once.
         </p>
       </div>
     </footer>

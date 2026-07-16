@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { BellRing, History, Lock, PhoneForwarded } from 'lucide-react';
+import { Reveal } from '@/components/motion/reveal';
 
 interface Feature {
   icon: LucideIcon;
@@ -32,20 +33,22 @@ const FEATURES: Feature[] = [
 
 export function Features() {
   return (
-    <section className="border-b border-line-soft">
-      <div className="mx-auto max-w-5xl border-x border-line-soft px-6 py-16 sm:py-20">
-        <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">
-          Built for reliability
-        </p>
-        <h2 className="mt-3 max-w-md text-2xl font-semibold tracking-tight sm:text-3xl">
-          A reminder is only as good as its worst day.
-        </h2>
-        <div className="mt-10 grid gap-px overflow-hidden rounded-card border border-line-soft bg-line-soft sm:grid-cols-2">
+    <section className="bg-paper">
+      <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+        <Reveal className="mx-auto max-w-xl text-center">
+          <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">
+            Built for reliability
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+            A reminder is only as good as its worst day.
+          </h2>
+        </Reveal>
+        <div className="mx-auto mt-16 grid max-w-4xl gap-5 sm:grid-cols-2">
           {FEATURES.map((feature) => (
-            <div key={feature.title} className="bg-background p-6">
-              <feature.icon className="size-4 text-muted-2" aria-hidden />
-              <h3 className="mt-3 text-[15px] font-semibold">{feature.title}</h3>
-              <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted">{feature.body}</p>
+            <div key={feature.title} className="rounded-2xl border border-line-soft bg-background p-7">
+              <feature.icon className="size-[18px] text-muted-2" aria-hidden strokeWidth={1.8} />
+              <h3 className="mt-4 text-[16px] font-semibold">{feature.title}</h3>
+              <p className="mt-2.5 max-w-sm text-[14.5px] leading-relaxed text-muted">{feature.body}</p>
             </div>
           ))}
         </div>

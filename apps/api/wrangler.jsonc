@@ -18,7 +18,8 @@
   "vars": {
     "APP_ORIGIN": "https://app.wakeupba.be",
     "API_ORIGIN": "https://api.wakeupba.be",
-    "COOKIE_DOMAIN": "wakeupba.be"
+    "COOKIE_DOMAIN": "wakeupba.be",
+    "LANDING_ORIGIN": "https://wakeupba.be"
   }
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN,

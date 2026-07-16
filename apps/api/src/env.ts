@@ -3,6 +3,7 @@ export interface Env {
 
   APP_ORIGIN: string;
   API_ORIGIN: string;
+  LANDING_ORIGIN: string;
   COOKIE_DOMAIN: string;
 
   GOOGLE_CLIENT_ID: string;

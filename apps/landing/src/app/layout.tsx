@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { SmoothScroll } from '@/components/motion/smooth-scroll';
 import './globals.css';
 
 const geistSans = Geist({
@@ -31,7 +32,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <SmoothScroll />
+        {children}
+      </body>
     </html>
   );
 }

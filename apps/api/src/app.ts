@@ -8,6 +8,7 @@ import { readSession } from './lib/session';
 import { authRoutes } from './routes/auth';
 import { dodoRoutes, plivoRoutes } from './routes/hooks';
 import { meRoutes } from './routes/me';
+import { waitlistRoutes } from './routes/waitlist';
 
 type AppContext = { Bindings: Env; Variables: { container: Container; userId: string } };
 
@@ -26,6 +27,9 @@ export function createApp() {
   );
   app.use('/features/*', (c, next) => cors({ origin: c.env.APP_ORIGIN, credentials: true })(c, next));
 
+  // waitlist is called from the public landing page, no session involved
+  app.use('/waitlist', (c, next) => cors({ origin: c.env.LANDING_ORIGIN })(c, next));
+
   // session guard for everything the dashboard calls
   const requireSession = createMiddleware<AppContext>(async (c, next) => {
     const userId = await readSession(c.req.header('Cookie'), c.env.SESSION_SECRET);
@@ -40,6 +44,7 @@ export function createApp() {
 
   app.route('/auth', authRoutes);
   app.route('/', meRoutes);
+  app.route('/waitlist', waitlistRoutes);
   app.route('/hooks/plivo', plivoRoutes);
   app.route('/hooks/dodo', dodoRoutes);
 

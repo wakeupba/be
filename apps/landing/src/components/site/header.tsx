@@ -5,8 +5,8 @@ const APP_URL = 'https://app.wakeupba.be';
 
 export function Header() {
   return (
-    <header className="border-b border-line-soft">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between border-x border-line-soft px-6">
+    <header>
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">
             <Phone className="size-3.5" aria-hidden />

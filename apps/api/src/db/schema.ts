@@ -95,6 +95,12 @@ export const featureVotes = sqliteTable(
   (table) => [primaryKey({ columns: [table.featureKey, table.userId] })],
 );
 
+export const waitlist = sqliteTable('waitlist', {
+  email: text('email').primaryKey(),
+  region: text('region').notNull(),
+  createdAt: integer('created_at').notNull(),
+});
+
 export type UserRow = typeof users.$inferSelect;
 export type TokenRow = typeof oauthTokens.$inferSelect;
 export type TrackedEventRow = typeof trackedEvents.$inferSelect;

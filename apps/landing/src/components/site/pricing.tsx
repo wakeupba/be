@@ -1,5 +1,7 @@
 import { Check } from 'lucide-react';
+import { Reveal } from '@/components/motion/reveal';
 import { ButtonLink } from '@/components/ui/button';
+import { Waitlist } from './waitlist';
 
 const APP_URL = 'https://app.wakeupba.be';
 
@@ -41,22 +43,24 @@ const PLANS: Plan[] = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="border-b border-line-soft">
-      <div className="mx-auto max-w-5xl border-x border-line-soft px-6 py-16 sm:py-20">
-        <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">Pricing</p>
-        <h2 className="mt-3 max-w-md text-2xl font-semibold tracking-tight sm:text-3xl">
-          One missed meeting costs more than a year of this.
-        </h2>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+    <section id="pricing">
+      <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+        <Reveal className="mx-auto max-w-xl text-center">
+          <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-muted-2">Pricing</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+            One missed meeting costs more than a year of this.
+          </h2>
+        </Reveal>
+        <div className="mx-auto mt-16 grid max-w-3xl gap-5 sm:grid-cols-2">
           {PLANS.map((plan) => (
-            <div key={plan.name} className="flex flex-col rounded-card border border-line bg-background p-6">
+            <div key={plan.name} className="flex flex-col rounded-2xl border border-line bg-background p-7">
               <div className="flex items-baseline justify-between">
                 <h3 className="text-[15px] font-semibold">{plan.name}</h3>
                 <p className="font-mono text-[12px] text-muted-2">{plan.cadence}</p>
               </div>
-              <p className="mt-4 text-4xl font-semibold tabular-nums tracking-tight">{plan.price}</p>
+              <p className="mt-5 text-4xl font-semibold tabular-nums tracking-tight">{plan.price}</p>
               <p className="mt-3 min-h-10 text-[14px] leading-relaxed text-muted">{plan.description}</p>
-              <ul className="mt-5 flex flex-col gap-2.5 border-t border-line-soft pt-5">
+              <ul className="mt-6 flex flex-col gap-3 border-t border-line-soft pt-6">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2.5 text-[14px] text-muted">
                     <Check className="size-3.5 shrink-0 text-foreground" aria-hidden />
@@ -64,7 +68,7 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-6 flex grow items-end">
+              <div className="mt-8 flex grow items-end">
                 <ButtonLink
                   href={APP_URL}
                   variant={plan.primary ? 'primary' : 'secondary'}
@@ -76,9 +80,9 @@ export function Pricing() {
             </div>
           ))}
         </div>
-        <p className="mt-4 font-mono text-[12px] text-muted-2">
-          Prices in USD. Calls to US and Canada numbers at launch, more regions on the roadmap.
-        </p>
+        <div className="mx-auto max-w-3xl">
+          <Waitlist />
+        </div>
       </div>
     </section>
   );

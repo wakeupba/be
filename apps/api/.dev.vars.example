@@ -9,3 +9,4 @@ DODO_WEBHOOK_SECRET=xxx
 APP_ORIGIN=http://localhost:3001
 API_ORIGIN=http://localhost:8787
 COOKIE_DOMAIN=localhost
+LANDING_ORIGIN=http://localhost:3000

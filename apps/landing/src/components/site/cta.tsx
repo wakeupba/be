@@ -7,7 +7,7 @@ const APP_URL = 'https://app.wakeupba.be';
 export function Cta() {
   return (
     <section>
-      <div className="mx-auto max-w-6xl px-6 pb-8 pt-12">
+      <div className="mx-auto max-w-6xl px-6 pb-24 pt-16 sm:pb-32">
         <div className="rounded-[2rem] bg-foreground px-6 py-20 text-center sm:py-24">
           <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-white/45">
             Even on do not disturb

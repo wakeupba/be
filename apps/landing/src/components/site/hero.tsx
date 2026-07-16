@@ -40,7 +40,7 @@ function CallCard() {
 export function Hero() {
   return (
     <section>
-      <div className="mx-auto max-w-6xl px-6 pt-20 sm:pt-28">
+      <div className="mx-auto max-w-6xl px-6 pb-14 pt-20 sm:pb-20 sm:pt-28">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="rise rise-1 text-4xl font-semibold leading-[1.06] tracking-tight sm:text-6xl">
             Color a meeting red.

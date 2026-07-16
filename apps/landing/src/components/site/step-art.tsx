@@ -28,6 +28,7 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
       ['Budget review', 76, 22, 3],
       ['Sales call', 96, 30, 0],
       ['Vendor call', 124, 24, 2],
+      ['Wrap-up', 146, 24, 1],
     ],
   },
   {
@@ -41,6 +42,7 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
       ['Retro', 86, 24, 0],
       ['Onboarding', 108, 18, 2],
       ['Late review', 124, 26, 1],
+      ['Deep work', 152, 22, 3],
     ],
   },
   {
@@ -54,6 +56,7 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
       ['Design crit', 82, 20, 1],
       ['Late sync', 100, 30, 2],
       ['Follow-ups', 128, 22, 0],
+      ['EOD sync', 148, 24, 2],
     ],
   },
 ];
@@ -69,7 +72,7 @@ function ArtFade() {
 
 export function WeekArt({ tidy = false }: { tidy?: boolean }) {
   return (
-    <div className="relative h-44 overflow-hidden border-b border-line-soft bg-background">
+    <div className="relative h-52 overflow-hidden border-b border-line-soft bg-background">
       <div className="grid h-8 grid-cols-3 border-b border-line-soft">
         {WEEK.map((day) => (
           <div
@@ -81,7 +84,7 @@ export function WeekArt({ tidy = false }: { tidy?: boolean }) {
           </div>
         ))}
       </div>
-      <div className="relative grid h-[144px] grid-cols-3">
+      <div className="relative grid h-[176px] grid-cols-3">
         {WEEK.map((day) => {
           let stackedTop = 4;
           return (
@@ -112,13 +115,13 @@ export function WeekArt({ tidy = false }: { tidy?: boolean }) {
 
 export function IphoneCallArt() {
   return (
-    <div className="relative flex h-44 items-end justify-center overflow-hidden border-b border-line-soft bg-background">
-      <div className="relative h-36 w-52 rounded-t-[2rem] border border-b-0 border-zinc-600/40 bg-[linear-gradient(165deg,#4b5563_0%,#27272a_55%,#101014_100%)] px-4 pt-2.5">
+    <div className="relative flex h-52 items-end justify-center overflow-hidden border-b border-line-soft bg-background">
+      <div className="relative h-44 w-64 rounded-t-[2.4rem] border border-b-0 border-zinc-600/40 bg-[linear-gradient(165deg,#4b5563_0%,#27272a_55%,#101014_100%)] px-4 pt-2.5">
         {/* dynamic island */}
-        <span className="mx-auto block h-[18px] w-20 rounded-full bg-black" aria-hidden />
+        <span className="mx-auto block h-5 w-24 rounded-full bg-black" aria-hidden />
         <div className="mt-5 text-center">
           <p className="text-[11px] text-white/55">incoming call</p>
-          <p className="mt-1 text-[19px] font-light tracking-tight text-white">Wake Up Babe</p>
+          <p className="mt-1.5 text-[22px] font-light tracking-tight text-white">Wake Up Babe</p>
           <p className="mt-0.5 text-[10.5px] text-white/55">wakeupba.be</p>
         </div>
       </div>

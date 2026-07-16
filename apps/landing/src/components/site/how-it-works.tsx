@@ -42,11 +42,11 @@ export function HowItWorks() {
             Your calendar is the interface.
           </h2>
         </Reveal>
-        <div className="mx-auto mt-16 grid max-w-5xl gap-5 lg:grid-cols-3">
+        <div className="mx-auto mt-16 grid gap-6 lg:grid-cols-3">
           {STEPS.map((step) => (
             <div key={step.number} className="overflow-hidden rounded-2xl border border-line bg-background">
               {step.art}
-              <div className="p-6">
+              <div className="p-7">
                 <p className="font-mono text-[12px] tabular-nums text-muted-2">{step.number}</p>
                 <h3 className="mt-2 text-[16px] font-semibold">{step.title}</h3>
                 <p className="mt-2 text-[14.5px] leading-relaxed text-muted">{step.body}</p>

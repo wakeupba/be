@@ -47,12 +47,26 @@ packages/
 
 ## Development
 
+Local dev runs the real Workers runtime (workerd via miniflare) against a local SQLite-backed D1, so dev and prod behave identically.
+
 ```sh
 pnpm install
-pnpm -C apps/api dev          # worker on :8787
-pnpm -C apps/dashboard dev    # dashboard on :3001
-pnpm -C apps/landing dev      # landing on :3000
+cp apps/api/.dev.vars.example apps/api/.dev.vars   # then fill in secrets
+pnpm -C apps/api db:migrate:local                  # create/refresh local D1
+pnpm -C apps/api dev                               # worker on :8787
+pnpm -C apps/dashboard dev                         # dashboard on :3001
+pnpm -C apps/landing dev                           # landing on :3000
 ```
+
+Useful to know:
+
+- Crons do not tick automatically in dev. Trigger them manually:
+  `curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"` (dispatcher) or
+  `curl "http://localhost:8787/__scheduled?cron=*%2F5+*+*+*+*"` (calendar sync).
+- Local D1 lives under `apps/api/.wrangler/state/`. Delete it to reset your data.
+- Google OAuth locally: add `http://localhost:8787/auth/callback` as a redirect URI in your Google Cloud console.
+- Real phone calls locally need Plivo to reach your machine: run
+  `cloudflared tunnel --url http://localhost:8787` and point `API_ORIGIN` in `.dev.vars` at the tunnel URL. Everything except live calls works without it.
 
 Secrets live in `wrangler secret` / `.dev.vars`, never in this repo. See `apps/api/.dev.vars.example`.
 

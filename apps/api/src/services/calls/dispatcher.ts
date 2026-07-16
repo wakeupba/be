@@ -31,7 +31,7 @@ export class CallDispatchService {
     const due = await this.events.listDue(nowMs, DISPATCH_BATCH_SIZE);
     for (const event of due) {
       try {
-        await this.dispatchOne(event.id, event.user_id);
+        await this.dispatchOne(event.id, event.userId);
       } catch (error) {
         console.error(`dispatch failed for event ${event.id}:`, error);
       }
@@ -40,7 +40,7 @@ export class CallDispatchService {
 
   private async dispatchOne(eventId: string, userId: string): Promise<void> {
     const user = await this.users.findById(userId);
-    if (!user?.phone_e164 || !user.dnd_verified_at) return;
+    if (!user?.phoneE164 || !user.dndVerifiedAt) return;
 
     // claim before spending quota or dialing so a second cron tick is a no-op
     if (!(await this.events.tryClaimForCalling(eventId))) return;
@@ -55,13 +55,13 @@ export class CallDispatchService {
 
     const attempt = (await this.calls.latestAttemptForEvent(eventId)) + 1;
     const call = await this.calls.create({ eventId, userId: user.id, attempt });
-    await this.placeCall(call.id, user.phone_e164);
+    await this.placeCall(call.id, user.phoneE164);
   }
 
   async placeVerificationCall(user: UserRow): Promise<string> {
-    if (!user.phone_e164) throw new Error('no phone number on file');
+    if (!user.phoneE164) throw new Error('no phone number on file');
     const call = await this.calls.create({ eventId: null, userId: user.id, attempt: 1, isTest: true });
-    await this.placeCall(call.id, user.phone_e164);
+    await this.placeCall(call.id, user.phoneE164);
     return call.id;
   }
 

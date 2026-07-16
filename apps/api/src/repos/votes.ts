@@ -1,38 +1,32 @@
+import { and, eq, sql } from 'drizzle-orm';
+import type { Db } from '../db/client';
+import { featureVotes } from '../db/schema';
+
 export class VoteRepo {
-  constructor(private readonly db: D1Database) {}
+  constructor(private readonly db: Db) {}
 
   async toggle(featureKey: string, userId: string, note: string | null): Promise<void> {
-    const existing = await this.db
-      .prepare('SELECT 1 FROM feature_votes WHERE feature_key = ? AND user_id = ?')
-      .bind(featureKey, userId)
-      .first();
+    const existing = await this.db.query.featureVotes.findFirst({
+      where: and(eq(featureVotes.featureKey, featureKey), eq(featureVotes.userId, userId)),
+    });
     if (existing) {
       await this.db
-        .prepare('DELETE FROM feature_votes WHERE feature_key = ? AND user_id = ?')
-        .bind(featureKey, userId)
-        .run();
+        .delete(featureVotes)
+        .where(and(eq(featureVotes.featureKey, featureKey), eq(featureVotes.userId, userId)));
       return;
     }
-    await this.db
-      .prepare('INSERT INTO feature_votes (feature_key, user_id, note, created_at) VALUES (?, ?, ?, ?)')
-      .bind(featureKey, userId, note, Date.now())
-      .run();
+    await this.db.insert(featureVotes).values({ featureKey, userId, note, createdAt: Date.now() });
   }
 
   async countsWithMine(userId: string): Promise<Map<string, { votes: number; mine: boolean }>> {
-    const result = await this.db
-      .prepare(
-        `SELECT feature_key,
-                COUNT(*) AS votes,
-                MAX(CASE WHEN user_id = ? THEN 1 ELSE 0 END) AS mine
-         FROM feature_votes GROUP BY feature_key`,
-      )
-      .bind(userId)
-      .all<{ feature_key: string; votes: number; mine: number }>();
-    const map = new Map<string, { votes: number; mine: boolean }>();
-    for (const row of result.results) {
-      map.set(row.feature_key, { votes: row.votes, mine: row.mine === 1 });
-    }
-    return map;
+    const rows = await this.db
+      .select({
+        featureKey: featureVotes.featureKey,
+        votes: sql<number>`COUNT(*)`,
+        mine: sql<number>`MAX(CASE WHEN ${featureVotes.userId} = ${userId} THEN 1 ELSE 0 END)`,
+      })
+      .from(featureVotes)
+      .groupBy(featureVotes.featureKey);
+    return new Map(rows.map((row) => [row.featureKey, { votes: row.votes, mine: row.mine === 1 }]));
   }
 }

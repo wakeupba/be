@@ -9,14 +9,17 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "db:migrate:local": "wrangler d1 migrations apply wakeupbabe --local",
-    "db:migrate:remote": "wrangler d1 migrations apply wakeupbabe --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply wakeupbabe --remote",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "hono": "^4.6.0",
-    "@wakeupbabe/shared": "workspace:*"
+    "@wakeupbabe/shared": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.6.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250405.0",
+    "drizzle-kit": "^0.31.10",
     "typescript": "^5.7.0",
     "wrangler": "^4.0.0"
   }

@@ -24,25 +24,25 @@ export class CallLifecycleService {
   }
 
   async onDigit(call: CallRow, digit: string): Promise<'ack' | 'snooze' | 'noop'> {
-    if (call.is_test === 1) {
+    if (call.isTest) {
       if (digit === '1') {
         await this.calls.finish(call.id, 'answered_ack');
-        await this.users.markDndVerified(call.user_id);
+        await this.users.markDndVerified(call.userId);
         return 'ack';
       }
       return 'noop';
     }
 
-    if (!call.event_id) return 'noop';
+    if (!call.eventId) return 'noop';
 
     if (digit === '1') {
       await this.calls.finish(call.id, 'answered_ack');
-      await this.events.setState(call.event_id, 'acknowledged');
+      await this.events.setState(call.eventId, 'acknowledged');
       return 'ack';
     }
     if (digit === '2') {
       await this.calls.finish(call.id, 'answered_snooze');
-      await this.events.setState(call.event_id, 'snoozed', Date.now() + SNOOZE_DELAY_MS);
+      await this.events.setState(call.eventId, 'snoozed', Date.now() + SNOOZE_DELAY_MS);
       return 'snooze';
     }
     return 'noop';
@@ -52,20 +52,20 @@ export class CallLifecycleService {
     const current = await this.calls.findById(call.id);
     if (current?.outcome !== 'pending') return;
 
-    if (current.answered_at) {
+    if (current.answeredAt) {
       // they picked up and heard the briefing but pressed nothing: job done
       await this.calls.finish(call.id, 'answered_no_input');
-      if (current.event_id) await this.events.setState(current.event_id, 'acknowledged');
+      if (current.eventId) await this.events.setState(current.eventId, 'acknowledged');
       return;
     }
 
     await this.calls.finish(call.id, 'no_answer');
-    if (current.is_test === 1 || !current.event_id) return;
+    if (current.isTest || !current.eventId) return;
 
     if (current.attempt < MAX_ATTEMPTS) {
-      await this.events.setState(current.event_id, 'scheduled', Date.now() + RETRY_DELAY_MS);
+      await this.events.setState(current.eventId, 'scheduled', Date.now() + RETRY_DELAY_MS);
     } else {
-      await this.events.setState(current.event_id, 'missed');
+      await this.events.setState(current.eventId, 'missed');
     }
   }
 }

@@ -32,8 +32,8 @@ export class CalendarSyncService {
     const tokenRow = await this.tokens.find(user.id);
     if (!tokenRow) return;
 
-    const accessToken = await this.freshAccessToken(user.id, tokenRow.refresh_token_enc, tokenRow);
-    const delta = await this.google.listEventsDelta(accessToken, tokenRow.calendar_sync_token);
+    const accessToken = await this.freshAccessToken(user.id, tokenRow.refreshTokenEnc, tokenRow);
+    const delta = await this.google.listEventsDelta(accessToken, tokenRow.calendarSyncToken);
 
     for (const item of delta.items) {
       await this.applyEvent(user, item);
@@ -48,7 +48,7 @@ export class CalendarSyncService {
     }
 
     const startsAtIso = item.start?.dateTime;
-    const isFlagged = item.colorId === user.trigger_color_id;
+    const isFlagged = item.colorId === user.triggerColorId;
     const isDeclinedByMe = (item.attendees ?? []).some(
       (a) => a.self === true && a.responseStatus === 'declined',
     );
@@ -60,7 +60,7 @@ export class CalendarSyncService {
     }
 
     const startsAt = Date.parse(startsAtIso);
-    const callAt = startsAt - user.lead_minutes * 60_000;
+    const callAt = startsAt - user.leadMinutes * 60_000;
     if (Number.isNaN(startsAt) || startsAt <= Date.now()) return;
 
     await this.events.upsert({
@@ -79,14 +79,14 @@ export class CalendarSyncService {
   private async freshAccessToken(
     userId: string,
     refreshTokenEnc: string,
-    cached: { access_token_enc: string | null; access_token_expires_at: number | null },
+    cached: { accessTokenEnc: string | null; accessTokenExpiresAt: number | null },
   ): Promise<string> {
     if (
-      cached.access_token_enc &&
-      cached.access_token_expires_at &&
-      cached.access_token_expires_at - ACCESS_TOKEN_SLACK_MS > Date.now()
+      cached.accessTokenEnc &&
+      cached.accessTokenExpiresAt &&
+      cached.accessTokenExpiresAt - ACCESS_TOKEN_SLACK_MS > Date.now()
     ) {
-      return decryptSecret(cached.access_token_enc, this.encKey);
+      return decryptSecret(cached.accessTokenEnc, this.encKey);
     }
 
     const refreshToken = await decryptSecret(refreshTokenEnc, this.encKey);

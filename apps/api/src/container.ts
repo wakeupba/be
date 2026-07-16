@@ -1,3 +1,4 @@
+import { createDb } from './db/client';
 import type { Env } from './env';
 import { CallRepo } from './repos/calls';
 import { EventRepo } from './repos/events';
@@ -16,11 +17,12 @@ import { PlivoProvider } from './services/telephony/plivo';
  * its collaborators here, once per request or cron tick.
  */
 export function buildContainer(env: Env) {
-  const users = new UserRepo(env.DB);
-  const tokens = new TokenRepo(env.DB);
-  const events = new EventRepo(env.DB);
-  const calls = new CallRepo(env.DB);
-  const votes = new VoteRepo(env.DB);
+  const db = createDb(env.DB);
+  const users = new UserRepo(db);
+  const tokens = new TokenRepo(db);
+  const events = new EventRepo(db);
+  const calls = new CallRepo(db);
+  const votes = new VoteRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
   const telephony = new PlivoProvider(env.PLIVO_AUTH_ID, env.PLIVO_AUTH_TOKEN);

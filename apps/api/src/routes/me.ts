@@ -35,16 +35,16 @@ export const meRoutes = new Hono<MeContext>()
     const dto: MeDto = {
       id: user.id,
       email: user.email,
-      displayName: user.display_name,
-      phone: user.phone_e164,
+      displayName: user.displayName,
+      phone: user.phoneE164,
       plan: user.plan,
-      callsUsed: user.calls_used_this_period,
+      callsUsed: user.callsUsedThisPeriod,
       callsLimit: PLAN_LIMITS[user.plan].callsPerMonth,
-      extraCredits: user.extra_call_credits,
-      triggerColorId: user.trigger_color_id,
-      leadMinutes: user.lead_minutes,
+      extraCredits: user.extraCallCredits,
+      triggerColorId: user.triggerColorId,
+      leadMinutes: user.leadMinutes,
       timezone: user.timezone,
-      dndVerified: user.dnd_verified_at !== null,
+      dndVerified: user.dndVerifiedAt !== null,
     };
     return c.json(dto);
   })
@@ -60,19 +60,19 @@ export const meRoutes = new Hono<MeContext>()
       if (typeof body.phone !== 'string' || !E164_PATTERN.test(body.phone)) {
         return c.json({ error: 'phone must be E.164, like +14155550123' }, 400);
       }
-      patch.phone_e164 = body.phone;
+      patch.phoneE164 = body.phone;
     }
     if (body.triggerColorId !== undefined) {
       if (typeof body.triggerColorId !== 'string' || !GOOGLE_COLOR_IDS.has(body.triggerColorId)) {
         return c.json({ error: 'triggerColorId must be a Google Calendar color id (1-11)' }, 400);
       }
-      patch.trigger_color_id = body.triggerColorId;
+      patch.triggerColorId = body.triggerColorId;
     }
     if (body.leadMinutes !== undefined) {
       if (!LEAD_MINUTE_OPTIONS.includes(body.leadMinutes as LeadMinutes)) {
         return c.json({ error: `leadMinutes must be one of ${LEAD_MINUTE_OPTIONS.join(', ')}` }, 400);
       }
-      patch.lead_minutes = body.leadMinutes as LeadMinutes;
+      patch.leadMinutes = body.leadMinutes as LeadMinutes;
     }
     if (body.timezone !== undefined) {
       if (typeof body.timezone !== 'string' || !isValidTimezone(body.timezone)) {
@@ -91,10 +91,10 @@ export const meRoutes = new Hono<MeContext>()
     const dtos: UpcomingEventDto[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
-      startsAt: row.starts_at,
-      callAt: row.call_at,
+      startsAt: row.startsAt,
+      callAt: row.callAt,
       state: row.state,
-      attendeeCount: row.attendee_count,
+      attendeeCount: row.attendeeCount,
     }));
     return c.json(dtos);
   })
@@ -104,11 +104,11 @@ export const meRoutes = new Hono<MeContext>()
     const rows = await calls.listHistoryForUser(c.get('userId'));
     const dtos: CallHistoryDto[] = rows.map((row) => ({
       id: row.id,
-      eventTitle: row.event_title,
+      eventTitle: row.eventTitle,
       attempt: row.attempt,
-      placedAt: row.placed_at,
+      placedAt: row.placedAt,
       outcome: row.outcome,
-      isTest: row.is_test === 1,
+      isTest: row.isTest,
     }));
     return c.json(dtos);
   })
@@ -117,7 +117,7 @@ export const meRoutes = new Hono<MeContext>()
     const { users, calls, dispatcher } = c.get('container');
     const user = await users.findById(c.get('userId'));
     if (!user) return c.json({ error: 'not found' }, 404);
-    if (!user.phone_e164) return c.json({ error: 'add a phone number first' }, 400);
+    if (!user.phoneE164) return c.json({ error: 'add a phone number first' }, 400);
 
     const recent = await calls.countTestCallsSince(user.id, Date.now() - 60 * 60_000);
     if (recent >= VERIFY_CALLS_PER_HOUR) {

@@ -36,13 +36,12 @@ export const plivoRoutes = new Hono<HookContext>()
 
     await lifecycle.onAnswered(call);
 
-    const speech =
-      call.is_test === 1
-        ? VERIFICATION_SCRIPT
-        : await (async () => {
-            const event = call.event_id ? await events.findById(call.event_id) : null;
-            return event ? scripts.build(event) : VERIFICATION_SCRIPT;
-          })();
+    const speech = call.isTest
+      ? VERIFICATION_SCRIPT
+      : await (async () => {
+          const event = call.eventId ? await events.findById(call.eventId) : null;
+          return event ? scripts.build(event) : VERIFICATION_SCRIPT;
+        })();
 
     const xml = buildGatherXml({
       speech,
@@ -112,7 +111,7 @@ interface DodoWebhookPayload {
   type: string;
   data: {
     customer?: { customer_id?: string };
-    metadata?: { user_id?: string };
+    metadata?: { userId?: string };
     product_cart?: Array<{ product_id: string; quantity: number }>;
   };
 }
@@ -126,7 +125,7 @@ export const dodoRoutes = new Hono<HookContext>().post('/', async (c) => {
   }
 
   const payload = JSON.parse(body) as DodoWebhookPayload;
-  const userId = payload.data.metadata?.user_id;
+  const userId = payload.data.metadata?.userId;
   if (!userId) return c.json({ ok: true, note: 'no user metadata, ignored' });
 
   const { users } = c.get('container');

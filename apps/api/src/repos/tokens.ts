@@ -1,42 +1,36 @@
-export interface TokenRow {
-  user_id: string;
-  refresh_token_enc: string;
-  access_token_enc: string | null;
-  access_token_expires_at: number | null;
-  calendar_sync_token: string | null;
-  updated_at: number;
-}
+import { eq } from 'drizzle-orm';
+import type { Db } from '../db/client';
+import { oauthTokens, type TokenRow } from '../db/schema';
+
+export type { TokenRow };
 
 export class TokenRepo {
-  constructor(private readonly db: D1Database) {}
+  constructor(private readonly db: Db) {}
 
   async find(userId: string): Promise<TokenRow | null> {
-    return this.db.prepare('SELECT * FROM oauth_tokens WHERE user_id = ?').bind(userId).first<TokenRow>();
+    const row = await this.db.query.oauthTokens.findFirst({ where: eq(oauthTokens.userId, userId) });
+    return row ?? null;
   }
 
   async upsertRefreshToken(userId: string, refreshTokenEnc: string): Promise<void> {
+    const now = Date.now();
     await this.db
-      .prepare(
-        `INSERT INTO oauth_tokens (user_id, refresh_token_enc, updated_at) VALUES (?, ?, ?)
-         ON CONFLICT (user_id) DO UPDATE SET refresh_token_enc = excluded.refresh_token_enc, updated_at = excluded.updated_at`,
-      )
-      .bind(userId, refreshTokenEnc, Date.now())
-      .run();
+      .insert(oauthTokens)
+      .values({ userId, refreshTokenEnc, updatedAt: now })
+      .onConflictDoUpdate({ target: oauthTokens.userId, set: { refreshTokenEnc, updatedAt: now } });
   }
 
   async cacheAccessToken(userId: string, accessTokenEnc: string, expiresAt: number): Promise<void> {
     await this.db
-      .prepare(
-        'UPDATE oauth_tokens SET access_token_enc = ?, access_token_expires_at = ?, updated_at = ? WHERE user_id = ?',
-      )
-      .bind(accessTokenEnc, expiresAt, Date.now(), userId)
-      .run();
+      .update(oauthTokens)
+      .set({ accessTokenEnc, accessTokenExpiresAt: expiresAt, updatedAt: Date.now() })
+      .where(eq(oauthTokens.userId, userId));
   }
 
   async saveSyncToken(userId: string, syncToken: string | null): Promise<void> {
     await this.db
-      .prepare('UPDATE oauth_tokens SET calendar_sync_token = ?, updated_at = ? WHERE user_id = ?')
-      .bind(syncToken, Date.now(), userId)
-      .run();
+      .update(oauthTokens)
+      .set({ calendarSyncToken: syncToken, updatedAt: Date.now() })
+      .where(eq(oauthTokens.userId, userId));
   }
 }

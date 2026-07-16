@@ -1,23 +1,13 @@
 import type { CallOutcome } from '@wakeupbabe/shared';
+import { and, desc, eq, gte, max, sql } from 'drizzle-orm';
+import type { Db } from '../db/client';
+import { type CallRow, calls, trackedEvents } from '../db/schema';
 import { newId } from '../lib/id';
 
-export interface CallRow {
-  id: string;
-  event_id: string | null;
-  user_id: string;
-  attempt: number;
-  provider: string;
-  provider_call_id: string | null;
-  placed_at: number | null;
-  answered_at: number | null;
-  ended_at: number | null;
-  outcome: CallOutcome;
-  is_test: number;
-  created_at: number;
-}
+export type { CallRow };
 
 export class CallRepo {
-  constructor(private readonly db: D1Database) {}
+  constructor(private readonly db: Db) {}
 
   async create(input: {
     eventId: string | null;
@@ -25,79 +15,65 @@ export class CallRepo {
     attempt: number;
     isTest?: boolean;
   }): Promise<CallRow> {
-    const id = newId('call');
-    const now = Date.now();
-    await this.db
-      .prepare(
-        `INSERT INTO calls (id, event_id, user_id, attempt, is_test, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(id, input.eventId, input.userId, input.attempt, input.isTest ? 1 : 0, now)
-      .run();
-    return {
-      id,
-      event_id: input.eventId,
-      user_id: input.userId,
-      attempt: input.attempt,
-      provider: 'plivo',
-      provider_call_id: null,
-      placed_at: null,
-      answered_at: null,
-      ended_at: null,
-      outcome: 'pending',
-      is_test: input.isTest ? 1 : 0,
-      created_at: now,
-    };
+    const [created] = await this.db
+      .insert(calls)
+      .values({
+        id: newId('call'),
+        eventId: input.eventId,
+        userId: input.userId,
+        attempt: input.attempt,
+        isTest: input.isTest ?? false,
+        createdAt: Date.now(),
+      })
+      .returning();
+    if (!created) throw new Error('call insert did not persist');
+    return created;
   }
 
   async findById(id: string): Promise<CallRow | null> {
-    return this.db.prepare('SELECT * FROM calls WHERE id = ?').bind(id).first<CallRow>();
+    const row = await this.db.query.calls.findFirst({ where: eq(calls.id, id) });
+    return row ?? null;
   }
 
   async markPlaced(id: string, providerCallId: string): Promise<void> {
-    await this.db
-      .prepare('UPDATE calls SET provider_call_id = ?, placed_at = ? WHERE id = ?')
-      .bind(providerCallId, Date.now(), id)
-      .run();
+    await this.db.update(calls).set({ providerCallId, placedAt: Date.now() }).where(eq(calls.id, id));
   }
 
   async markAnswered(id: string): Promise<void> {
-    await this.db.prepare('UPDATE calls SET answered_at = ? WHERE id = ?').bind(Date.now(), id).run();
+    await this.db.update(calls).set({ answeredAt: Date.now() }).where(eq(calls.id, id));
   }
 
   async finish(id: string, outcome: CallOutcome): Promise<void> {
-    await this.db
-      .prepare('UPDATE calls SET outcome = ?, ended_at = ? WHERE id = ?')
-      .bind(outcome, Date.now(), id)
-      .run();
+    await this.db.update(calls).set({ outcome, endedAt: Date.now() }).where(eq(calls.id, id));
   }
 
   async latestAttemptForEvent(eventId: string): Promise<number> {
-    const row = await this.db
-      .prepare('SELECT MAX(attempt) AS max_attempt FROM calls WHERE event_id = ?')
-      .bind(eventId)
-      .first<{ max_attempt: number | null }>();
-    return row?.max_attempt ?? 0;
+    const [row] = await this.db
+      .select({ maxAttempt: max(calls.attempt) })
+      .from(calls)
+      .where(eq(calls.eventId, eventId));
+    return row?.maxAttempt ?? 0;
   }
 
   async countTestCallsSince(userId: string, sinceMs: number): Promise<number> {
-    const row = await this.db
-      .prepare('SELECT COUNT(*) AS n FROM calls WHERE user_id = ? AND is_test = 1 AND created_at >= ?')
-      .bind(userId, sinceMs)
-      .first<{ n: number }>();
+    const [row] = await this.db
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(calls)
+      .where(and(eq(calls.userId, userId), eq(calls.isTest, true), gte(calls.createdAt, sinceMs)));
     return row?.n ?? 0;
   }
 
-  async listHistoryForUser(userId: string): Promise<Array<CallRow & { event_title: string }>> {
-    const result = await this.db
-      .prepare(
-        `SELECT calls.*, COALESCE(tracked_events.title, 'Verification call') AS event_title FROM calls
-         LEFT JOIN tracked_events ON tracked_events.id = calls.event_id
-         WHERE calls.user_id = ?
-         ORDER BY calls.created_at DESC LIMIT 50`,
-      )
-      .bind(userId)
-      .all<CallRow & { event_title: string }>();
-    return result.results;
+  async listHistoryForUser(userId: string): Promise<Array<CallRow & { eventTitle: string }>> {
+    const rows = await this.db
+      .select({
+        call: calls,
+        eventTitle: sql<string>`COALESCE(${trackedEvents.title}, 'Verification call')`,
+      })
+      .from(calls)
+      .leftJoin(trackedEvents, eq(trackedEvents.id, calls.eventId))
+      .where(eq(calls.userId, userId))
+      .orderBy(desc(calls.createdAt))
+      .limit(50);
+    return rows.map((row) => ({ ...row.call, eventTitle: row.eventTitle }));
   }
 }

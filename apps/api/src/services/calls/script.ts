@@ -11,8 +11,8 @@ export interface BriefingScriptBuilder {
  */
 export class TemplateScriptBuilder implements BriefingScriptBuilder {
   build(event: TrackedEventRow): string {
-    const minutes = Math.max(1, Math.round((event.starts_at - Date.now()) / 60000));
-    const attendees = event.attendee_count > 1 ? ` ${event.attendee_count} people are expected.` : '';
+    const minutes = Math.max(1, Math.round((event.startsAt - Date.now()) / 60000));
+    const attendees = event.attendeeCount > 1 ? ` ${event.attendeeCount} people are expected.` : '';
     return (
       `Wake up babe. ${event.title} starts in ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}.` +
       attendees +

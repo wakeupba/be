@@ -71,6 +71,54 @@ function UnblinkingEyes({ ink = '#18181b', paper = '#ffffff', ...props }: MarkPr
   );
 }
 
+/* 3b. side-eye: both pupils hard left, watching you leave */
+function SideEye({ ink = '#18181b', paper = '#ffffff', ...props }: MarkProps) {
+  return (
+    <svg viewBox="0 0 32 32" {...props} role="img" aria-label="side-eye mark">
+      <circle cx="10" cy="16" r="7" fill={paper} stroke={ink} strokeWidth="2.4" />
+      <circle cx="22" cy="16" r="7" fill={paper} stroke={ink} strokeWidth="2.4" />
+      <circle cx="6.8" cy="16.5" r="2.5" fill={ink} />
+      <circle cx="18.8" cy="16.5" r="2.5" fill={ink} />
+    </svg>
+  );
+}
+
+/* 3c. googly: one eye bigger, fully deranged */
+function Googly({ ink = '#18181b', paper = '#ffffff', ...props }: MarkProps) {
+  return (
+    <svg viewBox="0 0 32 32" {...props} role="img" aria-label="googly eyes mark">
+      <circle cx="10" cy="17" r="8.5" fill={paper} stroke={ink} strokeWidth="2.4" />
+      <circle cx="23.5" cy="14" r="5.5" fill={paper} stroke={ink} strokeWidth="2.4" />
+      <circle cx="12" cy="15" r="3" fill={ink} />
+      <circle cx="22.5" cy="12.8" r="2.1" fill={ink} />
+    </svg>
+  );
+}
+
+/* 3d. half-lidded: flat upper eyelids, thoroughly unimpressed */
+function HalfLidded({ ink = '#18181b', paper = '#ffffff', ...props }: MarkProps) {
+  return (
+    <svg viewBox="0 0 32 32" {...props} role="img" aria-label="half-lidded eyes mark">
+      <path
+        d="M3 13 a7 7 0 0 0 14 3 a 7 7 0 0 0 -0.6 -3 z"
+        fill={paper}
+        stroke={ink}
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.6 13 a7 7 0 0 0 14 3 a 7 7 0 0 0 -0.6 -3 z"
+        fill={paper}
+        stroke={ink}
+        strokeWidth="2.4"
+        strokeLinejoin="round"
+      />
+      <circle cx="10.5" cy="15.5" r="2.4" fill={ink} />
+      <circle cx="23" cy="15.5" r="2.4" fill={ink} />
+    </svg>
+  );
+}
+
 /* 4. the missed-call badge: 47 missed calls from wake up babe */
 function MissedCallBadge(props: SVGProps<SVGSVGElement>) {
   return (
@@ -176,6 +224,42 @@ export default function LogoLab() {
           note="We are up. Now you are up. Blinks once a minute on the site, never in your dreams."
           renderMark={(s, dark) => (
             <UnblinkingEyes
+              width={s}
+              height={s}
+              ink={dark ? '#ffffff' : '#18181b'}
+              paper={dark ? '#18181b' : '#ffffff'}
+            />
+          )}
+        />
+        <Row
+          name="3b. side-eye"
+          note="Both pupils hard to one side. Unmistakably eyes, and it is watching you leave."
+          renderMark={(s, dark) => (
+            <SideEye
+              width={s}
+              height={s}
+              ink={dark ? '#ffffff' : '#18181b'}
+              paper={dark ? '#18181b' : '#ffffff'}
+            />
+          )}
+        />
+        <Row
+          name="3c. googly"
+          note="One eye bigger. Symmetry broken, derangement achieved."
+          renderMark={(s, dark) => (
+            <Googly
+              width={s}
+              height={s}
+              ink={dark ? '#ffffff' : '#18181b'}
+              paper={dark ? '#18181b' : '#ffffff'}
+            />
+          )}
+        />
+        <Row
+          name="3d. half-lidded"
+          note="Flat upper eyelids. Thoroughly unimpressed that you almost missed the board review."
+          renderMark={(s, dark) => (
+            <HalfLidded
               width={s}
               height={s}
               ink={dark ? '#ffffff' : '#18181b'}

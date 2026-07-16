@@ -4,10 +4,10 @@ import { GoogleCalendarIcon, GoogleMeetIcon } from '@/components/brand/google';
  * A faithful static Google Calendar day-view fixture. Geometry mirrors the
  * real thing: a time gutter with labels sitting just above each rule, a
  * vertical divider, full-width event chips, and the red now-line spanning
- * only the day column. Hour rows are 64px, top inset 16px.
+ * only the day column. Hour rows are 64px, top inset 28px.
  */
 const HOUR = 64;
-const TOP = 16;
+const TOP = 28;
 const GUTTER = 48;
 
 function minutes(fromOnePm: number): number {
@@ -39,7 +39,7 @@ export function CalendarMock() {
         <p className="font-mono text-[12px] tabular-nums text-muted-2">2:15 PM</p>
       </div>
 
-      <div className="relative h-[196px]">
+      <div className="relative h-[236px]">
         {/* gutter divider */}
         <span className="absolute inset-y-0 w-px bg-line-soft" style={{ left: GUTTER }} aria-hidden />
 

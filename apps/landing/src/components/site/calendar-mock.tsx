@@ -24,7 +24,7 @@ interface Chip {
 
 const CHIPS: Chip[] = [
   { title: 'Team standup', start: 0, duration: 30, color: '#7986cb' },
-  { title: '1:1 with Sana', start: 30, duration: 30, color: '#33b679' },
+  { title: '1:1 with Marcus', start: 30, duration: 30, color: '#33b679' },
   { title: 'Quarterly board review', start: 90, duration: 45, color: '#d50000', meet: true },
 ];
 
@@ -39,7 +39,7 @@ export function CalendarMock() {
         <p className="font-mono text-[12px] tabular-nums text-muted-2">2:15 PM</p>
       </div>
 
-      <div className="relative h-[212px]">
+      <div className="relative h-[196px]">
         {/* gutter divider */}
         <span className="absolute inset-y-0 w-px bg-line-soft" style={{ left: GUTTER }} aria-hidden />
 
@@ -89,10 +89,6 @@ export function CalendarMock() {
           <span className="absolute inset-x-0 -top-px h-[2px] bg-[#ea4335]" />
         </div>
       </div>
-
-      <p className="border-t border-line-soft px-4 py-2.5 font-mono text-[11px] text-muted-2">
-        colored red, rings 15 minutes before
-      </p>
     </div>
   );
 }

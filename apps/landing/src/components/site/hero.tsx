@@ -1,4 +1,4 @@
-import { ArrowRight, Phone, PhoneOff } from 'lucide-react';
+import { ArrowDown, ArrowRight, Phone, PhoneOff } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/button';
 import { CalendarMock } from './calendar-mock';
 
@@ -63,8 +63,12 @@ export function Hero() {
         </div>
 
         <div className="rise rise-4 stage-glow mt-16 rounded-3xl border border-line-soft p-5 sm:mt-20 sm:p-10">
-          <div className="mx-auto grid max-w-3xl items-center gap-5 lg:grid-cols-[1.1fr_1fr] lg:gap-8">
+          <div className="mx-auto grid max-w-3xl items-center gap-4 lg:max-w-[52rem] lg:grid-cols-[1.1fr_auto_1fr] lg:gap-8">
             <CalendarMock />
+            <div className="flex justify-center text-muted-2" aria-hidden>
+              <ArrowRight className="hidden size-4 lg:block" />
+              <ArrowDown className="size-4 lg:hidden" />
+            </div>
             <CallCard />
           </div>
         </div>

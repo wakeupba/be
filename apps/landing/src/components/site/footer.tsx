@@ -4,9 +4,9 @@ const LINK_GROUPS = [
   {
     heading: 'Product',
     links: [
-      { label: 'How it works', href: '#how' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'FAQ', href: '#faq' },
+      { label: 'How it works', href: '/#how' },
+      { label: 'Pricing', href: '/pricing/' },
+      { label: 'FAQ', href: '/#faq' },
     ],
   },
   {
@@ -33,7 +33,7 @@ export function Footer() {
         <div className="grid gap-12 py-16 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2 font-semibold tracking-tight">
-              <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">
+              <span className="flex size-6 items-center justify-center rounded-md bg-accent text-white">
                 <Phone className="size-3.5" aria-hidden />
               </span>
               Wake Up Babe

@@ -5,23 +5,23 @@ const APP_URL = 'https://app.wakeupba.be';
 
 export function Header() {
   return (
-    <header>
+    <header className="sticky top-0 z-50 border-b border-line-soft bg-white/85 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">
+          <span className="flex size-6 items-center justify-center rounded-md bg-accent text-white">
             <Phone className="size-3.5" aria-hidden />
           </span>
           Wake Up Babe
         </a>
         <nav className="flex items-center gap-1">
           <a
-            href="#pricing"
+            href="/pricing/"
             className="hidden rounded-md px-3 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-foreground sm:block"
           >
             Pricing
           </a>
           <a
-            href="#faq"
+            href="/#faq"
             className="hidden rounded-md px-3 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-foreground sm:block"
           >
             FAQ

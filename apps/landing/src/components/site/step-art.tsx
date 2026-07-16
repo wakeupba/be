@@ -116,13 +116,15 @@ export function WeekArt({ tidy = false }: { tidy?: boolean }) {
 export function IphoneCallArt() {
   return (
     <div className="relative flex h-52 items-end justify-center overflow-hidden border-b border-line-soft bg-background">
-      <div className="relative h-44 w-64 rounded-t-[2.4rem] border border-b-0 border-zinc-600/40 bg-[linear-gradient(165deg,#4b5563_0%,#27272a_55%,#101014_100%)] px-4 pt-2.5">
-        {/* dynamic island */}
-        <span className="mx-auto block h-5 w-24 rounded-full bg-black" aria-hidden />
-        <div className="mt-5 text-center">
-          <p className="text-[11px] text-white/55">incoming call</p>
-          <p className="mt-1.5 text-[22px] font-light tracking-tight text-white">Wake Up Babe</p>
-          <p className="mt-0.5 text-[10.5px] text-white/55">wakeupba.be</p>
+      <div className="relative h-44 w-64 rounded-t-[2.6rem] border border-b-0 border-zinc-500/40 bg-zinc-800 p-[5px] pb-0">
+        <div className="h-full w-full rounded-t-[2.3rem] bg-[linear-gradient(165deg,#4b5563_0%,#27272a_55%,#101014_100%)] px-4 pt-2.5">
+          {/* dynamic island */}
+          <span className="mx-auto block h-5 w-24 rounded-full bg-black" aria-hidden />
+          <div className="mt-5 text-center">
+            <p className="text-[11px] text-white/55">incoming call</p>
+            <p className="mt-1.5 text-[22px] font-light tracking-tight text-white">Wake Up Babe</p>
+            <p className="mt-0.5 text-[10.5px] text-white/55">wakeupba.be</p>
+          </div>
         </div>
       </div>
       <ArtFade />

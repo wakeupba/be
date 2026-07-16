@@ -35,9 +35,9 @@ export function clearSessionCookie(cookieDomain: string): string {
 
 export async function readSession(cookieHeader: string | undefined, secret: string): Promise<string | null> {
   if (!cookieHeader) return null;
-  const match = cookieHeader.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`));
-  if (!match || !match[1]) return null;
-  const [body, signature] = match[1].split('.');
+  const raw = cookieHeader.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))?.[1];
+  if (!raw) return null;
+  const [body, signature] = raw.split('.');
   if (!body || !signature) return null;
   if (!(await hmacVerify(body, signature, secret))) return null;
   try {

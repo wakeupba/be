@@ -1,4 +1,4 @@
-import type { Plan, LeadMinutes } from '@wakeupbabe/shared';
+import type { LeadMinutes, Plan } from '@wakeupbabe/shared';
 import { newId } from '../lib/id';
 
 export interface UserRow {
@@ -75,7 +75,9 @@ export class UserRepo {
 
   async setPlan(id: string, plan: Plan, dodoCustomerId: string | null): Promise<void> {
     await this.db
-      .prepare('UPDATE users SET plan = ?, dodo_customer_id = COALESCE(?, dodo_customer_id), updated_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE users SET plan = ?, dodo_customer_id = COALESCE(?, dodo_customer_id), updated_at = ? WHERE id = ?',
+      )
       .bind(plan, dodoCustomerId, Date.now(), id)
       .run();
   }
@@ -116,7 +118,9 @@ export class UserRepo {
   async resetPeriodIfElapsed(user: UserRow, periodMs: number): Promise<void> {
     if (Date.now() - user.period_started_at < periodMs) return;
     await this.db
-      .prepare('UPDATE users SET calls_used_this_period = 0, period_started_at = ?, updated_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE users SET calls_used_this_period = 0, period_started_at = ?, updated_at = ? WHERE id = ?',
+      )
       .bind(Date.now(), Date.now(), user.id)
       .run();
   }

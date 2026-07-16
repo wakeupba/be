@@ -1,12 +1,6 @@
 export type Plan = 'situationship' | 'ride_or_die';
 
-export type EventState =
-  | 'scheduled'
-  | 'calling'
-  | 'acknowledged'
-  | 'snoozed'
-  | 'missed'
-  | 'cancelled';
+export type EventState = 'scheduled' | 'calling' | 'acknowledged' | 'snoozed' | 'missed' | 'cancelled';
 
 export type CallOutcome =
   | 'pending'

@@ -3,7 +3,7 @@ import { newId } from '../lib/id';
 
 export interface CallRow {
   id: string;
-  event_id: string;
+  event_id: string | null;
   user_id: string;
   attempt: number;
   provider: string;
@@ -19,7 +19,12 @@ export interface CallRow {
 export class CallRepo {
   constructor(private readonly db: D1Database) {}
 
-  async create(input: { eventId: string; userId: string; attempt: number; isTest?: boolean }): Promise<CallRow> {
+  async create(input: {
+    eventId: string | null;
+    userId: string;
+    attempt: number;
+    isTest?: boolean;
+  }): Promise<CallRow> {
     const id = newId('call');
     const now = Date.now();
     await this.db
@@ -75,11 +80,19 @@ export class CallRepo {
     return row?.max_attempt ?? 0;
   }
 
+  async countTestCallsSince(userId: string, sinceMs: number): Promise<number> {
+    const row = await this.db
+      .prepare('SELECT COUNT(*) AS n FROM calls WHERE user_id = ? AND is_test = 1 AND created_at >= ?')
+      .bind(userId, sinceMs)
+      .first<{ n: number }>();
+    return row?.n ?? 0;
+  }
+
   async listHistoryForUser(userId: string): Promise<Array<CallRow & { event_title: string }>> {
     const result = await this.db
       .prepare(
-        `SELECT calls.*, tracked_events.title AS event_title FROM calls
-         JOIN tracked_events ON tracked_events.id = calls.event_id
+        `SELECT calls.*, COALESCE(tracked_events.title, 'Verification call') AS event_title FROM calls
+         LEFT JOIN tracked_events ON tracked_events.id = calls.event_id
          WHERE calls.user_id = ?
          ORDER BY calls.created_at DESC LIMIT 50`,
       )

@@ -55,7 +55,8 @@ CREATE INDEX idx_tracked_events_due
 
 CREATE TABLE calls (
   id TEXT PRIMARY KEY,
-  event_id TEXT NOT NULL REFERENCES tracked_events(id) ON DELETE CASCADE,
+  -- NULL for DND verification test calls, which have no calendar event
+  event_id TEXT REFERENCES tracked_events(id) ON DELETE CASCADE,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   attempt INTEGER NOT NULL DEFAULT 1,
   provider TEXT NOT NULL DEFAULT 'plivo',

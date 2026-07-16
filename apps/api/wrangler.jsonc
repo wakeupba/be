@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wakeupbabe-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  "triggers": {
+    // every minute: dispatch due calls; every 5 minutes: sync calendars
+    "crons": ["* * * * *", "*/5 * * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "wakeupbabe",
+      "database_id": "REPLACE_AFTER_wrangler_d1_create"
+    }
+  ],
+  "vars": {
+    "APP_ORIGIN": "https://app.wakeupba.be",
+    "API_ORIGIN": "https://api.wakeupba.be",
+    "COOKIE_DOMAIN": "wakeupba.be"
+  }
+  // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+  // SESSION_SECRET, TOKEN_ENC_KEY, PLIVO_AUTH_ID, PLIVO_AUTH_TOKEN,
+  // PLIVO_FROM_NUMBER_US, DODO_WEBHOOK_SECRET
+}

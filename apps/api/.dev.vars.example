@@ -1,0 +1,11 @@
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxx
+SESSION_SECRET=any-long-random-string
+TOKEN_ENC_KEY=32-byte-base64url-key-for-aes-gcm
+PLIVO_AUTH_ID=MAxxxxxxxxxxxxxxxxxx
+PLIVO_AUTH_TOKEN=xxx
+PLIVO_FROM_NUMBER_US=+1XXXXXXXXXX
+DODO_WEBHOOK_SECRET=xxx
+APP_ORIGIN=http://localhost:3001
+API_ORIGIN=http://localhost:8787
+COOKIE_DOMAIN=localhost

@@ -1,7 +1,4 @@
 import { Phone } from 'lucide-react';
-import { ButtonLink } from '@/components/ui/button';
-
-const APP_URL = 'https://app.wakeupba.be';
 
 const LINK_GROUPS = [
   {
@@ -33,17 +30,7 @@ export function Footer() {
   return (
     <footer className="footer-dawn">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="flex flex-col items-center gap-6 py-24 text-center sm:py-28">
-          <h2 className="max-w-md text-3xl font-semibold tracking-tight sm:text-4xl">
-            Your next important meeting is coming.
-          </h2>
-          <p className="text-[15px] text-muted">Color it red. We will do the rest.</p>
-          <ButtonLink href={APP_URL} size="lg">
-            Start free
-          </ButtonLink>
-        </div>
-
-        <div className="grid gap-12 border-t border-line-soft py-14 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-12 py-16 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2 font-semibold tracking-tight">
               <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-background">

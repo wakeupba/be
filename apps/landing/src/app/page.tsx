@@ -1,3 +1,4 @@
+import { Cta } from '@/components/site/cta';
 import { Faq } from '@/components/site/faq';
 import { Features } from '@/components/site/features';
 import { Footer } from '@/components/site/footer';
@@ -16,6 +17,7 @@ export default function LandingPage() {
         <Features />
         <Pricing />
         <Faq />
+        <Cta />
       </main>
       <Footer />
     </>

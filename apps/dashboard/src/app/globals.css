@@ -1,0 +1,12 @@
+/* placeholder styles only: the real design pass happens later */
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+  max-width: 720px;
+  margin-inline: auto;
+}

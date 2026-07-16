@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Reveal } from '@/components/motion/reveal';
-import { ColorPickerArt, IphoneCallArt, MessyWeekArt } from './step-art';
+import { IphoneCallArt, WeekArt } from './step-art';
 
 interface Step {
   number: string;
@@ -14,13 +14,13 @@ const STEPS: Step[] = [
     number: '01',
     title: 'Connect your calendar',
     body: 'Sign in with Google. We ask for read-only access, so we can see events but never touch them.',
-    art: <MessyWeekArt />,
+    art: <WeekArt />,
   },
   {
     number: '02',
     title: 'Color the meetings that matter',
     body: 'Mark any event red in Google Calendar, the same way you already color things. That is the whole workflow.',
-    art: <ColorPickerArt />,
+    art: <WeekArt tidy />,
   },
   {
     number: '03',

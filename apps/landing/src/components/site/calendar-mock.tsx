@@ -1,16 +1,32 @@
 import { GoogleCalendarIcon, GoogleMeetIcon } from '@/components/brand/google';
 
 /*
- * A faithful, static Google Calendar day-view fixture. Real product colors:
- * the chips use actual Google Calendar event palette values, and the red
- * current-time line sits at 2:15 PM, the moment the call fires.
- * Hour rows are 64px; positions are minutes * 64 / 60 from 1 PM.
+ * A faithful static Google Calendar day-view fixture. Geometry mirrors the
+ * real thing: a time gutter with labels sitting just above each rule, a
+ * vertical divider, full-width event chips, and the red now-line spanning
+ * only the day column. Hour rows are 64px, top inset 16px.
  */
-const HOUR_HEIGHT = 64;
+const HOUR = 64;
+const TOP = 16;
+const GUTTER = 48;
 
-function eventOffset(minutesFromOne: number): number {
-  return (minutesFromOne / 60) * HOUR_HEIGHT;
+function minutes(fromOnePm: number): number {
+  return TOP + (fromOnePm / 60) * HOUR;
 }
+
+interface Chip {
+  title: string;
+  start: number;
+  duration: number;
+  color: string;
+  meet?: boolean;
+}
+
+const CHIPS: Chip[] = [
+  { title: 'Team standup', start: 0, duration: 30, color: '#7986cb' },
+  { title: '1:1 with Sana', start: 30, duration: 30, color: '#33b679' },
+  { title: 'Quarterly board review', start: 90, duration: 45, color: '#d50000', meet: true },
+];
 
 export function CalendarMock() {
   return (
@@ -23,48 +39,54 @@ export function CalendarMock() {
         <p className="font-mono text-[12px] tabular-nums text-muted-2">2:15 PM</p>
       </div>
 
-      <div className="relative h-[224px]">
-        {/* hour grid */}
+      <div className="relative h-[212px]">
+        {/* gutter divider */}
+        <span className="absolute inset-y-0 w-px bg-line-soft" style={{ left: GUTTER }} aria-hidden />
+
+        {/* hour rules with labels sitting just above, like the real thing */}
         {['1 PM', '2 PM', '3 PM'].map((hour, index) => (
-          <div
-            key={hour}
-            className="absolute inset-x-0 border-t border-line-soft"
-            style={{ top: index * HOUR_HEIGHT + 16 }}
-          >
-            <span className="absolute -top-2 left-3 w-10 pr-1 text-right font-mono text-[10px] text-muted-2">
+          <div key={hour}>
+            <span
+              className="absolute h-px bg-line-soft"
+              style={{ top: TOP + index * HOUR, left: GUTTER, right: 0 }}
+              aria-hidden
+            />
+            <span
+              className="absolute w-10 text-right font-mono text-[10px] leading-none text-muted-2"
+              style={{ top: TOP + index * HOUR - 4, left: 0 }}
+            >
               {hour}
             </span>
           </div>
         ))}
 
-        {/* events, google calendar palette */}
-        <div
-          className="absolute left-16 right-24 rounded-md px-2.5 py-1 text-[12px] font-medium text-white"
-          style={{ top: eventOffset(0) + 18, height: 30, backgroundColor: '#7986cb' }}
-        >
-          Team standup
-        </div>
-        <div
-          className="absolute left-20 right-4 rounded-md px-2.5 py-1 text-[12px] font-medium text-white"
-          style={{ top: eventOffset(35) + 18, height: 30, backgroundColor: '#33b679' }}
-        >
-          1:1 with Sana
-        </div>
-        <div
-          className="absolute left-16 right-8 flex flex-col justify-center gap-0.5 rounded-md px-2.5 py-1.5 text-white"
-          style={{ top: eventOffset(90) + 18, height: 48, backgroundColor: '#d50000' }}
-        >
-          <p className="text-[12px] font-semibold leading-tight">Quarterly board review</p>
-          <p className="flex items-center gap-1.5 text-[11px] leading-tight text-white/85">
-            <GoogleMeetIcon className="h-2.5 w-3" />
-            2:30 to 3:15 PM
-          </p>
-        </div>
+        {/* event chips, full column width, google calendar palette */}
+        {CHIPS.map((chip) => (
+          <div
+            key={chip.title}
+            className="absolute flex flex-col justify-center rounded-[4px] px-2 text-white"
+            style={{
+              top: minutes(chip.start) + 1,
+              height: (chip.duration / 60) * HOUR - 3,
+              left: GUTTER + 6,
+              right: 10,
+              backgroundColor: chip.color,
+            }}
+          >
+            <p className="truncate text-[11.5px] font-medium leading-tight">{chip.title}</p>
+            {chip.meet && (
+              <p className="mt-0.5 flex items-center gap-1.5 text-[10.5px] leading-tight text-white/85">
+                <GoogleMeetIcon className="h-2.5 w-3" />
+                2:30 to 3:15 PM
+              </p>
+            )}
+          </div>
+        ))}
 
-        {/* current time line at 2:15, the call moment */}
-        <div className="absolute inset-x-0 z-10 flex items-center" style={{ top: eventOffset(75) + 18 }}>
-          <span className="ml-14 size-2.5 rounded-full bg-accent" aria-hidden />
-          <span className="h-px grow bg-accent" aria-hidden />
+        {/* the red now-line at 2:15, spanning only the day column */}
+        <div className="absolute z-10" style={{ top: minutes(75), left: GUTTER, right: 0 }} aria-hidden>
+          <span className="absolute -left-[5px] -top-[5px] size-2.5 rounded-full bg-[#ea4335]" />
+          <span className="absolute inset-x-0 -top-px h-[2px] bg-[#ea4335]" />
         </div>
       </div>
 

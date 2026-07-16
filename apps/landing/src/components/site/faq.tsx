@@ -36,7 +36,7 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" className="bg-paper">
+    <section id="faq">
       <div className="mx-auto max-w-6xl px-6 py-24 sm:py-32">
         <div className="mx-auto grid max-w-4xl gap-12 lg:grid-cols-[1fr_1.6fr]">
           <Reveal>

@@ -74,6 +74,18 @@ body {
   background: radial-gradient(60% 50% at 50% 0%, rgba(217, 45, 32, 0.05), transparent 70%), var(--paper);
 }
 
+/* footer dawn: the page ends on a soft sunrise built from the accent hue */
+.footer-dawn {
+  background:
+    radial-gradient(
+      90% 65% at 50% 105%,
+      rgba(217, 45, 32, 0.16),
+      rgba(246, 191, 38, 0.05) 45%,
+      transparent 75%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #f7f6f3 100%);
+}
+
 /* heading-tier scroll reveal, applied by a tiny IntersectionObserver wrapper */
 .reveal {
   opacity: 0;

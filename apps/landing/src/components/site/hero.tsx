@@ -63,12 +63,8 @@ export function Hero() {
         </div>
 
         <div className="rise rise-4 stage-glow mt-16 rounded-3xl border border-line-soft p-5 sm:mt-20 sm:p-10">
-          <div className="mx-auto grid max-w-3xl items-center gap-6 lg:grid-cols-[1.1fr_auto_1fr]">
+          <div className="mx-auto grid max-w-3xl items-center gap-5 lg:grid-cols-[1.1fr_1fr] lg:gap-8">
             <CalendarMock />
-            <div className="hidden flex-col items-center gap-1 lg:flex" aria-hidden>
-              <span className="h-px w-10 bg-line" />
-              <Phone className="size-3.5 text-muted-2" />
-            </div>
             <CallCard />
           </div>
         </div>

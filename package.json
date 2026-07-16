@@ -1,0 +1,12 @@
+{
+  "name": "wakeupbabe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Your calendar, but clingy. Phone calls for the meetings you color red.",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build"
+  }
+}

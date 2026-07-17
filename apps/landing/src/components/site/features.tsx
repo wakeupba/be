@@ -11,22 +11,22 @@ interface Feature {
 const FEATURES: Feature[] = [
   {
     icon: BellRing,
-    title: 'Rings through Do Not Disturb',
+    title: 'Rings through Do Not Disturb.',
     body: 'Setup ends with a proof: you turn DND on, we call, you answer. If the test does not ring, you are not activated. No wishful thinking.',
   },
   {
     icon: Lock,
-    title: 'Read-only by design',
+    title: 'We watch. We do not touch.',
     body: 'The Google permission we request cannot write events, send email, or touch anything. The scope is the privacy policy.',
   },
   {
     icon: PhoneForwarded,
-    title: 'One keypress, handled',
+    title: 'One keypress, handled.',
     body: 'Press 1 and we log the acknowledgment. Press 2 and we call again in 5 minutes. Miss the call and we retry once, which is exactly what pierces DND.',
   },
   {
     icon: History,
-    title: 'Every call accounted for',
+    title: 'Receipts for every call.',
     body: 'The dashboard shows what we detected, when we will ring, and how every past call ended. If something did not ring, you can see why.',
   },
 ];

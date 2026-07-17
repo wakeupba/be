@@ -12,8 +12,10 @@ export function Cta() {
           <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-white/45">
             Even on do not disturb
           </p>
-          <h2 className="mx-auto mt-4 max-w-md text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Your next important meeting is coming.
+          <h2 className="mx-auto mt-4 max-w-xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            You are going to forget something.
+            <br />
+            We will call first.
           </h2>
           <p className="mt-3 text-[15px] text-white/60">Color it red. We will do the rest.</p>
           <div className="mt-8 flex justify-center">

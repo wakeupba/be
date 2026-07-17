@@ -1,4 +1,4 @@
-import { Phone } from 'lucide-react';
+import { BabeMark } from '@/components/brand/mark';
 import { ButtonLink } from '@/components/ui/button';
 
 const APP_URL = 'https://app.wakeupba.be';
@@ -8,9 +8,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-line-soft bg-white/85 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex size-6 items-center justify-center rounded-md bg-accent text-white">
-            <Phone className="size-3.5" aria-hidden />
-          </span>
+          <BabeMark className="blink size-7" />
           Wake Up Babe
         </a>
         <nav className="flex items-center gap-1">

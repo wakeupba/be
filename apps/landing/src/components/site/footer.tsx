@@ -1,4 +1,4 @@
-import { Phone } from 'lucide-react';
+import { BabeMark } from '@/components/brand/mark';
 
 const LINK_GROUPS = [
   {
@@ -33,9 +33,7 @@ export function Footer() {
         <div className="grid gap-12 py-16 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2 font-semibold tracking-tight">
-              <span className="flex size-6 items-center justify-center rounded-md bg-accent text-white">
-                <Phone className="size-3.5" aria-hidden />
-              </span>
+              <BabeMark className="size-7" />
               Wake Up Babe
             </div>
             <p className="mt-3 text-[14px] leading-relaxed text-muted">

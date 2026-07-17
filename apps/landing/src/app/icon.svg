@@ -7,10 +7,8 @@
       .pupil { fill: #ffffff; }
     }
   </style>
-  <g transform="translate(0,3.4)">
-    <path class="lid" d="M2 10.4 a7.4 7.4 0 0 0 14.8 3.2 a 7.4 7.4 0 0 0 -0.6 -3.2 z" stroke-width="3.2" stroke-linejoin="round"/>
-    <path class="lid" d="M15.3 10.4 a7.4 7.4 0 0 0 14.8 3.2 a 7.4 7.4 0 0 0 -0.6 -3.2 z" stroke-width="3.2" stroke-linejoin="round"/>
-    <circle class="pupil" cx="9.9" cy="13.1" r="3"/>
-    <circle class="pupil" cx="23.2" cy="13.1" r="3"/>
-  </g>
+  <path class="lid" d="M1.3 12 a7.9 7.9 0 1 0 13.6 0 z" stroke-width="2.6" stroke-linejoin="round"/>
+  <path class="lid" d="M17.1 12 a7.9 7.9 0 1 0 13.6 0 z" stroke-width="2.6" stroke-linejoin="round"/>
+  <circle class="pupil" cx="8.1" cy="15.6" r="3.5"/>
+  <circle class="pupil" cx="23.9" cy="15.6" r="3.5"/>
 </svg>

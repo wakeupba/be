@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <style>
-    .lid { stroke: #18181b; fill: none; }
-    .pupil { fill: #18181b; }
+    .eye { fill: #18181b; }
+    .pupil { fill: #ffffff; }
     @media (prefers-color-scheme: dark) {
-      .lid { stroke: #ffffff; }
-      .pupil { fill: #ffffff; }
+      .eye { fill: #ffffff; }
+      .pupil { fill: #18181b; }
     }
   </style>
-  <path class="lid" d="M1.3 12 a7.9 7.9 0 1 0 13.6 0 z" stroke-width="2.6" stroke-linejoin="round"/>
-  <path class="lid" d="M17.1 12 a7.9 7.9 0 1 0 13.6 0 z" stroke-width="2.6" stroke-linejoin="round"/>
-  <circle class="pupil" cx="8.1" cy="15.6" r="3.5"/>
-  <circle class="pupil" cx="23.9" cy="15.6" r="3.5"/>
+  <path class="eye" d="M0.1 11.6 a9.2 9.2 0 1 0 16.3 0 z"/>
+  <path class="eye" d="M15.6 11.6 a9.2 9.2 0 1 0 16.3 0 z"/>
+  <circle class="pupil" cx="8.2" cy="16.6" r="3.6"/>
+  <circle class="pupil" cx="23.8" cy="16.6" r="3.6"/>
 </svg>

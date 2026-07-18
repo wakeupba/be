@@ -1,7 +1,7 @@
 import { BabeMark } from '@/components/brand/mark';
 import { ButtonLink } from '@/components/ui/button';
 
-const APP_URL = 'https://app.wakeupba.be';
+import { APP_URL } from '@/lib/site';
 
 export function Header() {
   return (

@@ -1,9 +1,8 @@
 import { Check } from 'lucide-react';
 import { Reveal } from '@/components/motion/reveal';
 import { ButtonLink } from '@/components/ui/button';
+import { APP_URL } from '@/lib/site';
 import { Waitlist } from './waitlist';
-
-const APP_URL = 'https://app.wakeupba.be';
 
 interface Plan {
   name: string;

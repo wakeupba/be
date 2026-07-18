@@ -1,8 +1,7 @@
 import { ArrowDown, ArrowRight, Phone, PhoneOff } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/button';
+import { APP_URL } from '@/lib/site';
 import { CalendarMock } from './calendar-mock';
-
-const APP_URL = 'https://app.wakeupba.be';
 
 function CallCard() {
   return (

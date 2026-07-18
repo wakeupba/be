@@ -155,9 +155,17 @@ body {
     transform-origin: 50% 52%;
   }
   @keyframes blink {
-    0%, 94%, 100% { transform: scaleY(1); }
-    96% { transform: scaleY(0.12); }
-    98% { transform: scaleY(1); }
+    0%,
+    94%,
+    100% {
+      transform: scaleY(1);
+    }
+    96% {
+      transform: scaleY(0.12);
+    }
+    98% {
+      transform: scaleY(1);
+    }
   }
 
   /* the incoming call card rings every few seconds, briefly */

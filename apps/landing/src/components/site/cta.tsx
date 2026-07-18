@@ -1,6 +1,6 @@
 import { ButtonLink } from '@/components/ui/button';
 
-const APP_URL = 'https://app.wakeupba.be';
+import { APP_URL } from '@/lib/site';
 
 /* The one palette inversion on the page: a night panel right before the
  * dawn footer. Dark is DND territory, which is exactly where we work. */

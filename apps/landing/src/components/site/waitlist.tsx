@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
 
-const REGIONS = ['Europe', 'United Kingdom', 'India', 'Australia', 'Other'] as const;
+const REGIONS = ['Canada', 'Europe', 'United Kingdom', 'India', 'Australia', 'Other'] as const;
 
 type Status = 'idle' | 'sending' | 'done' | 'error';
 
 /*
- * Region waitlist: calls launch in US and Canada first, everyone else leaves
+ * Region waitlist: calls launch in the US first, everyone else leaves
  * an email and gets notified when their region ships. Backed by POST /waitlist.
  */
 export function Waitlist() {
@@ -46,9 +46,9 @@ export function Waitlist() {
   return (
     <div className="mt-6 rounded-2xl border border-line-soft bg-background p-6">
       <div className="flex flex-col gap-1.5">
-        <p className="text-[15px] font-medium">Outside the US and Canada?</p>
+        <p className="text-[15px] font-medium">Outside the US?</p>
         <p className="text-[14px] text-muted">
-          Calls start in North America. Join the waitlist and we will email you when your region goes live.
+          Calls start in the US. Join the waitlist and we will email you when your region goes live.
         </p>
       </div>
       <form onSubmit={submit} className="mt-4 flex flex-col gap-2.5 sm:flex-row">

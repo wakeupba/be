@@ -5,7 +5,7 @@ import { waitlist } from '../db/schema';
 import type { Env } from '../env';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const REGIONS = new Set(['Europe', 'United Kingdom', 'India', 'Australia', 'Other']);
+const REGIONS = new Set(['Canada', 'Europe', 'United Kingdom', 'India', 'Australia', 'Other']);
 
 type WaitlistContext = { Bindings: Env; Variables: { container: Container } };
 

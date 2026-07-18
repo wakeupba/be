@@ -70,7 +70,7 @@ export const calls = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     attempt: integer('attempt').notNull().default(1),
-    provider: text('provider').notNull().default('plivo'),
+    provider: text('provider').notNull().default('twilio'),
     providerCallId: text('provider_call_id'),
     placedAt: integer('placed_at'),
     answeredAt: integer('answered_at'),

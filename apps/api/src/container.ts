@@ -10,7 +10,7 @@ import { CalendarSyncService } from './services/calendar/sync';
 import { CallDispatchService } from './services/calls/dispatcher';
 import { CallLifecycleService } from './services/calls/lifecycle';
 import { defaultScriptBuilder } from './services/calls/script';
-import { PlivoProvider } from './services/telephony/plivo';
+import { TwilioProvider } from './services/telephony/twilio';
 
 /**
  * Composition root. Everything downstream depends on interfaces and receives
@@ -25,12 +25,12 @@ export function buildContainer(env: Env) {
   const votes = new VoteRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-  const telephony = new PlivoProvider(env.PLIVO_AUTH_ID, env.PLIVO_AUTH_TOKEN);
+  const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
 
   const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY);
   const dispatcher = new CallDispatchService(users, events, calls, telephony, {
     apiOrigin: env.API_ORIGIN,
-    fromNumber: env.PLIVO_FROM_NUMBER_US,
+    fromNumber: env.TWILIO_FROM_NUMBER_US,
     urlSigningSecret: env.SESSION_SECRET,
   });
   const lifecycle = new CallLifecycleService(calls, events, users);

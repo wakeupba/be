@@ -10,8 +10,8 @@ export interface Env {
   GOOGLE_CLIENT_SECRET: string;
   SESSION_SECRET: string;
   TOKEN_ENC_KEY: string;
-  PLIVO_AUTH_ID: string;
-  PLIVO_AUTH_TOKEN: string;
-  PLIVO_FROM_NUMBER_US: string;
+  TWILIO_ACCOUNT_SID: string;
+  TWILIO_AUTH_TOKEN: string;
+  TWILIO_FROM_NUMBER_US: string;
   DODO_WEBHOOK_SECRET: string;
 }

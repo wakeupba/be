@@ -6,7 +6,7 @@ import { buildContainer, type Container } from './container';
 import type { Env } from './env';
 import { readSession } from './lib/session';
 import { authRoutes } from './routes/auth';
-import { dodoRoutes, plivoRoutes } from './routes/hooks';
+import { callRoutes, dodoRoutes } from './routes/hooks';
 import { meRoutes } from './routes/me';
 import { waitlistRoutes } from './routes/waitlist';
 
@@ -45,7 +45,7 @@ export function createApp() {
   app.route('/auth', authRoutes);
   app.route('/', meRoutes);
   app.route('/waitlist', waitlistRoutes);
-  app.route('/hooks/plivo', plivoRoutes);
+  app.route('/hooks/call', callRoutes);
   app.route('/hooks/dodo', dodoRoutes);
 
   app.get('/health', (c) => c.json({ ok: true, service: 'wakeupbabe-api' }));

@@ -3,7 +3,7 @@ CREATE TABLE `calls` (
 	`event_id` text,
 	`user_id` text NOT NULL,
 	`attempt` integer DEFAULT 1 NOT NULL,
-	`provider` text DEFAULT 'plivo' NOT NULL,
+	`provider` text DEFAULT 'twilio' NOT NULL,
 	`provider_call_id` text,
 	`placed_at` integer,
 	`answered_at` integer,
@@ -74,4 +74,9 @@ CREATE TABLE `users` (
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `users_google_sub_unique` ON `users` (`google_sub`);
+CREATE UNIQUE INDEX `users_google_sub_unique` ON `users` (`google_sub`);--> statement-breakpoint
+CREATE TABLE `waitlist` (
+	`email` text PRIMARY KEY NOT NULL,
+	`region` text NOT NULL,
+	`created_at` integer NOT NULL
+);

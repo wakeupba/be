@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1784239015944,
-      "tag": "0000_flimsy_doctor_strange",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1784241978476,
-      "tag": "0001_skinny_luckman",
+      "when": 1784377202772,
+      "tag": "0000_cute_kitty_pryde",
       "breakpoints": true
     }
   ]

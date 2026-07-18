@@ -9,8 +9,8 @@ import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
 type HookContext = { Bindings: Env; Variables: { container: Container } };
 
 /**
- * Every Plivo hook must pass two independent checks: the provider signature
- * (proves Plivo sent it) and our per-call HMAC token in the URL (proves we
+ * Every telephony hook must pass two independent checks: the provider signature
+ * (proves the carrier sent it) and our per-call HMAC token in the URL (proves we
  * created this callback for this call).
  */
 async function authenticateCall(
@@ -23,12 +23,12 @@ async function authenticateCall(
   const callId = c.req.query('call');
   const token = c.req.query('tok');
   if (!callId || !token) return null;
-  if (!(await hmacVerify(`plivo-callback:${callId}`, token, secret))) return null;
+  if (!(await hmacVerify(`call-callback:${callId}`, token, secret))) return null;
 
   return container.calls.findById(callId);
 }
 
-export const plivoRoutes = new Hono<HookContext>()
+export const callRoutes = new Hono<HookContext>()
   .post('/answer', async (c) => {
     const call = await authenticateCall(c, c.env.SESSION_SECRET);
     if (!call) return c.text('forbidden', 403);

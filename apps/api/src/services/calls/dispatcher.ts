@@ -78,15 +78,15 @@ export class CallDispatchService {
 
   /**
    * Callback URLs carry their own HMAC token. Combined with the provider
-   * signature check this means forging a webhook requires both the Plivo auth
+   * signature check this means forging a webhook requires both the carrier auth
    * token and our signing secret.
    */
   async callbackUrl(kind: 'answer' | 'hangup' | 'input', callId: string): Promise<string> {
     const token = await signCallbackToken(callId, this.config.urlSigningSecret);
-    return `${this.config.apiOrigin}/hooks/plivo/${kind}?call=${callId}&tok=${token}`;
+    return `${this.config.apiOrigin}/hooks/call/${kind}?call=${callId}&tok=${token}`;
   }
 }
 
 export async function signCallbackToken(callId: string, secret: string): Promise<string> {
-  return hmacSign(`plivo-callback:${callId}`, secret);
+  return hmacSign(`call-callback:${callId}`, secret);
 }

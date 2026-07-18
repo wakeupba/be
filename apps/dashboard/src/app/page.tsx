@@ -49,6 +49,8 @@ export default function DashboardPage() {
   const onboarded = me.phone !== null && me.dndVerified;
 
   return (
-    <AppShell me={me}>{onboarded ? <Overview me={me} /> : <Onboarding me={me} refresh={refresh} />}</AppShell>
+    <AppShell me={me} title={onboarded ? 'Overview' : 'Setup'}>
+      {onboarded ? <Overview me={me} /> : <Onboarding me={me} refresh={refresh} />}
+    </AppShell>
   );
 }

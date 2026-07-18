@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const triggerColor = GCAL_COLORS.find((color) => color.id === me.triggerColorId);
 
   return (
-    <AppShell me={me}>
+    <AppShell me={me} title="Settings">
       <div className="rise-in mx-auto flex w-full max-w-2xl flex-col gap-6 py-2">
         <section>
           <SectionHeader title="Trigger color" />

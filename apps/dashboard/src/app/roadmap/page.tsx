@@ -32,7 +32,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <AppShell me={state.me}>
+    <AppShell me={state.me} title="Roadmap">
       <div className="rise-in mx-auto w-full max-w-2xl py-2">
         <SectionHeader title="Coming soon" />
         <p className="mb-4 max-w-md text-[13px] leading-relaxed text-muted-foreground">

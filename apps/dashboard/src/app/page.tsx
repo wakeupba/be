@@ -1,82 +1,54 @@
 'use client';
 
-import type { CallHistoryDto, MeDto, UpcomingEventDto } from '@wakeupbabe/shared';
-import { useEffect, useState } from 'react';
-import { api, UnauthorizedError } from '@/lib/api';
+import { AppShell } from '@/components/app-shell';
+import { BabeMark } from '@/components/brand/mark';
+import { Onboarding } from '@/components/onboarding';
+import { Overview } from '@/components/overview';
+import { ButtonLink } from '@/components/ui/button';
+import { Shell } from '@/components/ui/panel';
+import { api } from '@/lib/api';
+import { useMe } from '@/lib/use-me';
 
-type LoadState = 'loading' | 'anonymous' | 'ready' | 'error';
+function SignIn() {
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <Shell className="rise-in w-full max-w-sm">
+        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center">
+          <BabeMark className="size-10" />
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight">Wake Up Babe</h1>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Sign in with the Google account that owns your calendar.
+            </p>
+          </div>
+          <ButtonLink href={api.loginUrl()} size="lg">
+            Sign in with Google
+          </ButtonLink>
+          <p className="font-mono text-[10px] text-muted-foreground/60">read-only calendar access</p>
+        </div>
+      </Shell>
+    </div>
+  );
+}
 
-/**
- * Functional shell only. Proves the auth session, API wiring and data flow
- * end to end; the actual dashboard design is a separate pass.
- */
 export default function DashboardPage() {
-  const [state, setState] = useState<LoadState>('loading');
-  const [me, setMe] = useState<MeDto | null>(null);
-  const [events, setEvents] = useState<UpcomingEventDto[]>([]);
-  const [calls, setCalls] = useState<CallHistoryDto[]>([]);
+  const { state, refresh } = useMe();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const profile = await api.me();
-        setMe(profile);
-        const [upcoming, history] = await Promise.all([api.events(), api.calls()]);
-        setEvents(upcoming);
-        setCalls(history);
-        setState('ready');
-      } catch (error) {
-        setState(error instanceof UnauthorizedError ? 'anonymous' : 'error');
-      }
-    })();
-  }, []);
-
-  if (state === 'loading') return <p>waking up...</p>;
-  if (state === 'error') return <p>something broke. refresh, babe.</p>;
-  if (state === 'anonymous' || !me) {
+  if (state.status === 'loading') {
+    return <AppShell me={null}>{null}</AppShell>;
+  }
+  if (state.status === 'anonymous' || state.status === 'error') {
     return (
-      <main>
-        <h1>Wake Up Babe</h1>
-        <p>Your calendar, but clingy.</p>
-        <a href={api.loginUrl()}>Sign in with Google</a>
-      </main>
+      <AppShell me={null}>
+        <SignIn />
+      </AppShell>
     );
   }
 
+  const { me } = state;
+  const onboarded = me.phone !== null && me.dndVerified;
+
   return (
-    <main>
-      <h1>hey, {me.displayName ?? me.email}</h1>
-      <p>
-        plan: {me.plan} · calls used: {me.callsUsed}/{me.callsLimit}
-        {me.extraCredits > 0 ? ` (+${me.extraCredits} credits)` : ''}
-      </p>
-      {!me.dndVerified && <p>⚠️ finish setup: add your number and run the verification call.</p>}
-
-      <h2>upcoming calls</h2>
-      {events.length === 0 ? (
-        <p>no flagged meetings. color one red and it shows up here within 5 minutes.</p>
-      ) : (
-        <ul>
-          {events.map((event) => (
-            <li key={event.id}>
-              {event.title} · rings at {new Date(event.callAt).toLocaleString()} · {event.state}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <h2>call history</h2>
-      {calls.length === 0 ? (
-        <p>no calls yet.</p>
-      ) : (
-        <ul>
-          {calls.map((call) => (
-            <li key={call.id}>
-              {call.eventTitle} · attempt {call.attempt} · {call.outcome}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <AppShell me={me}>{onboarded ? <Overview me={me} /> : <Onboarding me={me} refresh={refresh} />}</AppShell>
   );
 }

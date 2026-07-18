@@ -1,12 +1,91 @@
-/* placeholder styles only: the real design pass happens later */
+@import "tailwindcss";
+
+/*
+ * Wake Up Babe dashboard tokens. Light-first, adapted from the spoo.me
+ * dashboard system: a canvas floor, an elevated content sheet, hairline-fused
+ * depth, one accent. Accent is tomato (hotter, higher chroma); destructive is
+ * a deeper desaturated crimson so error never reads as brand.
+ */
 :root {
-  color-scheme: light;
-  font-family: system-ui, sans-serif;
+  --canvas: oklch(0.955 0 0);
+  --shell: oklch(0.988 0 0);
+  --background: oklch(1 0 0);
+  --card: oklch(1 0 0);
+  --popover: oklch(1 0 0);
+  --muted: oklch(0.97 0 0);
+  --foreground: oklch(0.145 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --brand: oklch(0.62 0.22 31);
+  --live: oklch(0.596 0.145 163);
+  --destructive: oklch(0.5 0.16 22);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-shell: var(--shell);
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-muted: var(--muted);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand: var(--brand);
+  --color-live: var(--live);
+  --color-destructive: var(--destructive);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.06), 0 3px 6px -3px rgb(0 0 0 / 0.08);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.03), 0 8px 16px -4px rgb(0 0 0 / 0.04), 0 24px 48px -12px rgb(0 0 0 / 0.07);
+  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 20px -6px rgb(0 0 0 / 0.1);
 }
 
 body {
-  margin: 0;
-  padding: 2rem;
-  max-width: 720px;
-  margin-inline: auto;
+  background: var(--canvas);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* the one label treatment: 11px/500/0.16em uppercase mono, everywhere */
+.label-mono {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand), transparent 88%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise-in {
+    animation: rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: backwards;
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

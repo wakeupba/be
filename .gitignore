@@ -12,3 +12,6 @@ out/
 .DS_Store
 .turbo/
 coverage/
+
+# internal strategy doc, never ship to the public repo
+PLAN.md

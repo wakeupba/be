@@ -20,6 +20,10 @@ export interface EventUpsert {
 
 const ACTIVE_STATES: EventState[] = ['scheduled', 'snoozed'];
 
+/** a late call still beats silence: events stay dispatchable until this long
+ * after their start, then the sweep marks them missed */
+export const LATE_GRACE_MS = 10 * 60_000;
+
 export class EventRepo {
   constructor(private readonly db: Db) {}
 
@@ -89,11 +93,26 @@ export class EventRepo {
       where: and(
         inArray(trackedEvents.state, ACTIVE_STATES),
         lte(trackedEvents.callAt, nowMs),
-        gt(trackedEvents.startsAt, nowMs),
+        gt(sql`${trackedEvents.startsAt} + ${LATE_GRACE_MS}`, nowMs),
       ),
       orderBy: asc(trackedEvents.callAt),
       limit,
     });
+  }
+
+  /** anything still active this long past its start was missed; say so
+   * instead of letting it rot in scheduled */
+  async sweepMissed(nowMs: number): Promise<number> {
+    const result = await this.db
+      .update(trackedEvents)
+      .set({ state: 'missed', updatedAt: nowMs })
+      .where(
+        and(
+          inArray(trackedEvents.state, ['scheduled', 'snoozed', 'calling']),
+          lte(sql`${trackedEvents.startsAt} + ${LATE_GRACE_MS}`, nowMs),
+        ),
+      );
+    return result.meta.changes;
   }
 
   /**

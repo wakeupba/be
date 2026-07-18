@@ -28,6 +28,9 @@ export class CallDispatchService {
   ) {}
 
   async dispatchDue(nowMs: number): Promise<void> {
+    const swept = await this.events.sweepMissed(nowMs);
+    if (swept > 0) console.warn(`swept ${swept} past-grace events to missed`);
+
     const due = await this.events.listDue(nowMs, DISPATCH_BATCH_SIZE);
     for (const event of due) {
       try {

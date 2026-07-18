@@ -1,7 +1,5 @@
 import { BabeMark } from '@/components/brand/mark';
-import { ButtonLink } from '@/components/ui/button';
-
-import { APP_URL } from '@/lib/site';
+import { AuthButtons } from './auth-buttons';
 
 export function Header() {
   return (
@@ -31,12 +29,7 @@ export function Header() {
             GitHub
           </a>
           <div className="ml-2 flex items-center gap-2">
-            <ButtonLink href={APP_URL} variant="secondary" size="sm">
-              Sign in
-            </ButtonLink>
-            <ButtonLink href={APP_URL} size="sm">
-              Start free
-            </ButtonLink>
+            <AuthButtons />
           </div>
         </nav>
       </div>

@@ -30,6 +30,14 @@ export function createApp() {
   // waitlist is called from the public landing page, no session involved
   app.use('/waitlist', (c, next) => cors({ origin: c.env.LANDING_ORIGIN })(c, next));
 
+  // minimal auth probe for the landing header; credentials allowed so the
+  // shared-domain session cookie rides along
+  app.use('/session', (c, next) => cors({ origin: c.env.LANDING_ORIGIN, credentials: true })(c, next));
+  app.get('/session', async (c) => {
+    const userId = await readSession(c.req.header('Cookie'), c.env.SESSION_SECRET);
+    return c.json({ authenticated: userId !== null });
+  });
+
   // session guard for everything the dashboard calls
   const requireSession = createMiddleware<AppContext>(async (c, next) => {
     const userId = await readSession(c.req.header('Cookie'), c.env.SESSION_SECRET);

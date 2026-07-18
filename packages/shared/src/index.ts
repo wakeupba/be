@@ -23,6 +23,8 @@ export interface MeDto {
   email: string;
   displayName: string | null;
   phone: string | null;
+  /** the permanent number calls come from; users save it as a contact */
+  brandNumber: string;
   plan: Plan;
   callsUsed: number;
   callsLimit: number;

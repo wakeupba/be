@@ -50,6 +50,25 @@ export function createApp() {
 
   app.get('/health', (c) => c.json({ ok: true, service: 'wakeupbabe-api' }));
 
+  // public contact card; the number is the product's public identity
+  app.get('/contact.vcf', (c) => {
+    const vcard = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      'FN:Wake Up Babe',
+      'ORG:Wake Up Babe',
+      `TEL;TYPE=CELL,VOICE:${c.env.TWILIO_FROM_NUMBER_US}`,
+      'URL:https://wakeupba.be',
+      'NOTE:Calls you before the meetings you color red. Allow this contact through Do Not Disturb: Emergency Bypass on iPhone, starred contact on Android.',
+      'END:VCARD',
+      '',
+    ].join('\r\n');
+    return c.text(vcard, 200, {
+      'Content-Type': 'text/vcard; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="wake-up-babe.vcf"',
+    });
+  });
+
   app.onError((error, c) => {
     console.error('unhandled error:', error);
     return c.json({ error: 'internal error' }, 500);

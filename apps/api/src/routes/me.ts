@@ -37,6 +37,7 @@ export const meRoutes = new Hono<MeContext>()
       email: user.email,
       displayName: user.displayName,
       phone: user.phoneE164,
+      brandNumber: c.env.TWILIO_FROM_NUMBER_US,
       plan: user.plan,
       callsUsed: user.callsUsedThisPeriod,
       callsLimit: PLAN_LIMITS[user.plan].callsPerMonth,

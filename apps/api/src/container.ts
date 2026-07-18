@@ -25,7 +25,7 @@ export function buildContainer(env: Env) {
   const votes = new VoteRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-  const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
+  const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN, env.API_ORIGIN);
 
   const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY);
   const dispatcher = new CallDispatchService(users, events, calls, telephony, {

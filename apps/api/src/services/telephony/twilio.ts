@@ -8,6 +8,9 @@ export class TwilioProvider implements TelephonyProvider {
   constructor(
     private readonly accountSid: string,
     private readonly authToken: string,
+    /** public origin callbacks are registered under; proxies and tunnels can
+     * rewrite the scheme the worker observes, which would break signing */
+    private readonly publicOrigin: string,
   ) {}
 
   async placeCall(input: PlaceCallInput): Promise<PlacedCall> {
@@ -48,7 +51,8 @@ export class TwilioProvider implements TelephonyProvider {
     const signature = request.headers.get('X-Twilio-Signature');
     if (!signature) return false;
 
-    let payload = request.url;
+    const url = new URL(request.url);
+    let payload = this.publicOrigin + url.pathname + url.search;
     const contentType = request.headers.get('Content-Type') ?? '';
     if (request.method === 'POST' && contentType.includes('application/x-www-form-urlencoded')) {
       const form = await request.clone().formData();

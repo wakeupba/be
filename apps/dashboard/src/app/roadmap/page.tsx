@@ -10,7 +10,7 @@ import { useMe } from '@/lib/use-me';
 import { cn } from '@/lib/utils';
 
 export default function RoadmapPage() {
-  const { state } = useMe();
+  const { state } = useMe({ required: true });
   const [features, setFeatures] = useState<FeatureCardDto[] | null>(null);
 
   useEffect(() => {

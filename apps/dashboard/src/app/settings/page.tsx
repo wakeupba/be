@@ -27,7 +27,7 @@ const GCAL_COLORS: Array<{ id: string; name: string; hex: string }> = [
 ];
 
 export default function SettingsPage() {
-  const { state, refresh } = useMe();
+  const { state, refresh } = useMe({ required: true });
   const [busy, setBusy] = useState(false);
 
   if (state.status !== 'ready') {

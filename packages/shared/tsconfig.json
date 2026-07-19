@@ -3,7 +3,8 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    // WebWorker: the crypto/session modules use Web Crypto, TextEncoder, atob
+    "lib": ["ES2022", "WebWorker"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

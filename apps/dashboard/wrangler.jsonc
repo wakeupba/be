@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wakeupbabe-dashboard",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    // documents hit the auth gate first; build assets skip the worker so
+    // they stay free, cacheable static serves
+    "run_worker_first": ["/*", "!/_next/*"],
+    "not_found_handling": "404-page"
+  }
+  // secrets (set with `wrangler secret put`, must match the api worker):
+  //   SESSION_SECRET
+}

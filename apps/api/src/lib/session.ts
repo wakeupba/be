@@ -1,6 +1,8 @@
-import { hmacSign, hmacVerify } from './crypto';
+import { hmacSign, SESSION_COOKIE } from '@wakeupbabe/shared';
 
-const SESSION_COOKIE = 'wub_session';
+// verification is shared with the dashboard gate worker
+export { readSession } from '@wakeupbabe/shared';
+
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 
 interface SessionPayload {
@@ -31,20 +33,4 @@ export async function createSessionCookie(
 
 export function clearSessionCookie(cookieDomain: string): string {
   return `${SESSION_COOKIE}=; Domain=${cookieDomain}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
-}
-
-export async function readSession(cookieHeader: string | undefined, secret: string): Promise<string | null> {
-  if (!cookieHeader) return null;
-  const raw = cookieHeader.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))?.[1];
-  if (!raw) return null;
-  const [body, signature] = raw.split('.');
-  if (!body || !signature) return null;
-  if (!(await hmacVerify(body, signature, secret))) return null;
-  try {
-    const payload = JSON.parse(atob(body)) as SessionPayload;
-    if (payload.expiresAt < Date.now()) return null;
-    return payload.userId;
-  } catch {
-    return null;
-  }
 }

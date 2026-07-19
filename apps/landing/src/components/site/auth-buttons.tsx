@@ -33,10 +33,10 @@ export function AuthButtons() {
 
   return (
     <>
-      <ButtonLink href={APP_URL} variant="secondary" size="sm">
+      <ButtonLink href={`${APP_URL}/login/`} variant="secondary" size="sm">
         Sign in
       </ButtonLink>
-      <ButtonLink href={APP_URL} size="sm">
+      <ButtonLink href={`${APP_URL}/login/`} size="sm">
         Start free
       </ButtonLink>
     </>

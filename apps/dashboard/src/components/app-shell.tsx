@@ -80,7 +80,7 @@ export function AppShell({ me, title, children }: { me: MeDto | null; title?: st
               aria-label="Sign out"
               onClick={async () => {
                 await api.logout();
-                window.location.reload();
+                window.location.replace('/login/');
               }}
               className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
             >

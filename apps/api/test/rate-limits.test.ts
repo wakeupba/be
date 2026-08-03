@@ -62,6 +62,43 @@ describe('rate limits', () => {
     expect(((await blocked.json()) as { error: string }).error).toContain('number');
   });
 
+  it('oauth callbacks are capped per ip', async () => {
+    const app = createApp();
+    const ip = `test-ip-${crypto.randomUUID()}`;
+    const attempt = () =>
+      app.request(
+        new Request('https://api.test/auth/callback?code=junk&state=junk', {
+          headers: { 'CF-Connecting-IP': ip },
+        }),
+        undefined,
+        env,
+      );
+
+    // garbage state fails fast with 400 but still spends a slot
+    for (let n = 0; n < 10; n++) expect((await attempt()).status).toBe(400);
+    expect((await attempt()).status).toBe(429);
+  });
+
+  it('calendar disconnects are capped per user', async () => {
+    const db = testDb();
+    const user = await seedUser(db);
+    const app = createApp();
+
+    const attempt = async () =>
+      app.request(
+        new Request('https://api.test/me/calendar/disconnect', {
+          method: 'POST',
+          headers: { cookie: await sessionCookie(user.id) },
+        }),
+        undefined,
+        env,
+      );
+
+    // no token on file, so each is a cheap idempotent 200; slots spend anyway
+    for (let n = 0; n < 5; n++) expect((await attempt()).status).toBe(200);
+    expect((await attempt()).status).toBe(429);
+  });
+
   it('settings writes are capped per user', async () => {
     const db = testDb();
     const user = await seedUser(db);

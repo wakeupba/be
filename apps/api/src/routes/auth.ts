@@ -2,10 +2,14 @@ import { Hono } from 'hono';
 import type { Container } from '../container';
 import type { Env } from '../env';
 import { encryptSecret, hmacSign, hmacVerify } from '../lib/crypto';
+import { claimRateSlot, clientIp } from '../lib/rate-limit';
 import { clearSessionCookie, createSessionCookie } from '../lib/session';
 import { CALENDAR_SCOPE } from '../services/calendar/google-client';
 
 const STATE_TTL_MS = 10 * 60_000;
+const LOGINS_PER_WINDOW = 30;
+const CALLBACKS_PER_WINDOW = 10;
+const RATE_WINDOW_MS = 10 * 60_000;
 
 type AuthContext = { Bindings: Env; Variables: { container: Container } };
 
@@ -29,6 +33,16 @@ async function verifyState(state: string, secret: string): Promise<boolean> {
 export const authRoutes = new Hono<AuthContext>()
   .get('/login', async (c) => {
     const { google } = c.get('container');
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `login:${clientIp(c.req.raw)}`,
+        LOGINS_PER_WINDOW,
+        RATE_WINDOW_MS,
+      ))
+    ) {
+      return c.text('too many login attempts, try again in a few minutes', 429);
+    }
     const redirectUri = `${c.env.API_ORIGIN}/auth/callback`;
     const state = await buildState(c.env.SESSION_SECRET);
     return c.redirect(google.buildAuthUrl(redirectUri, state));
@@ -36,6 +50,18 @@ export const authRoutes = new Hono<AuthContext>()
 
   .get('/callback', async (c) => {
     const { google, users, tokens } = c.get('container');
+    // a captured state token is valid for its whole ttl; without this cap
+    // it converts into a lever for hammering google's token endpoint
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `callback:${clientIp(c.req.raw)}`,
+        CALLBACKS_PER_WINDOW,
+        RATE_WINDOW_MS,
+      ))
+    ) {
+      return c.text('too many attempts, try again in a few minutes', 429);
+    }
     const code = c.req.query('code');
     const state = c.req.query('state');
     if (!code || !state || !(await verifyState(state, c.env.SESSION_SECRET))) {

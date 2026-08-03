@@ -80,6 +80,17 @@ export const meRoutes = new Hono<MeContext>()
    */
   .post('/me/calendar/disconnect', async (c) => {
     const { users, tokens, events, google } = c.get('container');
+    // each disconnect fires a revocation call at google; keep it human-paced
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `disconnect:${c.get('userId')}`,
+        BILLING_ATTEMPTS_PER_WINDOW,
+        RATE_WINDOW_MS,
+      ))
+    ) {
+      return c.json({ error: 'too many attempts, try again in a few minutes' }, 429);
+    }
     const user = await users.findById(c.get('userId'));
     if (!user) return c.json({ error: 'not found' }, 404);
 

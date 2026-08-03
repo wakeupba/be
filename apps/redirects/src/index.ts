@@ -20,7 +20,10 @@ export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
-    if (url.pathname === '/' || url.pathname === '/m/setup/' || url.pathname === '/m/setup') {
+    // the page only reveals itself to whoever holds the key: the QR carries
+    // ?babe, and saying x-babe back to us also counts (we said it first)
+    const invited = url.searchParams.has('babe') || request.headers.has('x-babe');
+    if (invited && (url.pathname === '/' || url.pathname === '/m/setup/' || url.pathname === '/m/setup')) {
       return fetch(`${UPSTREAM}/m/setup/`, { headers: request.headers });
     }
     if (isAsset(url.pathname)) {

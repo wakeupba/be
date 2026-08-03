@@ -1,3 +1,4 @@
+# --- required ---
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=xxx
 SESSION_SECRET=any-long-random-string
@@ -5,8 +6,23 @@ TOKEN_ENC_KEY=32-byte-base64url-key-for-aes-gcm
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxx
 TWILIO_FROM_NUMBER_US=+1XXXXXXXXXX
-DODO_WEBHOOK_SECRET=xxx
-APP_ORIGIN=http://localhost:3001
+DODO_WEBHOOK_SECRET=whsec_xxx
+APP_ORIGIN=http://localhost:3004
 API_ORIGIN=http://localhost:8787
+LANDING_ORIGIN=http://localhost:3003
 COOKIE_DOMAIN=localhost
-LANDING_ORIGIN=http://localhost:3000
+
+# --- billing (leave unset and billing stays dark; set all three for real
+# test-mode checkout, or set only DODO_FAKE_CHECKOUT=1 for local fake pages) ---
+#DODO_API_KEY=xxx
+#DODO_ENVIRONMENT=test_mode
+#DODO_PRODUCT_RIDE_OR_DIE=pdt_xxx
+#DODO_PRODUCT_TOPUP=pdt_xxx
+#DODO_FAKE_CHECKOUT=1
+
+# --- live phone calls in dev (Twilio rejects localhost callback URLs):
+# run `cloudflared tunnel --url http://localhost:8787` and paste the URL ---
+#TELEPHONY_PUBLIC_ORIGIN=https://your-tunnel.trycloudflare.com
+
+# --- error tracking (stays dark until set) ---
+#SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx

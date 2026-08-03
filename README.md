@@ -23,15 +23,16 @@ Google Calendar ──(read-only poll, 5 min)──► sync service
                                          call scheduler (D1)
                                                 │ due (1 min cron)
                                                 ▼
-                                     telephony adapter (Plivo)
+                                     telephony adapter (Twilio)
                                                 │
                                           ☎️  your phone
 ```
 
-- **API**: Cloudflare Worker, [Hono](https://hono.dev), D1, two cron triggers
+- **API**: Cloudflare Worker, [Hono](https://hono.dev), D1 + Drizzle, two cron triggers
 - **Landing + dashboard**: Next.js static exports served as Workers assets
-- **Telephony**: Plivo behind a provider interface (swappable)
-- **Payments**: Dodo Payments hosted checkout (merchant of record)
+- **Telephony**: Twilio behind a provider interface (swappable)
+- **Payments**: Dodo Payments hosted checkout + webhooks (merchant of record; we never touch card data)
+- **Observability**: Workers Logs with structured events, optional Sentry (set `SENTRY_DSN`)
 - **Scopes**: `calendar.readonly` only. We cannot write to your calendar, ever.
 
 ## Monorepo layout
@@ -53,26 +54,37 @@ Local dev runs the real Workers runtime (workerd via miniflare) against a local 
 pnpm install
 cp apps/api/.dev.vars.example apps/api/.dev.vars   # then fill in secrets
 pnpm -C apps/api db:migrate:local                  # create/refresh local D1
-pnpm -C apps/api dev                               # worker on :8787
-pnpm -C apps/dashboard dev                         # dashboard on :3001
-pnpm -C apps/landing dev                           # landing on :3000
+pnpm -C apps/api dev                               # worker on :8787, crons included
+pnpm -C apps/dashboard dev                         # dashboard on :3004
+pnpm -C apps/landing dev                           # landing on :3003
 ```
 
 Useful to know:
 
-- Crons do not tick automatically in dev. Trigger them manually:
-  `curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"` (dispatcher) or
-  `curl "http://localhost:8787/__scheduled?cron=*%2F5+*+*+*+*"` (calendar sync).
+- `pnpm -C apps/api dev` runs wrangler *and* pulses the cron triggers
+  (dispatcher every minute, calendar sync every five) — wrangler alone never
+  fires them locally. `pnpm -C apps/api dev:bare` is the escape hatch if you
+  want wrangler without the pulse.
+- Tests run in the real Workers runtime against a real D1:
+  `pnpm -C apps/api test`.
+- Billing can be developed three ways, in increasing order of realism:
+  vitest suite (no keys), `DODO_FAKE_CHECKOUT=1` (local stand-ins for Dodo's
+  hosted pages, plus `pnpm -C apps/api sim:dodo <event>` to fire signed
+  webhooks), or a real Dodo test-mode account (set the `DODO_*` vars, which
+  automatically retires the fakes).
+- Real phone calls locally need Twilio to reach your machine — it rejects
+  localhost callback URLs outright. Run
+  `cloudflared tunnel --url http://localhost:8787` and point
+  `TELEPHONY_PUBLIC_ORIGIN` in `.dev.vars` at the tunnel URL. Everything
+  except live calls works without it.
 - Local D1 lives under `apps/api/.wrangler/state/`. Delete it to reset your data.
 - Google OAuth locally: add `http://localhost:8787/auth/callback` as a redirect URI in your Google Cloud console.
-- Real phone calls locally need Plivo to reach your machine: run
-  `cloudflared tunnel --url http://localhost:8787` and point `API_ORIGIN` in `.dev.vars` at the tunnel URL. Everything except live calls works without it.
 
 Secrets live in `wrangler secret` / `.dev.vars`, never in this repo. See `apps/api/.dev.vars.example`.
 
 ## Self-hosting
 
-You can. You will need your own Google Cloud OAuth app, a Plivo account, and a rented phone number. The hosted version at [wakeupba.be](https://wakeupba.be) exists so you do not have to do any of that for $5/month.
+You can. You will need your own Google Cloud OAuth app, a Twilio account, and a rented phone number. The hosted version at [wakeupba.be](https://wakeupba.be) exists so you do not have to do any of that for $5/month.
 
 ## License
 

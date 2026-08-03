@@ -16,3 +16,8 @@ coverage/
 # internal strategy doc, never ship to the public repo
 PLAN.md
 *.tsbuildinfo
+
+# agent tooling, local only
+.agents/
+.claude/
+skills-lock.json

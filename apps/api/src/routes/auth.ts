@@ -50,8 +50,15 @@ export const authRoutes = new Hono<AuthContext>()
 
   .get('/callback', async (c) => {
     const { google, users, tokens } = c.get('container');
-    // a captured state token is valid for its whole ttl; without this cap
-    // it converts into a lever for hammering google's token endpoint
+    const code = c.req.query('code');
+    const state = c.req.query('state');
+    if (!code || !state || !(await verifyState(state, c.env.SESSION_SECRET))) {
+      return c.text('invalid oauth state', 400);
+    }
+    // metered only after the state check: a captured state token is valid
+    // for its whole ttl and could otherwise hammer google's token endpoint,
+    // while pure garbage fails fast above without burning slots for the
+    // rest of a shared (cgnat) ip
     if (
       !(await claimRateSlot(
         c.get('container'),
@@ -61,11 +68,6 @@ export const authRoutes = new Hono<AuthContext>()
       ))
     ) {
       return c.text('too many attempts, try again in a few minutes', 429);
-    }
-    const code = c.req.query('code');
-    const state = c.req.query('state');
-    if (!code || !state || !(await verifyState(state, c.env.SESSION_SECRET))) {
-      return c.text('invalid oauth state', 400);
     }
 
     const redirectUri = `${c.env.API_ORIGIN}/auth/callback`;

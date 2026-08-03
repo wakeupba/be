@@ -9,10 +9,10 @@ import { Button, ButtonLink } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Panel, Shell } from '@/components/ui/panel';
 import { api } from '@/lib/api';
+import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
-const E164_PATTERN = /^\+[1-9]\d{6,14}$/;
 
 type StepId = 'phone' | 'contact' | 'verify';
 
@@ -53,7 +53,7 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const valid = E164_PATTERN.test(phone);
+  const parsed = parsePhone(phone);
 
   return (
     <div className="max-w-sm">
@@ -67,7 +67,7 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
           setSaving(true);
           setError(null);
           try {
-            await api.updateSettings({ phone });
+            await api.updateSettings({ phone: parsed.e164 });
             onSaved();
           } catch (err) {
             setError(err instanceof Error ? err.message : 'could not save');
@@ -79,17 +79,23 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
         <Input
           type="tel"
           value={phone}
-          onChange={(event) => setPhone(event.target.value.replace(/[^+0-9]/g, ''))}
+          onChange={(event) => setPhone(formatPhoneDraft(event.target.value))}
           placeholder="+14155550123"
           aria-label="Your phone number"
-          aria-invalid={phone.length > 3 && !valid}
+          aria-invalid={phone.length > 3 && !parsed.valid}
           className="font-mono tabular-nums"
         />
-        <Button type="submit" disabled={!valid || saving}>
+        <Button type="submit" disabled={!parsed.valid || saving}>
           {saving ? 'Saving' : 'Save'}
         </Button>
       </form>
-      {error && <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>}
+      {error ? (
+        <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>
+      ) : parsed.country ? (
+        <p className="mt-2 font-mono text-[11px] text-muted-foreground/70">
+          {parsed.valid ? parsed.country : `${parsed.country} · keep typing`}
+        </p>
+      ) : null}
     </div>
   );
 }

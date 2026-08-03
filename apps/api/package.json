@@ -20,7 +20,8 @@
     "@wakeupbabe/shared": "workspace:*",
     "dodopayments": "^2.42.2",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "libphonenumber-js": "^1.13.10"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.6",

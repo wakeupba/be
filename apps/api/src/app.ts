@@ -30,6 +30,12 @@ export function createApp() {
   );
   app.use('/features/*', (c, next) => cors({ origin: c.env.APP_ORIGIN, credentials: true })(c, next));
 
+  // logout is the one auth route the dashboard calls with fetch; login and
+  // the oauth callback are top-level navigations and never need CORS
+  app.use('/auth/logout', (c, next) =>
+    cors({ origin: c.env.APP_ORIGIN, credentials: true, allowMethods: ['POST'] })(c, next),
+  );
+
   // waitlist is called from the public landing page, no session involved
   app.use('/waitlist', (c, next) => cors({ origin: c.env.LANDING_ORIGIN })(c, next));
 
@@ -76,9 +82,11 @@ export function createApp() {
       'END:VCARD',
       '',
     ].join('\r\n');
+    // inline: iOS Safari opens the native contact sheet instead of putting a
+    // mystery file in Downloads; Android still downloads (no inline handler)
     return c.text(vcard, 200, {
       'Content-Type': 'text/vcard; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="wake-up-babe.vcf"',
+      'Content-Disposition': 'inline; filename="wake-up-babe.vcf"',
     });
   });
 

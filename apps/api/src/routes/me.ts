@@ -10,12 +10,12 @@ import {
   type UpcomingEventDto,
 } from '@wakeupbabe/shared';
 import { Hono } from 'hono';
+import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
 import { decryptSecret } from '../lib/crypto';
 import { billingConfigured, fakeBillingActive } from '../services/billing/dodo';
 
-const E164_PATTERN = /^\+[1-9]\d{6,14}$/;
 const GOOGLE_COLOR_IDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
 const VERIFY_CALLS_PER_HOUR = 3;
 const BILLING_ATTEMPTS_PER_WINDOW = 5;
@@ -171,14 +171,17 @@ export const meRoutes = new Hono<MeContext>()
     const patch: Parameters<typeof users.updateSettings>[1] = {};
 
     if (body.phone !== undefined) {
-      if (typeof body.phone !== 'string' || !E164_PATTERN.test(body.phone)) {
-        return c.json({ error: 'phone must be E.164, like +14155550123' }, 400);
+      // real number validation, not just an E.164 shape: country prefix,
+      // national length, and number-plan rules all checked
+      const parsed = typeof body.phone === 'string' ? parsePhoneNumberFromString(body.phone) : undefined;
+      if (!parsed?.isValid()) {
+        return c.json({ error: 'not a real phone number, use international format like +14155550123' }, 400);
       }
-      patch.phoneE164 = body.phone;
+      patch.phoneE164 = parsed.number;
       // a changed number loses its DND verification: we only ever call
       // numbers that have proven they ring through, so the test call re-runs
       const current = await users.findById(c.get('userId'));
-      if (current && current.phoneE164 !== body.phone) patch.dndVerifiedAt = null;
+      if (current && current.phoneE164 !== parsed.number) patch.dndVerifiedAt = null;
     }
     if (body.triggerColorId !== undefined) {
       if (typeof body.triggerColorId !== 'string' || !GOOGLE_COLOR_IDS.has(body.triggerColorId)) {

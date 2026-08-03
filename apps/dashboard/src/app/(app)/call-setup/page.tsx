@@ -9,10 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Shell } from '@/components/ui/panel';
 import { api } from '@/lib/api';
 import { GCAL_COLORS } from '@/lib/gcal-colors';
+import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { useMe } from '@/lib/use-me';
 import { cn } from '@/lib/utils';
-
-const E164_PATTERN = /^\+[1-9]\d{6,14}$/;
 
 const swap = {
   initial: { opacity: 0, y: 2 },
@@ -296,7 +295,8 @@ function PhoneRow({
   const [error, setError] = useState<string | null>(null);
   const [verifyPhase, setVerifyPhase] = useState<'idle' | 'calling'>('idle');
   const verifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const draftValid = E164_PATTERN.test(draft);
+  const parsedDraft = parsePhone(draft);
+  const draftValid = parsedDraft.valid;
 
   useEffect(
     () => () => {
@@ -309,7 +309,7 @@ function PhoneRow({
     setSaving(true);
     setError(null);
     try {
-      await api.updateSettings({ phone: draft });
+      await api.updateSettings({ phone: parsedDraft.e164 });
       await refresh();
       setEditing(false);
       setDraft('');
@@ -349,7 +349,7 @@ function PhoneRow({
                 autoFocus
                 type="tel"
                 value={draft}
-                onChange={(event) => setDraft(event.target.value.replace(/[^+0-9]/g, ''))}
+                onChange={(event) => setDraft(formatPhoneDraft(event.target.value))}
                 placeholder="+14155550123"
                 aria-label="New phone number"
                 aria-invalid={draft.length > 3 && !draftValid}
@@ -371,7 +371,9 @@ function PhoneRow({
               </Button>
             </form>
             <p className="font-mono text-[11px] text-muted-foreground/70">
-              a new number has to pass the verification call before we ring it
+              {parsedDraft.country
+                ? `${parsedDraft.country.toLowerCase()} · a new number has to pass the verification call`
+                : 'a new number has to pass the verification call before we ring it'}
             </p>
           </motion.div>
         ) : (

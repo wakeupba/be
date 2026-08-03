@@ -1,18 +1,22 @@
+import type { Icon } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { Shell } from './panel';
 
 /*
- * Stat tile: label-mono zone, 26px tabular mono value, and a quiet footer
- * zone (never a pill). Loaded-but-empty shows an honest 0; a dash means
- * loading only. All tiles share the same height via the footer strip.
+ * Stat tile: label-mono zone (optional glyph), 26px tabular mono value, and
+ * a quiet footer zone (never a pill). Loaded-but-empty shows an honest 0; a
+ * dash means loading only. All tiles share the same height via the footer
+ * strip.
  */
 export function Kpi({
   label,
+  icon: IconGlyph,
   value,
   sub,
   footer,
 }: {
   label: string;
+  icon?: Icon;
   value: string;
   sub?: string;
   footer: ReactNode;
@@ -21,7 +25,10 @@ export function Kpi({
     <Shell>
       <div className="flex h-full flex-col">
         <div className="px-4 pt-3.5 pb-3">
-          <p className="label-mono truncate text-muted-foreground">{label}</p>
+          <p className="flex items-center gap-1.5 label-mono truncate text-muted-foreground">
+            {IconGlyph && <IconGlyph size={13} className="shrink-0 text-muted-foreground/70" aria-hidden />}
+            {label}
+          </p>
         </div>
         <div className="flex grow items-baseline gap-1.5 px-4 pb-4">
           <p className="font-mono text-[26px] font-semibold leading-none tracking-tight tabular-nums">

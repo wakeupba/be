@@ -26,6 +26,11 @@ export const api = {
   events: () => request<UpcomingEventDto[]>('/me/events'),
   calls: () => request<CallHistoryDto[]>('/me/calls'),
   verifyCall: () => request<{ ok: true; callId: string }>('/me/verify-call', { method: 'POST' }),
+  disconnectCalendar: () =>
+    request<{ ok: true; cancelledCalls?: number }>('/me/calendar/disconnect', { method: 'POST' }),
+  billingCheckout: (kind: 'upgrade' | 'topup') =>
+    request<{ url: string }>('/me/billing/checkout', { method: 'POST', body: JSON.stringify({ kind }) }),
+  billingPortal: () => request<{ url: string }>('/me/billing/portal', { method: 'POST' }),
   features: () => request<FeatureCardDto[]>('/features'),
   voteFeature: (key: string, note?: string) =>
     request<{ ok: true }>(`/features/${key}/vote`, { method: 'POST', body: JSON.stringify({ note }) }),

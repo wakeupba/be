@@ -1,4 +1,4 @@
-import { Phone } from 'lucide-react';
+import { Phone } from '@phosphor-icons/react/dist/ssr';
 import { BabeMark } from '@/components/brand/mark';
 import { ButtonLink } from '@/components/ui/button';
 import { Panel } from '@/components/ui/panel';
@@ -18,7 +18,7 @@ export default function MobileSetupPage() {
       <h1 className="text-xl font-semibold tracking-tight">Save the contact, allow it through.</h1>
 
       <ButtonLink href={`${API}/contact.vcf`} size="lg" className="justify-center">
-        <Phone className="size-4" aria-hidden />
+        <Phone size={16} aria-hidden />
         Add Wake Up Babe to contacts
       </ButtonLink>
 

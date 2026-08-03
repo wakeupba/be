@@ -1,3 +1,4 @@
+import type { Icon } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -20,11 +21,23 @@ export function Panel({ className, children }: { className?: string; children: R
   );
 }
 
-/* one section grammar: bare label-mono heading on the canvas, optional action */
-export function SectionHeader({ title, action }: { title: string; action?: ReactNode }) {
+/* one section grammar: label-mono heading on the canvas, optional leading
+ * icon and trailing action */
+export function SectionHeader({
+  title,
+  icon: IconGlyph,
+  action,
+}: {
+  title: string;
+  icon?: Icon;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex h-9 items-center justify-between">
-      <p className="label-mono text-muted-foreground">{title}</p>
+      <p className="flex items-center gap-1.5 label-mono text-muted-foreground">
+        {IconGlyph && <IconGlyph size={13} className="shrink-0 text-muted-foreground/70" aria-hidden />}
+        {title}
+      </p>
       {action}
     </div>
   );

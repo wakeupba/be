@@ -3,26 +3,30 @@
 /*
  * Wake Up Babe dashboard tokens. Light-first, adapted from the spoo.me
  * dashboard system: a canvas floor, an elevated content sheet, hairline-fused
- * depth, one accent. Accent is tomato (hotter, higher chroma); destructive is
- * a deeper desaturated crimson so error never reads as brand.
+ * depth, one accent. Neutrals ride the zinc ramp (cool undertone, hue ~286),
+ * never pure 0-chroma gray. Accent is tomato, brand-locked to the Tomato
+ * trigger color, tuned deep enough to hold AA as text (4.84:1 on white);
+ * destructive is a deeper desaturated crimson so error never reads as brand.
+ * AA floors measured: muted-foreground 5.19:1 on background, 4.71:1 on muted,
+ * 4.56:1 on canvas; live 5.05:1 on white.
  */
 :root {
-  --canvas: oklch(0.955 0 0);
-  --shell: oklch(0.988 0 0);
+  --canvas: oklch(0.954 0.003 286);
+  --shell: oklch(0.985 0.001 286);
   --background: oklch(1 0 0);
   --card: oklch(1 0 0);
   --popover: oklch(1 0 0);
-  --muted: oklch(0.97 0 0);
-  --foreground: oklch(0.145 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --primary: oklch(0.205 0 0);
+  --muted: oklch(0.967 0.001 286.4);
+  --foreground: oklch(0.141 0.005 285.8);
+  --muted-foreground: oklch(0.535 0.016 285.9);
+  --border: oklch(0.92 0.004 286.3);
+  --input: oklch(0.92 0.004 286.3);
+  --ring: oklch(0.705 0.015 286.1);
+  --primary: oklch(0.21 0.006 285.9);
   --primary-foreground: oklch(0.985 0 0);
-  --brand: oklch(0.62 0.22 31);
-  --live: oklch(0.596 0.145 163);
-  --destructive: oklch(0.5 0.16 22);
+  --brand: oklch(0.575 0.205 30);
+  --live: oklch(0.527 0.11 163);
+  --destructive: oklch(0.49 0.155 20);
   --radius: 0.625rem;
 }
 
@@ -49,9 +53,9 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.06), 0 3px 6px -3px rgb(0 0 0 / 0.08);
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.03), 0 8px 16px -4px rgb(0 0 0 / 0.04), 0 24px 48px -12px rgb(0 0 0 / 0.07);
-  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 20px -6px rgb(0 0 0 / 0.1);
+  --shadow-soft: 0 1px 2px oklch(0.21 0.015 286 / 0.06), 0 3px 6px -3px oklch(0.21 0.015 286 / 0.08);
+  --shadow-card: 0 1px 2px oklch(0.21 0.015 286 / 0.03), 0 8px 16px -4px oklch(0.21 0.015 286 / 0.04), 0 24px 48px -12px oklch(0.21 0.015 286 / 0.07);
+  --shadow-float: 0 1px 2px oklch(0.21 0.015 286 / 0.05), 0 8px 20px -6px oklch(0.21 0.015 286 / 0.1);
 }
 
 body {

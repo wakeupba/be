@@ -1,7 +1,8 @@
 'use client';
 
+import { AddressBook, Check } from '@phosphor-icons/react';
 import type { MeDto } from '@wakeupbabe/shared';
-import { Check, Phone } from 'lucide-react';
+import { motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/button';
@@ -32,7 +33,18 @@ function StepMarker({ state, number }: { state: 'done' | 'active' | 'todo'; numb
         state === 'todo' && 'border-border/60 text-muted-foreground/60',
       )}
     >
-      {state === 'done' ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : number}
+      {state === 'done' ? (
+        <motion.span
+          initial={{ scale: 0.4, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          className="flex"
+        >
+          <Check size={14} weight="bold" aria-hidden />
+        </motion.span>
+      ) : (
+        number
+      )}
     </span>
   );
 }
@@ -118,7 +130,7 @@ function ContactStep({ brandNumber, onDone }: { brandNumber: string; onDone: () 
             <p className="mt-2 font-mono text-[17px] tabular-nums">{brandNumber}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <ButtonLink href={`${API}/contact.vcf`} variant="outline" size="sm">
-                <Phone className="size-3.5" aria-hidden />
+                <AddressBook size={14} aria-hidden />
                 Download contact card
               </ButtonLink>
             </div>
@@ -235,7 +247,16 @@ export function Onboarding({ me, refresh }: { me: MeDto; refresh: () => Promise<
                   {row.title}
                 </h2>
               </div>
-              {steps[row.id] === 'active' && <div className="mt-4 pl-9">{row.body}</div>}
+              {steps[row.id] === 'active' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  className="mt-4 pl-9"
+                >
+                  {row.body}
+                </motion.div>
+              )}
             </div>
           </Shell>
         ))}

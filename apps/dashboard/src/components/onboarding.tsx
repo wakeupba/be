@@ -171,17 +171,64 @@ function ContactStep({ brandNumber, onDone }: { brandNumber: string; onDone: () 
   );
 }
 
+const VERIFY_POLL_MS = 3000;
+const VERIFY_TIMEOUT_MS = 90_000;
+
+/** answered but 1 was never pressed, or never answered at all */
+const MISSED_OUTCOMES = new Set(['no_answer', 'answered_no_input', 'answered_snooze']);
+
 function VerifyStep({ refresh }: { refresh: () => Promise<MeDto | null> }) {
-  const [phase, setPhase] = useState<'idle' | 'calling' | 'error'>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'calling' | 'missed'>('idle');
+  const [notice, setNotice] = useState<{ text: string; tone: 'muted' | 'destructive' } | null>(null);
+  const callIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (phase !== 'calling') return;
+    const startedAt = Date.now();
+    let active = true;
+    let busy = false;
     const interval = setInterval(async () => {
-      const me = await refresh();
-      if (me?.dndVerified) clearInterval(interval);
-    }, 3000);
-    return () => clearInterval(interval);
+      if (busy) return;
+      busy = true;
+      try {
+        const me = await refresh().catch(() => null);
+        if (!active) return;
+        // success: the parent sees dndVerified and swaps this step to done
+        if (me?.dndVerified) return;
+
+        const callId = callIdRef.current;
+        const call = callId
+          ? await api
+              .calls()
+              .then((rows) => rows.find((row) => row.id === callId) ?? null)
+              .catch(() => null)
+          : null;
+        if (!active) return;
+
+        if (call && MISSED_OUTCOMES.has(call.outcome)) {
+          setPhase('missed');
+          setNotice({
+            text: "didn't catch you, or 1 wasn't pressed. turn on DND and try again",
+            tone: 'muted',
+          });
+        } else if (call?.outcome === 'failed') {
+          setPhase('missed');
+          setNotice({
+            text: 'the call could not be placed. check your number and try again',
+            tone: 'destructive',
+          });
+        } else if (Date.now() - startedAt > VERIFY_TIMEOUT_MS) {
+          setPhase('missed');
+          setNotice({ text: 'we lost track of that call. try again', tone: 'muted' });
+        }
+      } finally {
+        busy = false;
+      }
+    }, VERIFY_POLL_MS);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [phase, refresh]);
 
   return (
@@ -194,23 +241,34 @@ function VerifyStep({ refresh }: { refresh: () => Promise<MeDto | null> }) {
         <Button
           disabled={phase === 'calling'}
           onClick={async () => {
-            setError(null);
+            setNotice(null);
             try {
-              await api.verifyCall();
+              const { callId } = await api.verifyCall();
+              callIdRef.current = callId;
               setPhase('calling');
             } catch (err) {
-              setPhase('error');
-              setError(err instanceof Error ? err.message : 'call failed');
+              setPhase('idle');
+              setNotice({
+                text: err instanceof Error ? err.message : 'call failed',
+                tone: 'destructive',
+              });
             }
           }}
         >
-          {phase === 'calling' ? 'Calling your phone' : 'Call me now'}
+          {phase === 'calling' ? 'Calling your phone' : phase === 'missed' ? 'Call me again' : 'Call me now'}
         </Button>
         {phase === 'calling' && (
           <p className="font-mono text-[11px] text-muted-foreground/70">waiting for you to press 1</p>
         )}
       </div>
-      {error && <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>}
+      <p
+        className={cn(
+          'mt-2 min-h-[1lh] font-mono text-[11px]',
+          notice?.tone === 'destructive' ? 'text-destructive' : 'text-muted-foreground/70',
+        )}
+      >
+        {notice?.text}
+      </p>
     </div>
   );
 }

@@ -1,9 +1,32 @@
 /*
- * pickuptheph.one — the easter egg. Whoever finds it gets sent home, and
- * whoever reads their network tab gets a second one.
+ * pickuptheph.one — the phone-setup page, living on its own domain hack.
+ * The onboarding QR points here: short domain, small QR, and the URL bar
+ * reads "pick up the phone" while you teach your phone to do exactly that.
+ *
+ * The page itself is the dashboard's static /m/setup build, proxied so the
+ * domain never changes in the address bar. Anything that isn't the page or
+ * one of its assets gets nudged home.
  */
+
+const UPSTREAM = 'https://app.wakeupba.be';
+
+function isAsset(pathname: string): boolean {
+  if (pathname.startsWith('/_next/')) return true;
+  const lastSegment = pathname.split('/').pop() ?? '';
+  return lastSegment.includes('.');
+}
+
 export default {
-  fetch(): Response {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/' || url.pathname === '/m/setup/' || url.pathname === '/m/setup') {
+      return fetch(`${UPSTREAM}/m/setup/`, { headers: request.headers });
+    }
+    if (isAsset(url.pathname)) {
+      return fetch(`${UPSTREAM}${url.pathname}${url.search}`, { headers: request.headers });
+    }
+
     return new Response(null, {
       status: 302,
       headers: {

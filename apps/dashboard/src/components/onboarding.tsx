@@ -103,7 +103,14 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
 function ContactStep({ brandNumber, onDone }: { brandNumber: string; onDone: () => void }) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [qr, setQr] = useState<string | null>(null);
-  const setupUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/m/setup/`;
+  // in prod the setup page lives on its own domain hack; dev has no such
+  // domain, so the QR falls back to this origin's copy of the page
+  const setupUrl =
+    typeof window === 'undefined'
+      ? ''
+      : window.location.hostname === 'app.wakeupba.be'
+        ? 'https://pickuptheph.one/'
+        : `${window.location.origin}/m/setup/`;
 
   useEffect(() => {
     if (!setupUrl) return;
@@ -127,7 +134,7 @@ function ContactStep({ brandNumber, onDone }: { brandNumber: string; onDone: () 
             <div className="size-[168px]" />
           )}
           <p className="mt-2 text-center font-mono text-[10px] text-muted-foreground/70">
-            scan with your phone
+            {setupUrl === 'https://pickuptheph.one/' ? 'pickuptheph.one' : 'scan with your phone'}
           </p>
         </Panel>
         <div className="flex flex-col gap-2.5">

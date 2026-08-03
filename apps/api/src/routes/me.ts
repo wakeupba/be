@@ -14,12 +14,15 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
 import { decryptSecret } from '../lib/crypto';
+import { claimRateSlot } from '../lib/rate-limit';
 import { billingConfigured, fakeBillingActive } from '../services/billing/dodo';
 
 const GOOGLE_COLOR_IDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
 const VERIFY_CALLS_PER_HOUR = 3;
 const BILLING_ATTEMPTS_PER_WINDOW = 5;
-const BILLING_WINDOW_MS = 10 * 60_000;
+const WRITE_ATTEMPTS_PER_WINDOW = 30;
+const RATE_WINDOW_MS = 10 * 60_000;
+const HOUR_MS = 60 * 60_000;
 
 /** fake-checkout URLs are built from API_ORIGIN, which in dev may lag the
  * tunnel/port actually in use; the request URL's origin is what the browser
@@ -31,16 +34,6 @@ function browserReachable(url: string, requestUrl: string, env: Env): string {
   target.protocol = origin.protocol;
   target.host = origin.host;
   return target.toString();
-}
-
-/** claim one of N slots in the current time bucket; false = rate limited.
- * Rides on the webhook-events claim table, which the cron sweep prunes. */
-async function claimBillingSlot(container: Container, key: string): Promise<boolean> {
-  const bucket = Math.floor(Date.now() / BILLING_WINDOW_MS);
-  for (let slot = 0; slot < BILLING_ATTEMPTS_PER_WINDOW; slot++) {
-    if (await container.webhookEvents.claim(`rl:${key}:${bucket}:${slot}`, 'rate-limit')) return true;
-  }
-  return false;
 }
 
 type MeContext = { Bindings: Env; Variables: { container: Container; userId: string } };
@@ -106,7 +99,10 @@ export const meRoutes = new Hono<MeContext>()
    */
   .post('/me/billing/checkout', async (c) => {
     const { users, billing } = c.get('container');
-    if (!(await claimBillingSlot(c.get('container'), `checkout:${c.get('userId')}`))) {
+    const checkoutKey = `checkout:${c.get('userId')}`;
+    if (
+      !(await claimRateSlot(c.get('container'), checkoutKey, BILLING_ATTEMPTS_PER_WINDOW, RATE_WINDOW_MS))
+    ) {
       return c.json({ error: 'too many checkout attempts, try again in a few minutes' }, 429);
     }
     if (!billing || !billingConfigured(c.env)) {
@@ -148,7 +144,8 @@ export const meRoutes = new Hono<MeContext>()
 
   .post('/me/billing/portal', async (c) => {
     const { users, billing } = c.get('container');
-    if (!(await claimBillingSlot(c.get('container'), `portal:${c.get('userId')}`))) {
+    const portalKey = `portal:${c.get('userId')}`;
+    if (!(await claimRateSlot(c.get('container'), portalKey, BILLING_ATTEMPTS_PER_WINDOW, RATE_WINDOW_MS))) {
       return c.json({ error: 'too many attempts, try again in a few minutes' }, 429);
     }
     if (!billing || !billingConfigured(c.env)) {
@@ -165,6 +162,17 @@ export const meRoutes = new Hono<MeContext>()
 
   .patch('/me/settings', async (c) => {
     const { users } = c.get('container');
+    // generous for humans, a wall for scripts hammering DB writes
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `settings:${c.get('userId')}`,
+        WRITE_ATTEMPTS_PER_WINDOW,
+        RATE_WINDOW_MS,
+      ))
+    ) {
+      return c.json({ error: 'too many changes, try again in a few minutes' }, 429);
+    }
     const body = await c.req.json<Record<string, unknown>>().catch(() => null);
     if (!body) return c.json({ error: 'invalid json' }, 400);
 
@@ -269,9 +277,21 @@ export const meRoutes = new Hono<MeContext>()
     if (!user) return c.json({ error: 'not found' }, 404);
     if (!user.phoneE164) return c.json({ error: 'add a phone number first' }, 400);
 
-    const recent = await calls.countTestCallsSince(user.id, Date.now() - 60 * 60_000);
+    const recent = await calls.countTestCallsSince(user.id, Date.now() - HOUR_MS);
     if (recent >= VERIFY_CALLS_PER_HOUR) {
       return c.json({ error: 'too many verification calls, try again in an hour' }, 429);
+    }
+    // and per NUMBER across accounts: without this, farmed accounts sharing
+    // one victim number turn the test call into a phone-DoS
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `verify:num:${user.phoneE164}`,
+        VERIFY_CALLS_PER_HOUR,
+        HOUR_MS,
+      ))
+    ) {
+      return c.json({ error: 'this number has had too many verification calls, try again in an hour' }, 429);
     }
 
     const callId = await dispatcher.placeVerificationCall(user);
@@ -290,6 +310,16 @@ export const meRoutes = new Hono<MeContext>()
   })
 
   .post('/features/:key/vote', async (c) => {
+    if (
+      !(await claimRateSlot(
+        c.get('container'),
+        `vote:${c.get('userId')}`,
+        WRITE_ATTEMPTS_PER_WINDOW,
+        RATE_WINDOW_MS,
+      ))
+    ) {
+      return c.json({ error: 'too many votes, try again in a few minutes' }, 429);
+    }
     const key = c.req.param('key');
     if (!UPCOMING_FEATURES.some((f) => f.key === key)) return c.json({ error: 'unknown feature' }, 404);
     const body = await c.req.json<{ note?: string }>().catch(() => ({ note: undefined }));

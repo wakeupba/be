@@ -3,5 +3,11 @@
   "name": "wakeupbabe-redirects",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
-  "routes": [{ "pattern": "pickuptheph.one", "custom_domain": true }]
+  // zone routes, not custom domains: the zone ships with registrar-parked
+  // proxied A/AAAA records that custom domains refuse to coexist with, and
+  // routes ride the existing proxy instead
+  "routes": [
+    { "pattern": "pickuptheph.one/*", "zone_name": "pickuptheph.one" },
+    { "pattern": "www.pickuptheph.one/*", "zone_name": "pickuptheph.one" }
+  ]
 }

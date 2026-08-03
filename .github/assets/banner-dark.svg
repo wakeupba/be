@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 460">
+  <defs>
+    <pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="460" fill="#09090b"/>
+  <rect x="0.5" y="0.5" width="1279" height="459" fill="none" stroke="rgba(255,255,255,0.09)"/>
+  <rect x="1" y="1" width="1278" height="22" fill="url(#hatch)"/>
+  <rect x="1" y="437" width="1278" height="22" fill="url(#hatch)"/>
+  <line x1="1" y1="23.5" x2="1279" y2="23.5" stroke="rgba(255,255,255,0.05)"/>
+  <line x1="1" y1="436.5" x2="1279" y2="436.5" stroke="rgba(255,255,255,0.05)"/>
+  <g transform="translate(597.6 84) scale(2.65)">
+    <path d="M1.3 12 a7.9 7.9 0 1 0 13.6 0 z" stroke="#fafafa" fill="none" stroke-width="2.6" stroke-linejoin="round"/>
+    <path d="M17.1 12 a7.9 7.9 0 1 0 13.6 0 z" stroke="#fafafa" fill="none" stroke-width="2.6" stroke-linejoin="round"/>
+    <circle cx="8.1" cy="15.6" r="3.5" fill="#fafafa"/>
+    <circle cx="23.9" cy="15.6" r="3.5" fill="#fafafa"/>
+  </g>
+  <text x="640" y="245" text-anchor="middle" font-family="Geist" font-size="62" font-weight="600" fill="#fafafa" letter-spacing="-1.8">wake up babe</text>
+  <text x="640" y="302" text-anchor="middle" font-family="Geist Mono" font-size="23" fill="#a1a1aa">your calendar, but clingy.</text>
+  <text x="640" y="392" text-anchor="middle" font-family="Geist Mono" font-size="13" fill="#71717a" letter-spacing="2.2">COLOR A MEETING <tspan fill="#f2555a">RED</tspan>. YOUR PHONE RINGS BEFORE IT</text>
+</svg>

@@ -1,6 +1,24 @@
-# Wake Up Babe 📞
+<a href="https://wakeupba.be">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-dark.png">
+    <img src=".github/assets/banner-light.png" alt="wake up babe. your calendar, but clingy. color a meeting red, your phone rings before it.">
+  </picture>
+</a>
 
-> **[wakeupba.be](https://wakeupba.be)**, your calendar, but clingy.
+<p align="center">
+  <a href="https://wakeupba.be"><kbd>Website</kbd></a>
+  <a href="#how-it-works"><kbd>How it works</kbd></a>
+  <a href="#development"><kbd>Development</kbd></a>
+  <a href="#self-hosting"><kbd>Self-hosting</kbd></a>
+  <a href="#contributing"><kbd>Contributing</kbd></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/wakeupba/be/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/wakeupba/be/ci.yml?branch=main&label=ci" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/wakeupba/be?color=d92d20" alt="License: AGPL-3.0"></a>
+  <a href="https://wakeupba.be"><img src="https://img.shields.io/website?url=https%3A%2F%2Fwakeupba.be&label=wakeupba.be" alt="Website status"></a>
+  <a href="https://github.com/sponsors/zingzy"><img src="https://img.shields.io/badge/sponsor-%E2%9D%A4-d92d20?logo=githubsponsors&logoColor=white" alt="Sponsor"></a>
+</p>
 
 Color a Google Calendar event red and Wake Up Babe phone-calls you before it starts. The call rings through Do Not Disturb, briefs you on the meeting, and listens for a keypress:
 
@@ -85,6 +103,10 @@ Secrets live in `wrangler secret` / `.dev.vars`, never in this repo. See `apps/a
 ## Self-hosting
 
 You can. You will need your own Google Cloud OAuth app, a Twilio account, and a rented phone number. The hosted version at [wakeupba.be](https://wakeupba.be) exists so you do not have to do any of that for $5/month.
+
+## Contributing
+
+Bug reports, fixes, and well-argued feature proposals are welcome, see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Security issues go through [private vulnerability reporting](.github/SECURITY.md), never public issues.
 
 ## License
 

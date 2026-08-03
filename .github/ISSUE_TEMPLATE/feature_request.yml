@@ -1,0 +1,24 @@
+name: 💡 Feature request
+description: Propose an improvement. Heads up, the product is deliberately tiny, so bring a strong case.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation where Wake Up Babe currently lets you down, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should happen instead? Remember the design constraints, one marker (red event color), one channel (a phone call), no new UI to learn.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

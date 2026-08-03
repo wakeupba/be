@@ -115,7 +115,7 @@ function ContactStep({ brandNumber, onDone }: { brandNumber: string; onDone: () 
       <div className="mt-4 grid gap-3 sm:grid-cols-[auto_1fr]">
         <Panel className="hidden place-items-center p-4 sm:grid">
           {qr ? (
-            // eslint-disable-next-line @next/next/no-img-element
+            // biome-ignore lint/performance/noImgElement: data-URL QR code, next/image adds nothing
             <img src={qr} alt="QR code opening the phone setup page" className="size-[168px]" />
           ) : (
             <div className="size-[168px]" />

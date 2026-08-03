@@ -4,6 +4,9 @@
   "files": {
     "includes": ["apps/**/src/**", "packages/**/src/**"]
   },
+  "css": {
+    "parser": { "tailwindDirectives": true }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

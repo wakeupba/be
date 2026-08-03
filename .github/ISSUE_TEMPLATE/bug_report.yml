@@ -1,0 +1,51 @@
+name: 🐛 Bug report
+description: Something broke, a call didn't come, the dashboard misbehaved, sync missed an event.
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Calls (didn't ring, rang late, DTMF keys ignored)
+        - Calendar sync (red event not picked up)
+        - Dashboard (app.wakeupba.be)
+        - Landing / signup (wakeupba.be)
+        - API / self-hosting
+        - Billing
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Hosted (wakeupba.be)
+        - Self-hosted
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Include times (with timezone) for call/sync issues.
+      placeholder: "I colored 'Standup' red at 9:40, the meeting started at 10:00, no call by 10:05…"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Logs, screenshots, phone OS (for DND behavior), browser. **Never post phone numbers, tokens, or calendar contents of other people.**
+    validations:
+      required: false

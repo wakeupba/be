@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/wakeupba/be/security/advisories/new
+    about: Report security issues privately, never in a public issue.
+  - name: 💬 Account or billing help
+    url: https://wakeupba.be
+    about: For hosted-service account questions, use the contact options on the website.

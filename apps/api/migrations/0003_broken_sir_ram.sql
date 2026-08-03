@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `topup_packs_this_period` integer DEFAULT 0 NOT NULL;

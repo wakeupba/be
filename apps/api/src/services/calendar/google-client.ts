@@ -10,10 +10,15 @@ export const OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly',
 ].join(' ');
 
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+
 export interface GoogleTokens {
   accessToken: string;
   refreshToken: string | null;
   expiresInSeconds: number;
+  /** space-delimited scopes the user actually granted; Google's consent
+   * screen lets them decline individual checkboxes */
+  scope: string;
 }
 
 export interface GoogleUserInfo {
@@ -72,6 +77,22 @@ export class GoogleClient {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
     });
+  }
+
+  /**
+   * Best-effort revocation at Google: the token may already be dead, and a
+   * failed revoke must not block the local disconnect.
+   */
+  async revokeToken(token: string): Promise<void> {
+    try {
+      await fetch('https://oauth2.googleapis.com/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ token }),
+      });
+    } catch (error) {
+      console.warn('google token revoke failed (continuing local disconnect):', error);
+    }
   }
 
   async fetchUserInfo(accessToken: string): Promise<GoogleUserInfo> {
@@ -154,11 +175,13 @@ export class GoogleClient {
       access_token: string;
       refresh_token?: string;
       expires_in: number;
+      scope?: string;
     };
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token ?? null,
       expiresInSeconds: data.expires_in,
+      scope: data.scope ?? '',
     };
   }
 }

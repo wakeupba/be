@@ -3,6 +3,7 @@ import type { Container } from '../container';
 import type { Env } from '../env';
 import { encryptSecret, hmacSign, hmacVerify } from '../lib/crypto';
 import { clearSessionCookie, createSessionCookie } from '../lib/session';
+import { CALENDAR_SCOPE } from '../services/calendar/google-client';
 
 const STATE_TTL_MS = 10 * 60_000;
 
@@ -50,13 +51,22 @@ export const authRoutes = new Hono<AuthContext>()
       user = await users.create({ googleSub: info.sub, email: info.email, displayName: info.name });
     }
 
-    if (granted.refreshToken) {
+    /*
+     * Google's consent screen lets the user decline the calendar checkbox
+     * while still completing sign-in. A grant without calendar scope must
+     * not count as a connection: store nothing, land them in the app, and
+     * the dashboard shows the honest disconnected state with a reconnect
+     * path (never a forced consent loop against an explicit decline).
+     */
+    const grantsCalendar = granted.scope.includes(CALENDAR_SCOPE);
+    if (granted.refreshToken && grantsCalendar) {
       await tokens.upsertRefreshToken(
         user.id,
         await encryptSecret(granted.refreshToken, c.env.TOKEN_ENC_KEY),
       );
-    } else if (!(await tokens.find(user.id))) {
-      // no refresh token and none stored: force a re-consent
+    } else if (grantsCalendar && !(await tokens.find(user.id))) {
+      // calendar granted but no refresh token issued and none stored: only
+      // a re-consent can produce one
       return c.redirect(`${c.env.API_ORIGIN}/auth/login`);
     }
 

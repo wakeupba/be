@@ -1,7 +1,10 @@
+import * as Sentry from '@sentry/cloudflare';
+import { TOPUP_PACK } from '@wakeupbabe/shared';
 import { Hono } from 'hono';
 import type { Container } from '../container';
 import type { Env } from '../env';
 import { hmacVerify } from '../lib/crypto';
+import { logEvent } from '../lib/log';
 import type { CallRow } from '../repos/calls';
 import { VERIFICATION_SCRIPT } from '../services/calls/script';
 import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
@@ -80,7 +83,11 @@ export const callRoutes = new Hono<HookContext>()
  * Dodo Payments webhook, Standard Webhooks spec: signature is
  * base64(HMAC-SHA256(base64decode(secret), `${id}.${timestamp}.${body}`)).
  */
-async function verifyStandardWebhook(request: Request, body: string, secret: string): Promise<boolean> {
+export async function verifyStandardWebhook(
+  request: Request,
+  body: string,
+  secret: string,
+): Promise<boolean> {
   const id = request.headers.get('webhook-id');
   const timestamp = request.headers.get('webhook-timestamp');
   const signatureHeader = request.headers.get('webhook-signature');
@@ -107,16 +114,151 @@ async function verifyStandardWebhook(request: Request, body: string, secret: str
   });
 }
 
-interface DodoWebhookPayload {
+export interface DodoWebhookPayload {
   type: string;
   data: {
     customer?: { customer_id?: string };
     metadata?: { userId?: string };
     product_cart?: Array<{ product_id: string; quantity: number }>;
+    subscription_id?: string;
+    /** subscription events carry the full subscription snapshot; its status
+     * is the source of truth for entitlement */
+    status?: string;
+    /** set while a cancellation is scheduled; the sub stays active until
+     * the term ends */
+    cancel_at_next_billing_date?: boolean;
   };
 }
 
-const CREDITS_PER_PACK = 50;
+const SUBSCRIPTION_EVENTS = new Set([
+  'subscription.active',
+  'subscription.renewed',
+  'subscription.updated',
+  'subscription.plan_changed',
+  'subscription.update_payment_method',
+  'subscription.cancelled',
+  'subscription.expired',
+  'subscription.failed',
+  'subscription.on_hold',
+]);
+
+/** statuses that end paid access; 'pending' and unknown values change nothing */
+const REVOKED_STATUSES = new Set(['cancelled', 'expired', 'failed', 'on_hold', 'paused']);
+
+/**
+ * Applies one billing event to our state. The single source of truth for
+ * plan flips and credit grants: the production webhook and the dev fake
+ * checkout both go through here.
+ */
+export async function applyDodoEvent(
+  container: Container,
+  env: Env,
+  payload: DodoWebhookPayload,
+): Promise<void> {
+  const { users } = container;
+
+  // checkout metadata carries our user id; portal-initiated events may
+  // not, so fall back to the customer id stored on first purchase
+  const dodoCustomerId = payload.data.customer?.customer_id ?? null;
+  const user =
+    (payload.data.metadata?.userId ? await users.findById(payload.data.metadata.userId) : null) ??
+    (dodoCustomerId ? await users.findByDodoCustomerId(dodoCustomerId) : null);
+  if (!user) return;
+
+  const subscriptionId = payload.data.subscription_id ?? null;
+  // lifecycle events for a subscription that is no longer the user's
+  // active one are stale (late retries after a resubscribe) and must not
+  // touch the plan
+  const staleSubscription =
+    subscriptionId !== null && user.dodoSubscriptionId !== null && subscriptionId !== user.dodoSubscriptionId;
+
+  if (SUBSCRIPTION_EVENTS.has(payload.type)) {
+    if (staleSubscription) {
+      if (payload.type === 'subscription.active' && user.plan === 'ride_or_die') {
+        // two live subscriptions for one user: adopt the newest so its
+        // lifecycle events govern, and say so loudly for ops
+        logEvent('error', 'billing.double_subscription', {
+          userId: user.id,
+          newSubscriptionId: subscriptionId,
+          activeSubscriptionId: user.dodoSubscriptionId,
+        });
+        Sentry.captureMessage(`possible double billing for user ${user.id}`, 'error');
+        await users.setPlan(user.id, 'ride_or_die', dodoCustomerId, subscriptionId ?? undefined);
+      }
+      return;
+    }
+
+    /*
+     * Entitlement follows the subscription's status snapshot, not the event
+     * name. Observed in the wild: a portal cancellation fires
+     * subscription.updated with status still 'active' and
+     * cancel_at_next_billing_date true (paid term keeps running), and the
+     * terminal event at the billing date may carry that same flag, so the
+     * flag alone can never drive the downgrade.
+     */
+    const status = typeof payload.data.status === 'string' ? payload.data.status : null;
+    if (status !== null) {
+      if (status === 'active') {
+        await users.setPlan(user.id, 'ride_or_die', dodoCustomerId, subscriptionId ?? undefined);
+      } else if (REVOKED_STATUSES.has(status)) {
+        await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+      }
+      return;
+    }
+
+    // status-less payloads (older shapes, local simulations): event names
+    switch (payload.type) {
+      case 'subscription.active':
+      case 'subscription.renewed':
+        await users.setPlan(user.id, 'ride_or_die', dodoCustomerId, subscriptionId ?? undefined);
+        break;
+      case 'subscription.cancelled':
+        if (payload.data.cancel_at_next_billing_date) break;
+        await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+        break;
+      case 'subscription.expired':
+      case 'subscription.failed':
+      case 'subscription.on_hold':
+        await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+
+  switch (payload.type) {
+    case 'payment.succeeded': {
+      // payment.succeeded also fires for subscription charges; only the
+      // top-up product grants prepaid credits. A payment landing on an
+      // already-downgraded account (cancel racing checkout) still credits:
+      // the user paid, and the credits sit frozen until a resubscribe.
+      const topupProductId = env.DODO_PRODUCT_TOPUP;
+      const packs = (payload.data.product_cart ?? [])
+        .filter((item) => Boolean(topupProductId) && item.product_id === topupProductId)
+        .reduce((sum, item) => sum + item.quantity, 0);
+      if (packs > 0) await users.addCallCredits(user.id, packs * TOPUP_PACK.calls, packs);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+/** signed but structurally unusable payloads are acknowledged, not retried:
+ * a retry cannot fix its shape */
+function parsePayload(body: string): DodoWebhookPayload | null {
+  try {
+    const parsed = JSON.parse(body) as unknown;
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const candidate = parsed as { type?: unknown; data?: unknown };
+    if (typeof candidate.type !== 'string') return null;
+    if (typeof candidate.data !== 'object' || candidate.data === null) return null;
+    return candidate as DodoWebhookPayload;
+  } catch {
+    return null;
+  }
+}
 
 export const dodoRoutes = new Hono<HookContext>().post('/', async (c) => {
   const body = await c.req.raw.text();
@@ -124,31 +266,24 @@ export const dodoRoutes = new Hono<HookContext>().post('/', async (c) => {
     return c.text('forbidden', 403);
   }
 
-  const payload = JSON.parse(body) as DodoWebhookPayload;
-  const userId = payload.data.metadata?.userId;
-  if (!userId) return c.json({ ok: true, note: 'no user metadata, ignored' });
+  const payload = parsePayload(body);
+  if (!payload) return c.json({ ok: true, note: 'unrecognized payload shape, ignored' });
 
-  const { users } = c.get('container');
-  const dodoCustomerId = payload.data.customer?.customer_id ?? null;
+  const { webhookEvents } = c.get('container');
 
-  // TODO: confirm exact event type strings against the Dodo dashboard before launch
-  switch (payload.type) {
-    case 'subscription.active':
-    case 'subscription.renewed':
-      await users.setPlan(userId, 'ride_or_die', dodoCustomerId);
-      break;
-    case 'subscription.cancelled':
-    case 'subscription.expired':
-    case 'subscription.failed':
-      await users.setPlan(userId, 'situationship', dodoCustomerId);
-      break;
-    case 'payment.succeeded': {
-      const packs = (payload.data.product_cart ?? []).reduce((sum, item) => sum + item.quantity, 0);
-      if (packs > 0) await users.addCallCredits(userId, packs * CREDITS_PER_PACK);
-      break;
-    }
-    default:
-      break;
+  // providers redeliver with the same id on retry; a second delivery must
+  // not double-apply (credit grants are not naturally idempotent)
+  const webhookId = c.req.header('webhook-id');
+  if (webhookId && !(await webhookEvents.claim(webhookId, payload.type))) {
+    return c.json({ ok: true, note: 'duplicate delivery, already processed' });
+  }
+
+  try {
+    await applyDodoEvent(c.get('container'), c.env, payload);
+  } catch (error) {
+    // release the claim so the provider's retry is processed, not swallowed
+    if (webhookId) await webhookEvents.release(webhookId).catch(() => undefined);
+    throw error;
   }
   return c.json({ ok: true });
 });

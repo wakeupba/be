@@ -1,5 +1,7 @@
+import * as Sentry from '@sentry/cloudflare';
 import { PLAN_LIMITS } from '@wakeupbabe/shared';
 import { hmacSign } from '../../lib/crypto';
+import { errorFields, logEvent } from '../../lib/log';
 import type { CallRepo } from '../../repos/calls';
 import type { EventRepo } from '../../repos/events';
 import type { UserRepo, UserRow } from '../../repos/users';
@@ -29,14 +31,21 @@ export class CallDispatchService {
 
   async dispatchDue(nowMs: number): Promise<void> {
     const swept = await this.events.sweepMissed(nowMs);
-    if (swept > 0) console.warn(`swept ${swept} past-grace events to missed`);
+    // a swept event is a call we promised and never placed: the product
+    // failed for that user even though nothing threw
+    if (swept > 0) logEvent('warn', 'call.events_swept_missed', { count: swept });
 
     const due = await this.events.listDue(nowMs, DISPATCH_BATCH_SIZE);
     for (const event of due) {
       try {
         await this.dispatchOne(event.id, event.userId);
       } catch (error) {
-        console.error(`dispatch failed for event ${event.id}:`, error);
+        logEvent('error', 'call.dispatch_failed', {
+          eventId: event.id,
+          userId: event.userId,
+          ...errorFields(error),
+        });
+        Sentry.captureException(error);
       }
     }
   }
@@ -52,7 +61,7 @@ export class CallDispatchService {
     const limit = PLAN_LIMITS[user.plan].callsPerMonth;
     if (!(await this.users.consumeCall(user, limit))) {
       await this.events.setState(eventId, 'missed');
-      console.warn(`user ${user.id} out of call quota, event ${eventId} marked missed`);
+      logEvent('warn', 'call.quota_exhausted', { userId: user.id, eventId, plan: user.plan });
       return;
     }
 

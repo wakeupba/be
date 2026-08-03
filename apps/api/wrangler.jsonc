@@ -3,6 +3,8 @@
   "name": "wakeupbabe-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
+  // AsyncLocalStorage for Sentry's request isolation
+  "compatibility_flags": ["nodejs_als"],
   "observability": { "enabled": true },
   "triggers": {
     // every minute: dispatch due calls; every 5 minutes: sync calendars
@@ -23,5 +25,6 @@
   }
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-  // TWILIO_FROM_NUMBER_US, DODO_WEBHOOK_SECRET
+  // TWILIO_FROM_NUMBER_US, DODO_WEBHOOK_SECRET, SENTRY_DSN (optional:
+  // error tracking stays dark until set)
 }

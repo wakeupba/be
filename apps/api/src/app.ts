@@ -1,11 +1,14 @@
+import * as Sentry from '@sentry/cloudflare';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createMiddleware } from 'hono/factory';
 import { secureHeaders } from 'hono/secure-headers';
 import { buildContainer, type Container } from './container';
 import type { Env } from './env';
+import { errorFields, logEvent } from './lib/log';
 import { readSession } from './lib/session';
 import { authRoutes } from './routes/auth';
+import { devRoutes } from './routes/dev';
 import { callRoutes, dodoRoutes } from './routes/hooks';
 import { meRoutes } from './routes/me';
 import { waitlistRoutes } from './routes/waitlist';
@@ -55,6 +58,8 @@ export function createApp() {
   app.route('/waitlist', waitlistRoutes);
   app.route('/hooks/call', callRoutes);
   app.route('/hooks/dodo', dodoRoutes);
+  // local stand-ins for Dodo's hosted pages; hard-gated to fake mode
+  app.route('/dev', devRoutes);
 
   app.get('/health', (c) => c.json({ ok: true, service: 'wakeupbabe-api' }));
 
@@ -78,7 +83,14 @@ export function createApp() {
   });
 
   app.onError((error, c) => {
-    console.error('unhandled error:', error);
+    // Hono resolves errors into a 500 response, so Sentry's fetch
+    // instrumentation never sees them; hand them over explicitly
+    logEvent('error', 'http.unhandled_error', {
+      method: c.req.method,
+      path: c.req.path,
+      ...errorFields(error),
+    });
+    Sentry.captureException(error);
     return c.json({ error: 'internal error' }, 500);
   });
 

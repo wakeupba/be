@@ -15,11 +15,15 @@ export const users = sqliteTable('users', {
   callsUsedThisPeriod: integer('calls_used_this_period').notNull().default(0),
   periodStartedAt: integer('period_started_at').notNull(),
   extraCallCredits: integer('extra_call_credits').notNull().default(0),
+  // completed top-up purchases this period, for the per-period pack cap
+  topupPacksThisPeriod: integer('topup_packs_this_period').notNull().default(0),
   triggerColorId: text('trigger_color_id').notNull().default('11'), // Google Calendar 'Tomato'
   leadMinutes: integer('lead_minutes').$type<LeadMinutes>().notNull().default(15),
   timezone: text('timezone').notNull().default('UTC'),
   dndVerifiedAt: integer('dnd_verified_at'),
   dodoCustomerId: text('dodo_customer_id'),
+  // the one active subscription; lifecycle events for any other id are stale
+  dodoSubscriptionId: text('dodo_subscription_id'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
@@ -99,6 +103,14 @@ export const waitlist = sqliteTable('waitlist', {
   email: text('email').primaryKey(),
   region: text('region').notNull(),
   createdAt: integer('created_at').notNull(),
+});
+
+// processed billing webhook ids: providers redeliver with the same id on
+// retry, and credit grants must not double-apply
+export const webhookEvents = sqliteTable('webhook_events', {
+  id: text('id').primaryKey(),
+  type: text('type').notNull(),
+  processedAt: integer('processed_at').notNull(),
 });
 
 export type UserRow = typeof users.$inferSelect;

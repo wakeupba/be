@@ -8,6 +8,9 @@ export type { UserRow };
 
 export interface UserSettingsPatch {
   phoneE164?: string;
+  /* set to null when the phone changes: a new number is unverified until it
+   * passes the DND test call again */
+  dndVerifiedAt?: number | null;
   triggerColorId?: string;
   leadMinutes?: LeadMinutes;
   timezone?: string;
@@ -23,6 +26,13 @@ export class UserRepo {
 
   async findByGoogleSub(googleSub: string): Promise<UserRow | null> {
     const row = await this.db.query.users.findFirst({ where: eq(users.googleSub, googleSub) });
+    return row ?? null;
+  }
+
+  /** billing events that carry no checkout metadata (portal-initiated
+   * cancellations) still resolve through the stored customer id */
+  async findByDodoCustomerId(customerId: string): Promise<UserRow | null> {
+    const row = await this.db.query.users.findFirst({ where: eq(users.dodoCustomerId, customerId) });
     return row ?? null;
   }
 
@@ -57,28 +67,46 @@ export class UserRepo {
     await this.db.update(users).set({ dndVerifiedAt: now, updatedAt: now }).where(eq(users.id, id));
   }
 
-  async setPlan(id: string, plan: Plan, dodoCustomerId: string | null): Promise<void> {
+  /**
+   * Applies a plan change from a billing event. dodoSubscriptionId is the
+   * subscription the plan now rides on: a string on activation, null when
+   * the subscription ended, undefined to leave it untouched.
+   */
+  async setPlan(
+    id: string,
+    plan: Plan,
+    dodoCustomerId: string | null,
+    dodoSubscriptionId?: string | null,
+  ): Promise<void> {
     await this.db
       .update(users)
       .set({
         plan,
         updatedAt: Date.now(),
         ...(dodoCustomerId !== null ? { dodoCustomerId } : {}),
+        ...(dodoSubscriptionId !== undefined ? { dodoSubscriptionId } : {}),
       })
       .where(eq(users.id, id));
   }
 
-  async addCallCredits(id: string, credits: number): Promise<void> {
+  async addCallCredits(id: string, credits: number, packs: number): Promise<void> {
     await this.db
       .update(users)
-      .set({ extraCallCredits: sql`${users.extraCallCredits} + ${credits}`, updatedAt: Date.now() })
+      .set({
+        extraCallCredits: sql`${users.extraCallCredits} + ${credits}`,
+        topupPacksThisPeriod: sql`${users.topupPacksThisPeriod} + ${packs}`,
+        updatedAt: Date.now(),
+      })
       .where(eq(users.id, id));
   }
 
   /**
    * Consumes one call from the monthly allowance, falling back to prepaid
    * credits. Returns false when the user has nothing left. The guarded
-   * UPDATE keeps two concurrent cron ticks from double-spending.
+   * UPDATE keeps two concurrent cron ticks from double-spending. Credits
+   * spend only while the paid plan is active (frozen on downgrade); the
+   * plan predicate lives in the UPDATE so a mid-flight downgrade cannot
+   * slip a spend through.
    */
   async consumeCall(user: UserRow, monthlyLimit: number): Promise<boolean> {
     const now = Date.now();
@@ -91,7 +119,7 @@ export class UserRepo {
     const fromCredits = await this.db
       .update(users)
       .set({ extraCallCredits: sql`${users.extraCallCredits} - 1`, updatedAt: now })
-      .where(and(eq(users.id, user.id), gt(users.extraCallCredits, 0)));
+      .where(and(eq(users.id, user.id), gt(users.extraCallCredits, 0), eq(users.plan, 'ride_or_die')));
     return fromCredits.meta.changes > 0;
   }
 
@@ -100,7 +128,7 @@ export class UserRepo {
     const now = Date.now();
     await this.db
       .update(users)
-      .set({ callsUsedThisPeriod: 0, periodStartedAt: now, updatedAt: now })
+      .set({ callsUsedThisPeriod: 0, topupPacksThisPeriod: 0, periodStartedAt: now, updatedAt: now })
       .where(eq(users.id, user.id));
   }
 

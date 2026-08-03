@@ -1,4 +1,6 @@
+import * as Sentry from '@sentry/cloudflare';
 import { decryptSecret, encryptSecret } from '../../lib/crypto';
+import { errorFields, logEvent } from '../../lib/log';
 import type { EventRepo } from '../../repos/events';
 import type { TokenRepo } from '../../repos/tokens';
 import type { UserRepo, UserRow } from '../../repos/users';
@@ -22,8 +24,10 @@ export class CalendarSyncService {
       try {
         await this.syncUser(user);
       } catch (error) {
-        // one user's broken token must not stall everyone else's calls
-        console.error(`sync failed for ${user.id}:`, error);
+        // one user's broken token must not stall everyone else's calls,
+        // but a user who stops syncing silently stops getting calls
+        logEvent('error', 'calendar.sync_failed', { userId: user.id, ...errorFields(error) });
+        Sentry.captureException(error);
       }
     }
   }

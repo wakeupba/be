@@ -74,6 +74,24 @@ export class EventRepo {
       });
   }
 
+  /**
+   * Cancels every active event for a user, e.g. when the calendar
+   * disconnects: without calendar access we can no longer know whether an
+   * event moved or was cancelled, so ringing would be guessing.
+   */
+  async cancelAllActiveForUser(userId: string): Promise<number> {
+    const result = await this.db
+      .update(trackedEvents)
+      .set({ state: 'cancelled', updatedAt: Date.now() })
+      .where(
+        and(
+          eq(trackedEvents.userId, userId),
+          inArray(trackedEvents.state, ['scheduled', 'snoozed', 'calling']),
+        ),
+      );
+    return result.meta.changes;
+  }
+
   async cancelByGoogleId(userId: string, calendarId: string, googleEventId: string): Promise<void> {
     await this.db
       .update(trackedEvents)

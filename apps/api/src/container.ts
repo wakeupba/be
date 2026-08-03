@@ -5,6 +5,13 @@ import { EventRepo } from './repos/events';
 import { TokenRepo } from './repos/tokens';
 import { UserRepo } from './repos/users';
 import { VoteRepo } from './repos/votes';
+import { WebhookEventRepo } from './repos/webhook-events';
+import {
+  type BillingProvider,
+  DodoBillingProvider,
+  FakeBillingProvider,
+  fakeBillingActive,
+} from './services/billing/dodo';
 import { GoogleClient } from './services/calendar/google-client';
 import { CalendarSyncService } from './services/calendar/sync';
 import { CallDispatchService } from './services/calls/dispatcher';
@@ -23,20 +30,43 @@ export function buildContainer(env: Env) {
   const events = new EventRepo(db);
   const calls = new CallRepo(db);
   const votes = new VoteRepo(db);
+  const webhookEvents = new WebhookEventRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-  const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN, env.API_ORIGIN);
+  // callback URLs handed to Twilio (and verified on the way back) must be
+  // publicly reachable; in dev that is the tunnel, never localhost
+  const telephonyOrigin = env.TELEPHONY_PUBLIC_ORIGIN || env.API_ORIGIN;
+  const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN, telephonyOrigin);
 
   const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY);
   const dispatcher = new CallDispatchService(users, events, calls, telephony, {
-    apiOrigin: env.API_ORIGIN,
+    apiOrigin: telephonyOrigin,
     fromNumber: env.TWILIO_FROM_NUMBER_US,
     urlSigningSecret: env.SESSION_SECRET,
   });
   const lifecycle = new CallLifecycleService(calls, events, users);
   const scripts = defaultScriptBuilder();
+  const billing: BillingProvider | null = env.DODO_API_KEY
+    ? new DodoBillingProvider(env.DODO_API_KEY, env.DODO_ENVIRONMENT ?? 'test_mode')
+    : fakeBillingActive(env)
+      ? new FakeBillingProvider(env.API_ORIGIN)
+      : null;
 
-  return { users, tokens, events, calls, votes, google, telephony, sync, dispatcher, lifecycle, scripts };
+  return {
+    users,
+    tokens,
+    events,
+    calls,
+    votes,
+    webhookEvents,
+    google,
+    telephony,
+    sync,
+    dispatcher,
+    lifecycle,
+    scripts,
+    billing,
+  };
 }
 
 export type Container = ReturnType<typeof buildContainer>;

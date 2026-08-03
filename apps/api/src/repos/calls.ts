@@ -63,17 +63,38 @@ export class CallRepo {
     return row?.n ?? 0;
   }
 
-  async listHistoryForUser(userId: string): Promise<Array<CallRow & { eventTitle: string }>> {
+  async listHistoryForUser(userId: string): Promise<
+    Array<
+      CallRow & {
+        eventTitle: string;
+        eventStartsAt: number | null;
+        attendeeCount: number | null;
+        colorId: string | null;
+        googleEventId: string | null;
+      }
+    >
+  > {
     const rows = await this.db
       .select({
         call: calls,
         eventTitle: sql<string>`COALESCE(${trackedEvents.title}, 'Verification call')`,
+        eventStartsAt: trackedEvents.startsAt,
+        attendeeCount: trackedEvents.attendeeCount,
+        colorId: trackedEvents.colorId,
+        googleEventId: trackedEvents.googleEventId,
       })
       .from(calls)
       .leftJoin(trackedEvents, eq(trackedEvents.id, calls.eventId))
       .where(eq(calls.userId, userId))
       .orderBy(desc(calls.createdAt))
       .limit(50);
-    return rows.map((row) => ({ ...row.call, eventTitle: row.eventTitle }));
+    return rows.map((row) => ({
+      ...row.call,
+      eventTitle: row.eventTitle,
+      eventStartsAt: row.eventStartsAt ?? null,
+      attendeeCount: row.attendeeCount ?? null,
+      colorId: row.colorId ?? null,
+      googleEventId: row.googleEventId ?? null,
+    }));
   }
 }

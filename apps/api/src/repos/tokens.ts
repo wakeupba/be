@@ -33,4 +33,9 @@ export class TokenRepo {
       .set({ calendarSyncToken: syncToken, updatedAt: Date.now() })
       .where(eq(oauthTokens.userId, userId));
   }
+
+  /** disconnecting the calendar removes every credential we hold */
+  async delete(userId: string): Promise<void> {
+    await this.db.delete(oauthTokens).where(eq(oauthTokens.userId, userId));
+  }
 }

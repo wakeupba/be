@@ -6,11 +6,11 @@
 </a>
 
 <p align="center">
-  <a href="https://wakeupba.be"><kbd>Website</kbd></a>
-  <a href="#how-it-works"><kbd>How it works</kbd></a>
-  <a href="#development"><kbd>Development</kbd></a>
-  <a href="#self-hosting"><kbd>Self-hosting</kbd></a>
-  <a href="#contributing"><kbd>Contributing</kbd></a>
+  <a href="https://wakeupba.be"><kbd>🌐 Website</kbd></a>
+  <a href="#how-it-works"><kbd>⚙️ How it works</kbd></a>
+  <a href="#development"><kbd>🧑‍💻 Development</kbd></a>
+  <a href="#self-hosting"><kbd>🏠 Self-hosting</kbd></a>
+  <a href="#contributing"><kbd>🤝 Contributing</kbd></a>
 </p>
 
 <p align="center">

@@ -5,7 +5,7 @@ import { EventRepo, LATE_GRACE_MS } from '../src/repos/events';
 import { TokenRepo } from '../src/repos/tokens';
 import { UserRepo } from '../src/repos/users';
 import { WebhookEventRepo } from '../src/repos/webhook-events';
-import type { GoogleClient } from '../src/services/calendar/google-client';
+import { GoogleAuthRevokedError, type GoogleClient } from '../src/services/calendar/google-client';
 import { CalendarSyncService } from '../src/services/calendar/sync';
 import { CallDispatchService } from '../src/services/calls/dispatcher';
 import { CallLifecycleService } from '../src/services/calls/lifecycle';
@@ -137,6 +137,44 @@ describe('transactional emails', () => {
     expect(email.missed[0]?.eventTitle).toBe('One on one');
   });
 
+  it('a swept event we actually dialed says we called, not that placement failed', async () => {
+    const { db, email, dispatcher } = build();
+    const user = await seedUser(db);
+    const past = Date.now() - LATE_GRACE_MS - 60_000;
+    // a snooze chain that ran past the grace window: one real attempt exists
+    const event = await seedEvent(db, user.id, {
+      state: 'snoozed',
+      startsAt: past,
+      callAt: past - 900_000,
+      title: 'Snoozed away',
+    });
+    await seedCall(db, user.id, { eventId: event.id, attempt: 1, outcome: 'answered_snooze' });
+
+    await dispatcher.dispatchDue(Date.now());
+
+    expect(email.missed).toHaveLength(1);
+    expect(email.missed[0]?.reason).toBe('no_answer');
+  });
+
+  it('a throwing email subsystem never blocks call dispatch', async () => {
+    const { db, email, dispatcher } = build();
+    for (const key of ['missedCall', 'outOfCalls', 'numberUnverified', 'calendarBroken'] as const) {
+      email[key] = async () => {
+        throw new Error('email infra is down');
+      };
+    }
+    const user = await seedUser(db);
+    const past = Date.now() - LATE_GRACE_MS - 60_000;
+    // one event to sweep (email throws) and one due call that must still ring
+    await seedEvent(db, user.id, { startsAt: past, callAt: past - 900_000 });
+    await seedEvent(db, user.id, { googleEventId: 'gev_due', callAt: Date.now() - 1000 });
+
+    await dispatcher.dispatchDue(Date.now());
+
+    const placed = await new CallRepo(db).listHistoryForUser(user.id);
+    expect(placed).toHaveLength(1);
+  });
+
   it('a revoked google grant emails once, not once per sync tick', async () => {
     const db = testDb();
     const users = new UserRepo(db);
@@ -147,7 +185,7 @@ describe('transactional emails', () => {
     await tokens.upsertRefreshToken(user.id, await encryptSecret('refresh-token', ENC_KEY));
     const revokedGoogle = {
       refreshAccessToken: async () => {
-        throw new Error('google token request failed: 400 {"error":"invalid_grant"}');
+        throw new GoogleAuthRevokedError('google grant revoked: 400 {"error":"invalid_grant"}');
       },
     } as unknown as GoogleClient;
     const sync = new CalendarSyncService(revokedGoogle, users, tokens, new EventRepo(db), ENC_KEY, notifier);

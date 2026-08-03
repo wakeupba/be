@@ -38,13 +38,23 @@ export class CallDispatchService {
     if (swept.length > 0) {
       logEvent('warn', 'call.events_swept_missed', { count: swept.length });
       for (const row of swept) {
-        const user = await this.users.findById(row.userId);
-        if (!user) continue;
-        // the honest reason: an unverified number means we never dialed
-        if (!user.phoneE164 || !user.dndVerifiedAt) {
-          await this.notifier?.numberUnverified(user);
-        } else {
-          await this.notifier?.missedCall(user, row, 'failed');
+        if (!this.notifier) break;
+        try {
+          const user = await this.users.findById(row.userId);
+          if (!user) continue;
+          // the honest reason: an unverified number means we never dialed
+          if (!user.phoneE164 || !user.dndVerifiedAt) {
+            await this.notifier.numberUnverified(user);
+          } else {
+            // swept snooze chains and mid-ring events land here too: if we
+            // ever dialed this event, say we called instead of claiming
+            // the call could not be placed
+            const attempts = await this.calls.latestAttemptForEvent(row.id);
+            await this.notifier.missedCall(user, row, attempts > 0 ? 'no_answer' : 'failed');
+          }
+        } catch (error) {
+          // one row's db blip must not lose the tick or the other emails
+          logEvent('error', 'email.sweep_notify_failed', { eventId: row.id, ...errorFields(error) });
         }
       }
     }

@@ -45,6 +45,10 @@ export interface EventsDelta {
 
 export class SyncTokenExpiredError extends Error {}
 
+/** invalid_grant from the token endpoint: the user (or google) revoked us,
+ * and only a re-consent can fix it */
+export class GoogleAuthRevokedError extends Error {}
+
 export class GoogleClient {
   constructor(
     private readonly clientId: string,
@@ -169,6 +173,9 @@ export class GoogleClient {
     });
     if (!response.ok) {
       const body = await response.text();
+      if (body.includes('invalid_grant')) {
+        throw new GoogleAuthRevokedError(`google grant revoked: ${response.status} ${body}`);
+      }
       throw new Error(`google token request failed: ${response.status} ${body}`);
     }
     const data = (await response.json()) as {

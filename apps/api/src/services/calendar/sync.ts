@@ -5,7 +5,7 @@ import type { EventRepo } from '../../repos/events';
 import type { TokenRepo } from '../../repos/tokens';
 import type { UserRepo, UserRow } from '../../repos/users';
 import type { EmailNotifier } from '../email/notifier';
-import type { GoogleClient, GoogleEventItem } from './google-client';
+import { GoogleAuthRevokedError, type GoogleClient, type GoogleEventItem } from './google-client';
 
 const PRIMARY_CALENDAR = 'primary';
 const ACCESS_TOKEN_SLACK_MS = 60_000;
@@ -30,9 +30,12 @@ export class CalendarSyncService {
         // but a user who stops syncing silently stops getting calls
         logEvent('error', 'calendar.sync_failed', { userId: user.id, ...errorFields(error) });
         Sentry.captureException(error);
-        // invalid_grant is definitive revocation, not a blip: the user
-        // revoked us (or google expired the grant) and only they can fix it
-        if (String(error).includes('invalid_grant')) {
+        // definitive revocation, not a blip: the user revoked us (or
+        // google expired the grant) and only they can fix it. Deliberate
+        // conservative choice: the token row stays, so already-flagged
+        // events keep ringing at their last known times; the email copy
+        // matches that reality
+        if (error instanceof GoogleAuthRevokedError) {
           await this.notifier?.calendarBroken(user);
         }
       }

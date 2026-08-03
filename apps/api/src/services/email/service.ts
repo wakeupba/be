@@ -39,7 +39,7 @@ export interface EmailService {
 const FROM = 'Wake Up Babe <info@wakeupba.be>';
 
 const REASON_LINES: Record<MissedReason, string> = {
-  no_answer: 'we called twice. no answer.',
+  no_answer: 'we called. no answer.',
   failed: 'we tried to call, the call could not be placed.',
   out_of_calls: 'you were out of calls this month, so the phone never rang.',
 };
@@ -143,10 +143,12 @@ export class ResendEmailService implements EmailService {
   async calendarBroken(to: string): Promise<void> {
     await this.send(
       to,
-      'your calendar disconnected, calls are paused',
+      'we lost sight of your calendar',
       [
-        'babe. google stopped letting us read your calendar, so we cannot',
-        'see your meetings and no calls will go out until it is reconnected.',
+        'babe. google stopped letting us read your calendar. meetings we',
+        'already flagged will still ring at their last known times, but new',
+        'ones, moves, and cancellations are invisible to us until you',
+        'reconnect.',
         '',
         `reconnect: ${this.appOrigin}/call-setup/`,
         '',

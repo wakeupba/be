@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArrowUpRight,
   CalendarBlank,
   ClockCounterClockwise,
   Flag,
@@ -14,6 +15,7 @@ import { Kpi } from '@/components/ui/kpi';
 import { Panel, SectionHeader } from '@/components/ui/panel';
 import { api } from '@/lib/api';
 import { EVENT_WORDS, OUTCOME_WORDS, timeShort } from '@/lib/call-meta';
+import { gcalColor } from '@/lib/gcal-colors';
 import { cn } from '@/lib/utils';
 
 const RECENT_CALLS = 5;
@@ -34,6 +36,10 @@ export function Overview({ me }: { me: MeDto }) {
   }, []);
 
   const nextRing = events?.find((event) => event.state === 'scheduled' || event.state === 'snoozed');
+  /* the activation nudge is for people who have never had a real call; test
+   * calls from onboarding don't count */
+  const hasRealCalls = calls?.some((call) => !call.isTest) ?? false;
+  const triggerColor = gcalColor(me.triggerColorId);
 
   return (
     <div className="rise-in mx-auto flex w-full max-w-4xl flex-col gap-6 py-2">
@@ -66,14 +72,38 @@ export function Overview({ me }: { me: MeDto }) {
       <section>
         <SectionHeader title="Upcoming calls" icon={CalendarBlank} />
         <Panel>
-          {events === null ? (
+          {events === null || (events.length === 0 && calls === null) ? (
             <div className="flex min-h-24 items-center justify-center" />
           ) : events.length === 0 ? (
-            <div className="flex min-h-24 items-center justify-center px-4">
-              <p className="text-xs text-muted-foreground/70">
-                No flagged meetings. Color one red in Google Calendar and it shows up within 5 minutes.
-              </p>
-            </div>
+            hasRealCalls ? (
+              <div className="flex min-h-24 items-center justify-center px-4">
+                <p className="text-xs text-muted-foreground/70">No flagged meetings right now.</p>
+              </div>
+            ) : (
+              <div className="flex min-h-24 flex-col items-center justify-center gap-2 px-4 py-5 text-center">
+                <p className="max-w-sm text-[13px] text-muted-foreground">
+                  Color a meeting{' '}
+                  {triggerColor && (
+                    <span
+                      className="inline-block size-2.5 translate-y-px rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]"
+                      style={{ backgroundColor: triggerColor.hex }}
+                      aria-hidden
+                    />
+                  )}{' '}
+                  {triggerColor ? triggerColor.name : 'your trigger color'} in Google Calendar and it gets
+                  picked up within 5 minutes.
+                </p>
+                <a
+                  href="https://calendar.google.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 transition-colors duration-150 hover:text-foreground"
+                >
+                  Open Google Calendar
+                  <ArrowUpRight size={12} aria-hidden />
+                </a>
+              </div>
+            )
           ) : (
             <ul>
               {events.map((event) => {

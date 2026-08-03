@@ -14,13 +14,14 @@ import { cn } from '@/lib/utils';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
 
-type StepId = 'phone' | 'contact' | 'verify';
+type StepId = 'calendar' | 'phone' | 'contact' | 'verify';
 
 function stepStates(me: MeDto, contactSaved: boolean): Record<StepId, 'done' | 'active' | 'todo'> {
-  if (!me.phone) return { phone: 'active', contact: 'todo', verify: 'todo' };
-  if (!contactSaved) return { phone: 'done', contact: 'active', verify: 'todo' };
-  if (!me.dndVerified) return { phone: 'done', contact: 'done', verify: 'active' };
-  return { phone: 'done', contact: 'done', verify: 'done' };
+  if (!me.calendarConnected) return { calendar: 'active', phone: 'todo', contact: 'todo', verify: 'todo' };
+  if (!me.phone) return { calendar: 'done', phone: 'active', contact: 'todo', verify: 'todo' };
+  if (!contactSaved) return { calendar: 'done', phone: 'done', contact: 'active', verify: 'todo' };
+  if (!me.dndVerified) return { calendar: 'done', phone: 'done', contact: 'done', verify: 'active' };
+  return { calendar: 'done', phone: 'done', contact: 'done', verify: 'done' };
 }
 
 function StepMarker({ state, number }: { state: 'done' | 'active' | 'todo'; number: string }) {
@@ -46,6 +47,22 @@ function StepMarker({ state, number }: { state: 'done' | 'active' | 'todo'; numb
         number
       )}
     </span>
+  );
+}
+
+function CalendarStep() {
+  return (
+    <div className="max-w-md">
+      <p className="text-[13px] leading-relaxed text-muted-foreground">
+        We can only call you about meetings we can see, so the calendar box on Google's screen has to stay
+        checked this time.
+      </p>
+      <div className="mt-4">
+        <ButtonLink href={api.loginUrl()} size="sm">
+          Connect Google Calendar
+        </ButtonLink>
+      </div>
+    </div>
   );
 }
 
@@ -221,20 +238,26 @@ export function Onboarding({ me, refresh }: { me: MeDto; refresh: () => Promise<
 
   const rows: Array<{ id: StepId; number: string; title: string; body: React.ReactNode }> = [
     {
-      id: 'phone',
+      id: 'calendar',
       number: '1',
+      title: 'Connect your calendar',
+      body: <CalendarStep />,
+    },
+    {
+      id: 'phone',
+      number: '2',
       title: 'Your phone number',
       body: <PhoneStep onSaved={() => void refresh()} />,
     },
     {
       id: 'contact',
-      number: '2',
+      number: '3',
       title: 'Save us as a contact',
       body: <ContactStep brandNumber={me.brandNumber} onDone={() => setContactSaved(true)} />,
     },
     {
       id: 'verify',
-      number: '3',
+      number: '4',
       title: 'Prove it rings through DND',
       body: <VerifyStep refresh={refresh} />,
     },
@@ -244,7 +267,7 @@ export function Onboarding({ me, refresh }: { me: MeDto; refresh: () => Promise<
     <div className="rise-in mx-auto w-full max-w-2xl py-6">
       <p className="label-mono text-muted-foreground/70">Setup</p>
       <h1 className="mt-2 text-xl font-semibold tracking-tight">
-        Three steps and your calendar can call you.
+        A few steps and your calendar can call you.
       </h1>
       <div className="mt-6 flex flex-col gap-3">
         {rows.map((row) => (

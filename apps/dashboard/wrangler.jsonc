@@ -3,6 +3,7 @@
   "name": "wakeupbabe-dashboard",
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-01",
+  "routes": [{ "pattern": "app.wakeupba.be", "custom_domain": true }],
   "assets": {
     "directory": "./out",
     "binding": "ASSETS",

@@ -1,0 +1,14 @@
+{
+  "$schema": "../dashboard/node_modules/wrangler/config-schema.json",
+  "name": "wakeupbabe-landing",
+  "compatibility_date": "2026-07-01",
+  // pure asset worker: no code, every request serves the static export
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "wakeupba.be", "custom_domain": true },
+    { "pattern": "www.wakeupba.be", "custom_domain": true }
+  ]
+}

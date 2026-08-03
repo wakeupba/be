@@ -3,6 +3,7 @@
   "name": "wakeupbabe-api",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
+  "routes": [{ "pattern": "api.wakeupba.be", "custom_domain": true }],
   // AsyncLocalStorage for Sentry's request isolation
   "compatibility_flags": ["nodejs_als"],
   "observability": { "enabled": true },
@@ -14,14 +15,19 @@
     {
       "binding": "DB",
       "database_name": "wakeupbabe",
-      "database_id": "REPLACE_AFTER_wrangler_d1_create"
+      "database_id": "044932be-7182-4c24-ac7c-bbbd8b522abb"
     }
   ],
   "vars": {
     "APP_ORIGIN": "https://app.wakeupba.be",
     "API_ORIGIN": "https://api.wakeupba.be",
     "COOKIE_DOMAIN": "wakeupba.be",
-    "LANDING_ORIGIN": "https://wakeupba.be"
+    "LANDING_ORIGIN": "https://wakeupba.be",
+    // Dodo test mode until launch; product ids are public (they appear in
+    // checkout URLs), the API key and webhook secret are wrangler secrets
+    "DODO_ENVIRONMENT": "test_mode",
+    "DODO_PRODUCT_RIDE_OR_DIE": "pdt_0Nkafp0vKvIKcBRjayIc1",
+    "DODO_PRODUCT_TOPUP": "pdt_0Nkafp38o73rDNOm13MFd"
   }
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,

@@ -30,4 +30,7 @@ export interface Env {
 
   /* error tracking stays dark until set */
   SENTRY_DSN?: string;
+
+  /* transactional email stays dark until set */
+  RESEND_API_KEY?: string;
 }

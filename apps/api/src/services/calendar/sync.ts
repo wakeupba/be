@@ -4,6 +4,7 @@ import { errorFields, logEvent } from '../../lib/log';
 import type { EventRepo } from '../../repos/events';
 import type { TokenRepo } from '../../repos/tokens';
 import type { UserRepo, UserRow } from '../../repos/users';
+import type { EmailNotifier } from '../email/notifier';
 import type { GoogleClient, GoogleEventItem } from './google-client';
 
 const PRIMARY_CALENDAR = 'primary';
@@ -16,6 +17,7 @@ export class CalendarSyncService {
     private readonly tokens: TokenRepo,
     private readonly events: EventRepo,
     private readonly encKey: string,
+    private readonly notifier: EmailNotifier | null = null,
   ) {}
 
   async syncAllUsers(): Promise<void> {
@@ -28,6 +30,11 @@ export class CalendarSyncService {
         // but a user who stops syncing silently stops getting calls
         logEvent('error', 'calendar.sync_failed', { userId: user.id, ...errorFields(error) });
         Sentry.captureException(error);
+        // invalid_grant is definitive revocation, not a blip: the user
+        // revoked us (or google expired the grant) and only they can fix it
+        if (String(error).includes('invalid_grant')) {
+          await this.notifier?.calendarBroken(user);
+        }
       }
     }
   }

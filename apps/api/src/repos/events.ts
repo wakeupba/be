@@ -119,9 +119,12 @@ export class EventRepo {
   }
 
   /** anything still active this long past its start was missed; say so
-   * instead of letting it rot in scheduled */
-  async sweepMissed(nowMs: number): Promise<number> {
-    const result = await this.db
+   * instead of letting it rot in scheduled. Returns the swept rows so the
+   * caller can tell their owners. */
+  async sweepMissed(
+    nowMs: number,
+  ): Promise<Array<{ id: string; userId: string; title: string; startsAt: number }>> {
+    return this.db
       .update(trackedEvents)
       .set({ state: 'missed', updatedAt: nowMs })
       .where(
@@ -129,8 +132,13 @@ export class EventRepo {
           inArray(trackedEvents.state, ['scheduled', 'snoozed', 'calling']),
           lte(sql`${trackedEvents.startsAt} + ${LATE_GRACE_MS}`, nowMs),
         ),
-      );
-    return result.meta.changes;
+      )
+      .returning({
+        id: trackedEvents.id,
+        userId: trackedEvents.userId,
+        title: trackedEvents.title,
+        startsAt: trackedEvents.startsAt,
+      });
   }
 
   /**

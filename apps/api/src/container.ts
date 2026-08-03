@@ -17,6 +17,8 @@ import { CalendarSyncService } from './services/calendar/sync';
 import { CallDispatchService } from './services/calls/dispatcher';
 import { CallLifecycleService } from './services/calls/lifecycle';
 import { defaultScriptBuilder } from './services/calls/script';
+import { EmailNotifier } from './services/email/notifier';
+import { ResendEmailService } from './services/email/service';
 import { TwilioProvider } from './services/telephony/twilio';
 
 /**
@@ -38,13 +40,26 @@ export function buildContainer(env: Env) {
   const telephonyOrigin = env.TELEPHONY_PUBLIC_ORIGIN || env.API_ORIGIN;
   const telephony = new TwilioProvider(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN, telephonyOrigin);
 
-  const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY);
-  const dispatcher = new CallDispatchService(users, events, calls, telephony, {
-    apiOrigin: telephonyOrigin,
-    fromNumber: env.TWILIO_FROM_NUMBER_US,
-    urlSigningSecret: env.SESSION_SECRET,
-  });
-  const lifecycle = new CallLifecycleService(calls, events, users);
+  // transactional email stays dark until the key exists; every caller
+  // treats the notifier as optional
+  const notifier = env.RESEND_API_KEY
+    ? new EmailNotifier(new ResendEmailService(env.RESEND_API_KEY, env.APP_ORIGIN), webhookEvents)
+    : null;
+
+  const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY, notifier);
+  const dispatcher = new CallDispatchService(
+    users,
+    events,
+    calls,
+    telephony,
+    {
+      apiOrigin: telephonyOrigin,
+      fromNumber: env.TWILIO_FROM_NUMBER_US,
+      urlSigningSecret: env.SESSION_SECRET,
+    },
+    notifier,
+  );
+  const lifecycle = new CallLifecycleService(calls, events, users, notifier);
   const scripts = defaultScriptBuilder();
   const billing: BillingProvider | null = env.DODO_API_KEY
     ? new DodoBillingProvider(env.DODO_API_KEY, env.DODO_ENVIRONMENT ?? 'test_mode')

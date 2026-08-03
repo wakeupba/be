@@ -220,6 +220,15 @@ export const meRoutes = new Hono<MeContext>()
     return c.json(dtos);
   })
 
+  /** one call's outcome, for the verification step's status poll: fetching
+   * the whole history every tick would be waste */
+  .get('/me/calls/:id', async (c) => {
+    const { calls } = c.get('container');
+    const call = await calls.findById(c.req.param('id'));
+    if (!call || call.userId !== c.get('userId')) return c.json({ error: 'not found' }, 404);
+    return c.json({ outcome: call.outcome });
+  })
+
   .get('/me/calls', async (c) => {
     const { calls, users } = c.get('container');
     const [rows, user] = await Promise.all([

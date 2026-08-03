@@ -1,4 +1,10 @@
-import type { CallHistoryDto, FeatureCardDto, MeDto, UpcomingEventDto } from '@wakeupbabe/shared';
+import type {
+  CallHistoryDto,
+  CallOutcome,
+  FeatureCardDto,
+  MeDto,
+  UpcomingEventDto,
+} from '@wakeupbabe/shared';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
 
@@ -25,6 +31,7 @@ export const api = {
     request<{ ok: true }>('/me/settings', { method: 'PATCH', body: JSON.stringify(patch) }),
   events: () => request<UpcomingEventDto[]>('/me/events'),
   calls: () => request<CallHistoryDto[]>('/me/calls'),
+  callOutcome: (id: string) => request<{ outcome: CallOutcome }>(`/me/calls/${id}`),
   verifyCall: () => request<{ ok: true; callId: string }>('/me/verify-call', { method: 'POST' }),
   disconnectCalendar: () =>
     request<{ ok: true; cancelledCalls?: number }>('/me/calendar/disconnect', { method: 'POST' }),

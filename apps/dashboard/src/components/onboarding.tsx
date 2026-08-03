@@ -193,16 +193,16 @@ function VerifyStep({ refresh }: { refresh: () => Promise<MeDto | null> }) {
       try {
         const me = await refresh().catch(() => null);
         if (!active) return;
-        // success: the parent sees dndVerified and swaps this step to done
-        if (me?.dndVerified) return;
+        // success: the parent sees dndVerified and swaps this step to done;
+        // stop polling now instead of waiting for the unmount
+        if (me?.dndVerified) {
+          active = false;
+          clearInterval(interval);
+          return;
+        }
 
         const callId = callIdRef.current;
-        const call = callId
-          ? await api
-              .calls()
-              .then((rows) => rows.find((row) => row.id === callId) ?? null)
-              .catch(() => null)
-          : null;
+        const call = callId ? await api.callOutcome(callId).catch(() => null) : null;
         if (!active) return;
 
         if (call && MISSED_OUTCOMES.has(call.outcome)) {

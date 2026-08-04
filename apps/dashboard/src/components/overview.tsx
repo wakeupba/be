@@ -33,7 +33,8 @@ let nextRefreshAt = 0;
 
 /* 'stale' covers both a sync google refused and a refresh we never got to run
  * (no calendar, rate limited, network): in all of them the list on screen is
- * the old one, and saying "up to date" would be a lie */
+ * the old one, and saying "up to date" would be a lie. The label deliberately
+ * does not name a cause — only one of the four ever reached Google. */
 type Outcome = 'checked' | 'stale';
 
 export function Overview({ me }: { me: MeDto }) {
@@ -153,7 +154,7 @@ export function Overview({ me }: { me: MeDto }) {
                 {syncing
                   ? 'Checking…'
                   : outcome === 'stale'
-                    ? "Couldn't reach Google"
+                    ? "Couldn't refresh"
                     : outcome === 'checked'
                       ? 'Up to date'
                       : 'Refresh'}

@@ -17,7 +17,12 @@ export const SITE_NAME = 'Wake Up Babe';
 
 export const GITHUB_URL = 'https://github.com/wakeupba/be';
 
-export const SUPPORT_EMAIL = 'hey@wakeupba.be';
+export const SUPPORT_EMAIL = 'support@wakeupba.be';
+
+/* Security reports do not go to the support inbox. .github/SECURITY.md routes
+ * them through GitHub's private advisories, with a 72 hour acknowledgement, and
+ * the site must not offer a second, slower door. */
+export const SECURITY_ADVISORY_URL = 'https://github.com/wakeupba/be/security/advisories/new';
 
 /* Used for twitter:site and twitter:creator. Personal handle until the project
  * has its own, which is the honest attribution either way. */
@@ -73,6 +78,7 @@ export const ROUTES: RouteMeta[] = [
     priority: 0.7,
     changeFrequency: 'monthly',
   },
-  { path: '/privacy/', lastModified: '2026-08-04', priority: 0.3, changeFrequency: 'yearly' },
-  { path: '/terms/', lastModified: '2026-08-04', priority: 0.3, changeFrequency: 'yearly' },
+  { path: '/contact/', lastModified: '2026-08-05', priority: 0.5, changeFrequency: 'yearly' },
+  { path: '/privacy/', lastModified: '2026-08-05', priority: 0.3, changeFrequency: 'yearly' },
+  { path: '/terms/', lastModified: '2026-08-05', priority: 0.3, changeFrequency: 'yearly' },
 ];

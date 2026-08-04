@@ -1,5 +1,5 @@
 import { FAQS, PLANS } from '@/lib/content';
-import { absoluteUrl, GITHUB_URL, SITE_NAME, SITE_TAGLINE, SITE_URL } from '@/lib/site';
+import { absoluteUrl, GITHUB_URL, SITE_NAME, SITE_TAGLINE, SITE_URL, SUPPORT_EMAIL } from '@/lib/site';
 
 /* Stable @ids so the graph nodes can reference each other instead of repeating
  * themselves. Google follows these; humans never see them. */
@@ -137,6 +137,41 @@ export function BreadcrumbJsonLd({ name, path }: { name: string; path: string })
           { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
           { '@type': 'ListItem', position: 2, name, item: absoluteUrl(path) },
         ],
+      }}
+    />
+  );
+}
+
+/* The contact routes, attached to the Organization node so the email is
+ * associated with the publisher rather than floating loose on a page. Only the
+ * support inbox is listed: security disclosures go through GitHub advisories, and
+ * advertising a second channel for them would undercut SECURITY.md. */
+export function ContactJsonLd({ path }: { path: string }) {
+  return (
+    <JsonLd
+      data={{
+        '@context': 'https://schema.org',
+        '@type': 'ContactPage',
+        '@id': `${absoluteUrl(path)}#contact`,
+        url: absoluteUrl(path),
+        name: `Contact ${SITE_NAME}`,
+        isPartOf: { '@id': SITE_ID },
+        inLanguage: 'en',
+        about: {
+          '@id': ORG_ID,
+          '@type': 'Organization',
+          name: SITE_NAME,
+          url: SITE_URL,
+          email: SUPPORT_EMAIL,
+          contactPoint: [
+            {
+              '@type': 'ContactPoint',
+              contactType: 'customer support',
+              email: SUPPORT_EMAIL,
+              availableLanguage: 'English',
+            },
+          ],
+        },
       }}
     />
   );

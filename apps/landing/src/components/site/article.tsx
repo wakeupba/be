@@ -79,8 +79,12 @@ export function Prose({ children, className }: { children: ReactNode; className?
 }
 
 /* A definition row, for the "what we store" tables in the privacy policy. The
- * label is mono because it names a database column, not a concept. */
-export function DataRow({ label, children }: { label: string; children: ReactNode }) {
+ * label is mono because it names a database column, not a concept.
+ *
+ * ReactNode rather than string so the contact page can make its address a real
+ * mailto. The label is outside .prose, so a link passed in has to bring its own
+ * underline; the classes below match what .prose gives anchors. */
+export function DataRow({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <div className="grid gap-1 border-b border-line-soft py-3 last:border-b-0 sm:grid-cols-[13rem_1fr] sm:gap-6">
       <p className="font-mono text-[12.5px] leading-relaxed text-foreground">{label}</p>

@@ -3,7 +3,7 @@ import { ArticleShell, DataRow, Prose, Section } from '@/components/site/article
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
 import { OG_CARDS, pageMetadata } from '@/lib/seo';
-import { GITHUB_URL, SUPPORT_EMAIL } from '@/lib/site';
+import { GITHUB_URL, SECURITY_ADVISORY_URL, SUPPORT_EMAIL } from '@/lib/site';
 
 const TITLE = 'Privacy Policy';
 const DESCRIPTION =
@@ -224,8 +224,11 @@ export default function PrivacyPage() {
               <a href={GITHUB_URL} rel="noreferrer" target="_blank">
                 github.com/wakeupba/be
               </a>
-              , so none of the above has to be taken on faith. If you find a security issue, email{' '}
-              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> rather than opening a public issue.
+              , so none of the above has to be taken on faith. If you find a security issue, report it through{' '}
+              <a href={SECURITY_ADVISORY_URL} rel="noreferrer" target="_blank">
+                GitHub&rsquo;s private advisories
+              </a>{' '}
+              rather than a public issue or the support inbox. You get an acknowledgement within 72 hours.
             </Prose>
           </Section>
 

@@ -23,6 +23,7 @@ export const OG_CARDS = {
   dnd: '/og/dnd.png',
   alternatives: '/og/alternatives.png',
   legal: '/og/legal.png',
+  contact: '/og/contact.png',
 } as const;
 
 type OgCard = (typeof OG_CARDS)[keyof typeof OG_CARDS];

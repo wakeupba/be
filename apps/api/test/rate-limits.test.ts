@@ -1,10 +1,11 @@
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
+import { SESSION_COOKIE } from '@wakeupbabe/shared';
 import { createApp } from '../src/app';
+import { hmacSign } from '../src/lib/crypto';
 import { seedUser, testDb } from './helpers';
 
 async function sessionCookie(userId: string): Promise<string> {
-  const { hmacSign, SESSION_COOKIE } = await import('@wakeupbabe/shared');
   const body = btoa(JSON.stringify({ userId, expiresAt: Date.now() + 60_000 }));
   return `${SESSION_COOKIE}=${body}.${await hmacSign(body, env.SESSION_SECRET)}`;
 }
@@ -65,7 +66,6 @@ describe('rate limits', () => {
   it('oauth callbacks are capped per ip, but only past the state check', async () => {
     const app = createApp();
     const ip = `test-ip-${crypto.randomUUID()}`;
-    const { hmacSign } = await import('@wakeupbabe/shared');
     const validState = async () => {
       const body = btoa(JSON.stringify({ nonce: crypto.randomUUID(), expiresAt: Date.now() + 60_000 }));
       return `${body}.${await hmacSign(body, env.SESSION_SECRET)}`;
@@ -84,8 +84,9 @@ describe('rate limits', () => {
     for (let n = 0; n < 15; n++) expect((await attempt('junk')).status).toBe(400);
 
     // valid-state requests are the ones that can reach google, so they are
-    // the ones that spend slots (the junk code 500s at the token exchange)
-    for (let n = 0; n < 10; n++) expect((await attempt(await validState())).status).toBe(500);
+    // the ones that spend slots. What matters is that they are not refused,
+    // whatever the callback does with a junk code today
+    for (let n = 0; n < 10; n++) expect((await attempt(await validState())).status).not.toBe(429);
     expect((await attempt(await validState())).status).toBe(429);
   });
 

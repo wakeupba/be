@@ -70,10 +70,10 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // a number we cannot ring yet is not a mistake the user made, so it reads as
+  // a country we cannot ring yet is not a mistake the user made, so it reads as
   // a status rather than an error, and the field stays open in case they meant
   // a different number
-  const [waitlisted, setWaitlisted] = useState<string | null>(null);
+  const [unreachableCountry, setUnreachableCountry] = useState<string | null>(null);
   const parsed = parsePhone(phone);
 
   return (
@@ -87,13 +87,13 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
           event.preventDefault();
           setSaving(true);
           setError(null);
-          setWaitlisted(null);
+          setUnreachableCountry(null);
           try {
             await api.updateSettings({ phone: parsed.e164 });
             onSaved();
           } catch (err) {
             if (err instanceof ApiError && err.code === 'region_unsupported') {
-              setWaitlisted(parsed.country ?? 'your country');
+              setUnreachableCountry(parsed.country ?? 'your country');
             } else {
               setError(err instanceof Error ? err.message : 'could not save');
             }
@@ -117,10 +117,10 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
       </form>
       {error ? (
         <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>
-      ) : waitlisted ? (
+      ) : unreachableCountry ? (
         <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-          We cannot place calls to {waitlisted} yet. We have noted the country, and it counts towards which
-          one we open next. If you have a number somewhere else, try that one.
+          We cannot place calls to {unreachableCountry} yet. We have noted the country, and it counts towards
+          which one we open next. If you have a number somewhere else, try that one.
         </p>
       ) : parsed.country ? (
         <p className="mt-2 font-mono text-[11px] text-muted-foreground/70">

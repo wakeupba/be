@@ -210,10 +210,10 @@ export default function PrivacyPage() {
 
           <Section n="09" title="International transfers">
             <Prose>
-              We are US-first, and calls currently launch in the United States. Our subprocessors operate
-              globally, which means your data may be processed outside your country, including in the United
-              States. Where required, transfers rely on the relevant provider&rsquo;s standard contractual
-              clauses.
+              We operate from the United States: the number we call you from is a US number, and our
+              infrastructure and subprocessors are US-based or global. Calls themselves reach most countries.
+              Either way your data may be processed outside your own country, including in the United States.
+              Where required, transfers rely on the relevant provider&rsquo;s standard contractual clauses.
             </Prose>
           </Section>
 

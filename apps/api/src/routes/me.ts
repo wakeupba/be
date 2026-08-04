@@ -188,7 +188,7 @@ export const meRoutes = new Hono<MeContext>()
   })
 
   .patch('/me/settings', async (c) => {
-    const { users } = c.get('container');
+    const { users, tokens, events } = c.get('container');
     // generous for humans, a wall for scripts hammering DB writes
     if (
       !(await claimRateSlot(
@@ -203,6 +203,9 @@ export const meRoutes = new Hono<MeContext>()
     const body = await c.req.json<Record<string, unknown>>().catch(() => null);
     if (!body) return c.json({ error: 'invalid json' }, 400);
 
+    const current = await users.findById(c.get('userId'));
+    if (!current) return c.json({ error: 'not found' }, 404);
+
     const patch: Parameters<typeof users.updateSettings>[1] = {};
 
     if (body.phone !== undefined) {
@@ -215,8 +218,7 @@ export const meRoutes = new Hono<MeContext>()
       patch.phoneE164 = parsed.number;
       // a changed number loses its DND verification: we only ever call
       // numbers that have proven they ring through, so the test call re-runs
-      const current = await users.findById(c.get('userId'));
-      if (current && current.phoneE164 !== parsed.number) patch.dndVerifiedAt = null;
+      if (current.phoneE164 !== parsed.number) patch.dndVerifiedAt = null;
     }
     if (body.triggerColorId !== undefined) {
       if (typeof body.triggerColorId !== 'string' || !GOOGLE_COLOR_IDS.has(body.triggerColorId)) {
@@ -238,6 +240,21 @@ export const meRoutes = new Hono<MeContext>()
     }
 
     await users.updateSettings(c.get('userId'), patch);
+
+    /*
+     * Both of these change what we already decided about meetings we already
+     * track, and neither is something Google will tell us about: the delta
+     * sync only returns events *it* considers changed, so without this a
+     * setting would only take effect on meetings edited afterwards.
+     */
+    if (patch.leadMinutes !== undefined && patch.leadMinutes !== current.leadMinutes) {
+      await events.recomputeCallTimes(current.id, patch.leadMinutes);
+    }
+    if (patch.triggerColorId !== undefined && patch.triggerColorId !== current.triggerColorId) {
+      // a new trigger color re-decides every meeting, including ones we
+      // ignored and therefore never stored: only a full window settles it
+      await tokens.forceFullResync(current.id);
+    }
     return c.json({ ok: true });
   })
 

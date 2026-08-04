@@ -141,7 +141,8 @@ export function DemoCall() {
        * a gap. The section below supplies the space underneath */}
       <div className="mx-auto -mt-12 max-w-xl px-6 pb-4 sm:-mt-16">
         {status === 'ringing' ? (
-          <div className="rounded-2xl border border-line-soft bg-background p-6">
+          // the card swaps rather than appending, so this announces itself
+          <div aria-live="polite" className="rounded-2xl border border-line-soft bg-background p-6">
             <p className="text-[15px] font-medium">Your phone is ringing.</p>
             <p className="mt-1 font-mono text-[12px] text-muted-2">
               that is the whole product. pick up, then come back
@@ -170,8 +171,21 @@ export function DemoCall() {
                 {status === 'calling' ? 'Calling' : 'Call me now'}
               </Button>
             </form>
-            <div ref={widgetRef} className="mt-3 empty:mt-0" />
-            {message && <p className="mt-2.5 font-mono text-[12px] text-muted-2">{message}</p>}
+            {/* Turnstile will not render narrower than 300px, and a 320px phone
+             * leaves 272px of card, so its innards pushed the whole page into
+             * horizontal scroll. Clipping bounds the layout box; scaling keeps
+             * the widget itself whole inside it, since a transform is visual and
+             * would otherwise still occupy 300px. Untouched above ~345px. */}
+            <div className="mt-3 overflow-hidden">
+              <div ref={widgetRef} className="origin-left max-[345px]:scale-90" />
+            </div>
+            {message && (
+              // the form does not move when this appears, so a screen reader
+              // needs telling that anything happened
+              <p aria-live="polite" className="mt-2.5 font-mono text-[12px] text-muted-2">
+                {message}
+              </p>
+            )}
           </div>
         )}
       </div>

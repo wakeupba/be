@@ -52,8 +52,11 @@ export default function TermsPage() {
               five minutes. If you do not answer, we try once more.
             </Prose>
             <Prose>
-              Google Calendar is the only calendar we support today. Calls currently reach United States
-              numbers. Other regions have a waitlist, and joining it is not a commitment from us to a date.
+              Google Calendar is the only calendar we support today. We reach most of the world, but not all
+              of it: what a call costs varies enormously by network, and for a minority of destinations it
+              costs more than the plan does, so we do not place calls there. You will find out when you add
+              your number, and we keep a count of which countries were asked for so we know what to open next.
+              We do not promise a date.
             </Prose>
           </Section>
 

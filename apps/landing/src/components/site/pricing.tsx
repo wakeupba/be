@@ -3,7 +3,6 @@ import { Reveal } from '@/components/motion/reveal';
 import { ButtonLink } from '@/components/ui/button';
 import { PLANS } from '@/lib/content';
 import { APP_URL } from '@/lib/site';
-import { Waitlist } from './waitlist';
 
 /*
  * On the homepage this is a section under the hero, so it introduces itself with
@@ -71,9 +70,6 @@ export function Pricing({ heading }: { heading?: string | null } = {}) {
               </div>
             </div>
           ))}
-        </div>
-        <div className="mx-auto max-w-3xl">
-          <Waitlist />
         </div>
       </div>
     </section>

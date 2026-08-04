@@ -128,8 +128,9 @@ export default function Page() {
             </Prose>
             <Prose>
               Current limits, plainly: Google Calendar only, with Outlook on the roadmap behind a vote on the
-              dashboard. Calls reach United States numbers, with other regions on a waitlist. Events you color
-              minutes before they start may not survive the five-minute poll in time.
+              dashboard. Calls reach most countries, though a minority of networks cost more per call than the
+              plan does, and we do not ring those. Events you color minutes before they start may not survive
+              the five-minute poll in time.
             </Prose>
           </Section>
 

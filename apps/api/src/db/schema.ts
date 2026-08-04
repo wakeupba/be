@@ -99,6 +99,11 @@ export const featureVotes = sqliteTable(
   (table) => [primaryKey({ columns: [table.featureKey, table.userId] })],
 );
 
+/* Retired. Nothing writes here any more: the landing page no longer asks people
+ * to wait for a region, because most of the regions it asked about are live, and
+ * the ones that are not are recorded in region_interest at the point a real
+ * number is refused. Kept only so the table is dropped in a deliberate
+ * migration rather than as a side effect of deleting a route. */
 export const waitlist = sqliteTable('waitlist', {
   email: text('email').primaryKey(),
   region: text('region').notNull(),

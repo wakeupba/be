@@ -11,25 +11,6 @@ async function sessionCookie(userId: string): Promise<string> {
 }
 
 describe('rate limits', () => {
-  it('waitlist signups are capped per ip', async () => {
-    const app = createApp();
-    // storage is shared across tests; a unique ip keeps runs independent
-    const ip = `test-ip-${crypto.randomUUID()}`;
-    const post = (n: number) =>
-      app.request(
-        new Request('https://api.test/waitlist', {
-          method: 'POST',
-          body: JSON.stringify({ email: `babe${n}@example.com`, region: 'India' }),
-          headers: { 'content-type': 'application/json', 'CF-Connecting-IP': ip },
-        }),
-        undefined,
-        env,
-      );
-
-    for (let n = 0; n < 5; n++) expect((await post(n)).status).toBe(200);
-    expect((await post(5)).status).toBe(429);
-  });
-
   it('verification calls are capped per number across accounts', async () => {
     const db = testDb();
     // one victim number, two attacker accounts; bogus twilio creds so no

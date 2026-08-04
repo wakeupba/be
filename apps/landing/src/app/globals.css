@@ -386,3 +386,11 @@ body {
     }
   }
 }
+
+/* the theme switch cross-fades the whole page; duration lives here so the
+ * switcher stays a plain state change */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
+  animation-timing-function: ease-out;
+}

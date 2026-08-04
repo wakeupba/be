@@ -41,6 +41,54 @@ export function applyTheme(pref: ThemePref): void {
   document.documentElement.classList.toggle('dark', dark);
 }
 
+type ViewTransitionDocument = Document & {
+  startViewTransition?: (callback: () => void) => { ready: Promise<void> };
+};
+
+/**
+ * Wraps a theme switch in a View Transition so the browser cross-fades the
+ * whole page instead of snapping. Falls back to an instant switch where the
+ * API is missing or the user asked for less motion. Ported from spoo, minus
+ * next-themes: the caller passes whatever applies the change, and React's
+ * flushSync is not needed because applyTheme touches the DOM directly.
+ */
+export function themeTransition(apply: () => void): void {
+  const doc = document as ViewTransitionDocument;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!doc.startViewTransition || reduce) {
+    apply();
+    return;
+  }
+  doc.startViewTransition(apply);
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
+  );
+}
+
+/**
+ * "d" toggles light and dark, the hidden keyboard bit spoo ships. Ignores
+ * modifier combinations and anything typed into a field, so it never eats a
+ * "d" meant for an input. Returns its own teardown.
+ */
+export function bindThemeHotkey(onToggle: (next: 'light' | 'dark') => void): () => void {
+  function onKeyDown(event: KeyboardEvent) {
+    if (event.defaultPrevented || event.repeat) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key.toLowerCase() !== 'd') return;
+    if (isTypingTarget(event.target)) return;
+    onToggle(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+  }
+  window.addEventListener('keydown', onKeyDown);
+  return () => window.removeEventListener('keydown', onKeyDown);
+}
+
 /**
  * Runs as a blocking inline script before first paint, so a dark-mode user
  * never sees a white flash. Kept tiny and dependency free on purpose: it has

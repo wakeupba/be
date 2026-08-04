@@ -1,7 +1,6 @@
 import { BabeMark } from '@/components/brand/mark';
 import { GITHUB_URL } from '@/lib/site';
 import { AuthButtons } from './auth-buttons';
-import { ThemeControl } from './theme-control';
 
 export function Header() {
   return (
@@ -31,7 +30,6 @@ export function Header() {
             GitHub
           </a>
           <div className="ml-2 flex items-center gap-2">
-            <ThemeControl />
             <AuthButtons />
           </div>
         </nav>

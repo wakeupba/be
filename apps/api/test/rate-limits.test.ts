@@ -84,10 +84,15 @@ describe('rate limits', () => {
     for (let n = 0; n < 15; n++) expect((await attempt('junk')).status).toBe(400);
 
     // valid-state requests are the ones that can reach google, so they are
-    // the ones that spend slots. What matters is that they are not refused,
-    // whatever the callback does with a junk code today
-    for (let n = 0; n < 10; n++) expect((await attempt(await validState())).status).not.toBe(429);
-    expect((await attempt(await validState())).status).toBe(429);
+    // the ones that spend slots. What matters is that the first ten are not
+    // refused, whatever the callback does with a junk code today
+    const refused = (response: Response) =>
+      response.headers.get('location')?.endsWith('/login/?retry=busy') ?? false;
+    for (let n = 0; n < 10; n++) expect(refused(await attempt(await validState()))).toBe(false);
+
+    // and that the eleventh is, which the callback expresses as a bounce to
+    // the login page rather than a bare status, since a person can reach it
+    expect(refused(await attempt(await validState()))).toBe(true);
   });
 
   it('calendar disconnects are capped per user', async () => {

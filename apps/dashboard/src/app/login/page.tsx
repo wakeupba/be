@@ -16,17 +16,19 @@ const LANDING = process.env.NEXT_PUBLIC_LANDING_ORIGIN ?? 'https://wakeupba.be';
  */
 export default function LoginPage() {
   const { state } = useMe();
-  /* the api bounces here when a sign-in code was already spent, which is
-   * what refreshing the callback url does; say so instead of looking like
-   * the button silently failed */
-  const [staleAttempt, setStaleAttempt] = useState(false);
+  /* the api bounces here for the two failures a person can actually cause:
+   * a sign-in code that is no longer good, and too many attempts inside the
+   * rate-limit window. Saying which beats looking like the button did
+   * nothing. */
+  const [retry, setRetry] = useState<'stale' | 'busy' | null>(null);
 
   useEffect(() => {
     if (state.status === 'ready') window.location.replace('/');
   }, [state.status]);
 
   useEffect(() => {
-    setStaleAttempt(new URLSearchParams(window.location.search).get('retry') === 'stale');
+    const retry = new URLSearchParams(window.location.search).get('retry');
+    if (retry === 'stale' || retry === 'busy') setRetry(retry);
   }, []);
 
   return (
@@ -43,9 +45,11 @@ export default function LoginPage() {
           <ButtonLink href={api.loginUrl()} size="lg" className="w-full">
             Sign in with Google
           </ButtonLink>
-          {staleAttempt && (
+          {retry && (
             <p className="-mt-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
-              that sign in link was already used, start again
+              {retry === 'busy'
+                ? 'too many attempts just now, wait a minute and try again'
+                : 'that sign in link has expired or was already used, start again'}
             </p>
           )}
           <p className="font-mono text-[10px] text-muted-foreground/60">read-only calendar access</p>

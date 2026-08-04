@@ -5,7 +5,11 @@ import { encryptSecret, hmacSign, hmacVerify } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import { claimRateSlot, clientIp } from '../lib/rate-limit';
 import { clearSessionCookie, createSessionCookie } from '../lib/session';
-import { CALENDAR_SCOPE, GoogleInvalidGrantError } from '../services/calendar/google-client';
+import {
+  CALENDAR_SCOPE,
+  GoogleInvalidGrantError,
+  type GoogleTokens,
+} from '../services/calendar/google-client';
 
 const STATE_TTL_MS = 10 * 60_000;
 const LOGINS_PER_WINDOW = 30;
@@ -68,7 +72,8 @@ export const authRoutes = new Hono<AuthContext>()
         RATE_WINDOW_MS,
       ))
     ) {
-      return c.text('too many attempts, try again in a few minutes', 429);
+      logEvent('info', 'auth.callback_rate_limited', { ip: clientIp(c.req.raw) });
+      return c.redirect(`${c.env.APP_ORIGIN}/login/?retry=busy`);
     }
 
     const redirectUri = `${c.env.API_ORIGIN}/auth/callback`;
@@ -79,12 +84,12 @@ export const authRoutes = new Hono<AuthContext>()
      * signup is bad enough, and reporting it buries genuine failures in
      * Sentry under noise nobody can act on.
      */
-    let granted: Awaited<ReturnType<typeof google.exchangeCode>>;
+    let granted: GoogleTokens;
     try {
       granted = await google.exchangeCode(code, redirectUri);
     } catch (error) {
       if (error instanceof GoogleInvalidGrantError) {
-        logEvent('info', 'auth.code_already_used', {});
+        logEvent('info', 'auth.code_already_used', { ip: clientIp(c.req.raw) });
         return c.redirect(`${c.env.APP_ORIGIN}/login/?retry=stale`);
       }
       throw error;

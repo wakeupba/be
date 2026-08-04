@@ -12,6 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** replies as many times as asked, so a loop of attempts can share one stub */
 function stubTokenEndpoint(status: number, body: string): void {
   vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -45,6 +46,28 @@ describe('oauth callback', () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get('location')).toBe(`${env.APP_ORIGIN}/login/?retry=stale`);
+  });
+
+  it('sends a rate-limited attempt back to sign in too, not to a bare 429', async () => {
+    // one ip, past the window: every one of these carries a valid state, so
+    // each spends a slot before reaching google
+    const ip = `test-ip-${crypto.randomUUID()}`;
+    stubTokenEndpoint(400, JSON.stringify({ error: 'invalid_grant' }));
+    const attempt = async () =>
+      createApp().request(
+        new Request(
+          `https://api.test/auth/callback?code=x&state=${encodeURIComponent(await signedState())}`,
+          { headers: { 'CF-Connecting-IP': ip } },
+        ),
+        undefined,
+        env,
+      );
+
+    for (let n = 0; n < 10; n++) await attempt();
+    const limited = await attempt();
+
+    expect(limited.status).toBe(302);
+    expect(limited.headers.get('location')).toBe(`${env.APP_ORIGIN}/login/?retry=busy`);
   });
 
   it('still surfaces an unexpected google failure instead of swallowing it', async () => {

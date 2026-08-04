@@ -3,11 +3,14 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /* the machined frame: hairline, 2px shell gutter, hairline; inner radius =
- * outer radius minus padding so corners stay concentric */
+ * outer radius minus padding so corners stay concentric. The face is --card
+ * rather than --background, so a framed tile reads as sitting on the page
+ * sheet instead of dissolving into it (identical in light, where both are
+ * white; the distinction only exists in dark) */
 export function Shell({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <div className={cn('rounded-2xl border border-border/60 bg-shell p-0.5', className)}>
-      <div className="h-full rounded-[14px] bg-background">{children}</div>
+      <div className="h-full rounded-[14px] bg-card">{children}</div>
     </div>
   );
 }

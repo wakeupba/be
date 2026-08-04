@@ -168,6 +168,11 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
               Call setup
             </Link>
             <div className="my-1 border-t border-border/60" />
+            <div className="flex items-center justify-between gap-2 px-1.5 py-1">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <ThemeControl />
+            </div>
+            <div className="my-1 border-t border-border/60" />
             <button
               type="button"
               role="menuitem"
@@ -316,10 +321,6 @@ function RailBody({
               onNavigate={onNavigate}
             />
           ))}
-          <div className="flex items-center justify-between gap-2 px-2.5 pt-2">
-            <span className="text-[13px] font-medium text-muted-foreground">Theme</span>
-            <ThemeControl />
-          </div>
         </div>
         {me && <UsageMeter me={me} />}
         {me ? <ProfilePill me={me} onNavigate={onNavigate} /> : <div aria-hidden className="h-[52px]" />}

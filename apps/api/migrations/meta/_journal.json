@@ -36,6 +36,13 @@
       "when": 1785881358075,
       "tag": "0004_typical_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785882803563,
+      "tag": "0005_soft_marauders",
+      "breakpoints": true
     }
   ]
 }

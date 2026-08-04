@@ -6,7 +6,7 @@ import type { Env } from '../env';
 import { hmacVerify } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import type { CallRow } from '../repos/calls';
-import { VERIFICATION_SCRIPT } from '../services/calls/script';
+import { DEMO_SCRIPT, VERIFICATION_SCRIPT } from '../services/calls/script';
 import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
 
 type HookContext = { Bindings: Env; Variables: { container: Container } };
@@ -76,6 +76,43 @@ export const callRoutes = new Hono<HookContext>()
     const call = await authenticateCall(c, c.env.SESSION_SECRET);
     if (!call) return c.text('forbidden', 403);
     await c.get('container').lifecycle.onHangup(call);
+    return c.text('ok');
+  });
+
+/*
+ * The landing demo's own callbacks. Separate from the routes above because a
+ * demo call has no account, no calendar event and no row in `calls`, so there
+ * is nothing for authenticateCall to look up. The checks are the same two
+ * though: the carrier signature plus our per-call HMAC.
+ */
+async function authenticateDemo(
+  c: { req: { raw: Request; query: (k: string) => string | undefined }; get: (k: 'container') => Container },
+  secret: string,
+) {
+  const container = c.get('container');
+  if (!(await container.telephony.verifyWebhook(c.req.raw))) return null;
+  const demoId = c.req.query('demo');
+  const token = c.req.query('tok');
+  if (!demoId || !token) return null;
+  if (!(await hmacVerify(`demo-callback:${demoId}`, token, secret))) return null;
+  return container.demoCalls.findById(demoId);
+}
+
+export const demoCallRoutes = new Hono<HookContext>()
+  .post('/answer', async (c) => {
+    const demo = await authenticateDemo(c, c.env.SESSION_SECRET);
+    if (!demo) return c.text('forbidden', 403);
+    // answered means Twilio will bill it, so the reservation stands
+    await c.get('container').demoCalls.markAnswered(demo.id);
+    return c.text(buildSpeakXml(DEMO_SCRIPT), 200, { 'Content-Type': 'application/xml' });
+  })
+
+  .post('/hangup', async (c) => {
+    const demo = await authenticateDemo(c, c.env.SESSION_SECRET);
+    if (!demo) return c.text('forbidden', 403);
+    // never answered, so nothing is billed and the week's budget gets it back.
+    // The row stays and still counts against the per-number cap
+    if (demo.answeredAt === null) await c.get('container').demoCalls.release(demo.id);
     return c.text('ok');
   });
 

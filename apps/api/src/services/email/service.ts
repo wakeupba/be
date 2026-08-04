@@ -42,6 +42,9 @@ export interface MissedCallEmail {
 
 export interface EmailService {
   missedCall(input: MissedCallEmail): Promise<void>;
+  /** operational mail to us, not to a customer: plain text, no template, and
+   * none of the transactional voice rules apply */
+  opsAlert(to: string, subject: string, text: string, idempotencyKey: string): Promise<void>;
   calendarBroken(to: string, idempotencyKey: string): Promise<void>;
   outOfCalls(
     to: string,
@@ -114,5 +117,11 @@ export class ResendEmailService implements EmailService {
   async calendarBroken(to: string, idempotencyKey: string): Promise<void> {
     const { calendarBrokenEmail } = await templates();
     await this.send(to, await calendarBrokenEmail({ appOrigin: this.appOrigin }), idempotencyKey);
+  }
+
+  /** skips the template import entirely: this one is for us, and loading react
+   * to tell ourselves the demo ran out would be silly */
+  async opsAlert(to: string, subject: string, text: string, idempotencyKey: string): Promise<void> {
+    await this.send(to, { subject, text, html: `<pre>${text}</pre>` }, idempotencyKey);
   }
 }

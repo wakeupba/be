@@ -125,6 +125,36 @@ export const regionInterest = sqliteTable(
   (table) => [index('idx_region_interest_rate').on(table.rateUsd)],
 );
 
+/*
+ * Every demo call the landing page placed. One table serves four jobs, which is
+ * why it holds cost rather than just a count: the weekly budget sums costUsd,
+ * the per-visitor and per-number caps count rows, and the whole thing is the
+ * audit trail for an endpoint that spends money without a session behind it.
+ *
+ * The number and the IP are stored as HMACs, never in the clear. A demo caller
+ * is not a user and we have no reason to keep their number: the only thing we
+ * need is to recognise the same one coming back.
+ */
+export const demoCalls = sqliteTable(
+  'demo_calls',
+  {
+    id: text('id').primaryKey(),
+    phoneHash: text('phone_hash').notNull(),
+    ipHash: text('ip_hash').notNull(),
+    /* what Twilio will bill: reserved before dialling, and zeroed if the call
+     * was never answered, since unanswered calls are free */
+    costUsd: real('cost_usd').notNull(),
+    providerCallId: text('provider_call_id'),
+    answeredAt: integer('answered_at'),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_demo_calls_window').on(table.createdAt),
+    index('idx_demo_calls_phone').on(table.phoneHash, table.createdAt),
+    index('idx_demo_calls_ip').on(table.ipHash, table.createdAt),
+  ],
+);
+
 // processed billing webhook ids: providers redeliver with the same id on
 // retry, and credit grants must not double-apply
 export const webhookEvents = sqliteTable('webhook_events', {

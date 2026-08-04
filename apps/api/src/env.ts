@@ -33,4 +33,13 @@ export interface Env {
 
   /* transactional email stays dark until set */
   RESEND_API_KEY?: string;
+
+  /* The landing demo call. Both are required for it to exist at all: without a
+   * challenge secret the endpoint refuses, and with a budget of zero there is
+   * nothing to spend, so the CTA never renders. Fail closed by construction. */
+  TURNSTILE_SECRET?: string;
+  DEMO_WEEKLY_BUDGET_USD?: string;
+
+  /* where operational mail goes; falls back to the sending address */
+  OWNER_EMAIL?: string;
 }

@@ -1,6 +1,7 @@
 import type { CallRepo, CallRow } from '../../repos/calls';
 import type { EventRepo } from '../../repos/events';
 import type { UserRepo } from '../../repos/users';
+import type { EmailNotifier } from '../email/notifier';
 import { MAX_ATTEMPTS, RETRY_DELAY_MS, SNOOZE_DELAY_MS } from './dispatcher';
 
 /**
@@ -17,6 +18,7 @@ export class CallLifecycleService {
     private readonly calls: CallRepo,
     private readonly events: EventRepo,
     private readonly users: UserRepo,
+    private readonly notifier: EmailNotifier | null = null,
   ) {}
 
   async onAnswered(call: CallRow): Promise<void> {
@@ -66,6 +68,12 @@ export class CallLifecycleService {
       await this.events.setState(current.eventId, 'scheduled', Date.now() + RETRY_DELAY_MS);
     } else {
       await this.events.setState(current.eventId, 'missed');
+      // both attempts rang out: the phone has said all it can, email takes over
+      const [user, event] = await Promise.all([
+        this.users.findById(current.userId),
+        this.events.findById(current.eventId),
+      ]);
+      if (user && event) await this.notifier?.missedCall(user, event, 'no_answer');
     }
   }
 }

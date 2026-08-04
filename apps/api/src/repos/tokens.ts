@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, lt, or } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { oauthTokens, type TokenRow } from '../db/schema';
 
@@ -32,6 +32,25 @@ export class TokenRepo {
       .update(oauthTokens)
       .set({ calendarSyncToken: syncToken, updatedAt: Date.now() })
       .where(eq(oauthTokens.userId, userId));
+  }
+
+  /**
+   * Claims this user's on-demand sync slot, stamping the attempt in the same
+   * statement. The state guard is the rate limit: a double-tapped refresh
+   * finds the slot held and is served the data we already have. Same idiom as
+   * events.tryClaimForCalling, and like it, safe across isolates.
+   */
+  async tryClaimSync(userId: string, notSince: number): Promise<boolean> {
+    const result = await this.db
+      .update(oauthTokens)
+      .set({ lastSyncAttemptAt: Date.now() })
+      .where(
+        and(
+          eq(oauthTokens.userId, userId),
+          or(isNull(oauthTokens.lastSyncAttemptAt), lt(oauthTokens.lastSyncAttemptAt, notSince)),
+        ),
+      );
+    return result.meta.changes > 0;
   }
 
   /** disconnecting the calendar removes every credential we hold */

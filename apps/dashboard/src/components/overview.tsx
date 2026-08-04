@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArrowsClockwise,
   ArrowUpRight,
   CalendarBlank,
   ClockCounterClockwise,
@@ -10,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { type CallHistoryDto, type MeDto, PLAN_LIMITS, type UpcomingEventDto } from '@wakeupbabe/shared';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Kpi } from '@/components/ui/kpi';
 import { Panel, SectionHeader } from '@/components/ui/panel';
 import { api } from '@/lib/api';
@@ -19,21 +20,70 @@ import { gcalColor } from '@/lib/gcal-colors';
 import { cn } from '@/lib/utils';
 
 const RECENT_CALLS = 5;
+/** how long the button says it just checked, so a refresh never looks ignored */
+const CHECKED_LABEL_MS = 4000;
 
 export function Overview({ me }: { me: MeDto }) {
   const [events, setEvents] = useState<UpcomingEventDto[] | null>(null);
   const [calls, setCalls] = useState<CallHistoryDto[] | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [justChecked, setJustChecked] = useState(false);
+  /* server-declared end of the cooldown: a refetch on tab focus inside it
+   * would only be handed back the answer we are already showing */
+  const nextRefreshAt = useRef(0);
+
+  const refresh = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const result = await api.syncEvents();
+      setEvents(result.events);
+      nextRefreshAt.current = result.nextRefreshAt;
+    } catch {
+      // a refresh we were not allowed to run (no calendar, rate limited) still
+      // has to leave the page showing whatever we already know
+      await api
+        .events()
+        .then(setEvents)
+        .catch(() => setEvents([]));
+    } finally {
+      setSyncing(false);
+      setJustChecked(true);
+    }
+  }, []);
 
   useEffect(() => {
-    api
-      .events()
-      .then(setEvents)
-      .catch(() => setEvents([]));
+    // onboarding only proves a verified phone, so this page also renders for
+    // someone who has since disconnected: nothing to ask google about
+    if (me.calendarConnected) {
+      void refresh();
+    } else {
+      api
+        .events()
+        .then(setEvents)
+        .catch(() => setEvents([]));
+    }
     api
       .calls()
       .then(setCalls)
       .catch(() => setCalls([]));
-  }, []);
+  }, [refresh, me.calendarConnected]);
+
+  useEffect(() => {
+    if (!justChecked) return;
+    const timer = setTimeout(() => setJustChecked(false), CHECKED_LABEL_MS);
+    return () => clearTimeout(timer);
+  }, [justChecked]);
+
+  /* coming back to the tab is the other half of the paranoid refresh: you
+   * flagged the meeting in Google Calendar and switched back here */
+  useEffect(() => {
+    const onFocus = () => {
+      if (!me.calendarConnected || Date.now() < nextRefreshAt.current) return;
+      void refresh();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refresh, me.calendarConnected]);
 
   const nextRing = events?.find((event) => event.state === 'scheduled' || event.state === 'snoozed');
   /* the activation nudge is for people who have never had a real call; test
@@ -70,7 +120,23 @@ export function Overview({ me }: { me: MeDto }) {
       </div>
 
       <section>
-        <SectionHeader title="Upcoming calls" icon={CalendarBlank} />
+        <SectionHeader
+          title="Upcoming calls"
+          icon={CalendarBlank}
+          action={
+            me.calendarConnected ? (
+              <button
+                type="button"
+                onClick={() => void refresh()}
+                disabled={syncing}
+                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:opacity-60"
+              >
+                <ArrowsClockwise size={12} className={cn(syncing && 'animate-spin')} aria-hidden />
+                {syncing ? 'Checking…' : justChecked ? 'Up to date' : 'Refresh'}
+              </button>
+            ) : undefined
+          }
+        />
         <Panel>
           {events === null || (events.length === 0 && calls === null) ? (
             <div className="flex min-h-24 items-center justify-center" />
@@ -90,8 +156,8 @@ export function Overview({ me }: { me: MeDto }) {
                       aria-hidden
                     />
                   )}{' '}
-                  {triggerColor ? triggerColor.name : 'your trigger color'} in Google Calendar and it gets
-                  picked up within 5 minutes.
+                  {triggerColor ? triggerColor.name : 'your trigger color'} in Google Calendar, then hit
+                  refresh. We also check on our own every 5 minutes.
                 </p>
                 <a
                   href="https://calendar.google.com"

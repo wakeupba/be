@@ -35,7 +35,8 @@ Corporate calendars are fully booked, and important meetings drown in the same n
 ## How it works
 
 ```
-Google Calendar ──(read-only poll, 5 min)──► sync service
+Google Calendar ──(read-only, 5 min poll
+                   or dashboard refresh)──► sync service
                                                 │ red event found
                                                 ▼
                                          call scheduler (D1)

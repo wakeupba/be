@@ -69,7 +69,10 @@
  *
  * Borders stay solid lightness steps rather than spoo's white-alpha, because
  * this codebase composes them with opacity modifiers (border-border/50) and
- * alpha-on-alpha renders unpredictably.
+ * alpha-on-alpha renders unpredictably. The value is tuned so a hairline at
+ * /60 over the sheet lands on the same pixel spoo renders, measured rather
+ * than guessed; --input sits a step brighter, mirroring spoo giving inputs
+ * 15% where borders get 10%.
  */
 .dark {
   --canvas: oklch(0.115 0 0);
@@ -80,8 +83,8 @@
   --muted: oklch(0.269 0 0);
   --foreground: oklch(0.985 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --border: oklch(0.3 0 0);
-  --input: oklch(0.34 0 0);
+  --border: oklch(0.27 0 0);
+  --input: oklch(0.31 0 0);
   --ring: oklch(0.556 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);

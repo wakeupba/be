@@ -1,5 +1,5 @@
 import type { CallOutcome, EventState, LeadMinutes, Plan } from '@wakeupbabe/shared';
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // All timestamps are unix epoch milliseconds (UTC). Event-local timezones are
 // stored separately because call scheduling must survive DST transitions.
@@ -108,6 +108,38 @@ export const waitlist = sqliteTable('waitlist', {
   region: text('region').notNull(),
   createdAt: integer('created_at').notNull(),
 });
+
+/*
+ * Destinations we turned away because ringing them costs more than the plan
+ * earns. One row per user, so a repeated attempt is demand signal rather than a
+ * duplicate: attempts says how much someone wants their country covered, and
+ * rateUsd says what agreeing would cost.
+ *
+ * The number itself is deliberately absent. Deciding which region to open next
+ * needs the destination, not the subscriber: country and rate answer that
+ * question completely, and the digits would only be a thing to disclose and a
+ * thing to leak.
+ */
+export const regionInterest = sqliteTable(
+  'region_interest',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** ISO country, or null when the number parsed but belongs to no country
+     * libphonenumber recognises */
+    country: text('country'),
+    /** the table prefix that priced it, so a country with mixed ranges can be
+     * told apart from one that is dear throughout */
+    prefix: text('prefix'),
+    // null when no prefix matched at all, which is its own useful signal
+    rateUsd: real('rate_usd'),
+    attempts: integer('attempts').notNull().default(1),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [index('idx_region_interest_rate').on(table.rateUsd)],
+);
 
 // processed billing webhook ids: providers redeliver with the same id on
 // retry, and credit grants must not double-apply

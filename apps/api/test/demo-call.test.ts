@@ -74,7 +74,7 @@ async function callDemoFrom(ip: string, phone: string, envOverrides: Record<stri
   return createApp().request(
     new Request('https://api.test/demo/call', {
       method: 'POST',
-      body: JSON.stringify({ phone, token: GOOD_TOKEN }),
+      body: JSON.stringify({ phone, token: GOOD_TOKEN, owns: true }),
       headers: { 'content-type': 'application/json', 'CF-Connecting-IP': ip },
     }),
     undefined,
@@ -168,24 +168,33 @@ describe('country support', () => {
 describe('demo call refusals', () => {
   it('refuses outright when the demo is not configured', async () => {
     const response = await callDemo(
-      { phone: CALLABLE, token: GOOD_TOKEN },
+      { phone: CALLABLE, token: GOOD_TOKEN, owns: true },
       { TURNSTILE_SECRET: undefined },
     );
     expect(response.status).toBe(503);
   });
 
   it('refuses a missing or wrong challenge token before touching anything else', async () => {
-    expect((await callDemo({ phone: CALLABLE })).status).toBe(400);
-    expect((await callDemo({ phone: CALLABLE, token: 'forged' })).status).toBe(403);
+    expect((await callDemo({ phone: CALLABLE, owns: true })).status).toBe(400);
+    expect((await callDemo({ phone: CALLABLE, token: 'forged', owns: true })).status).toBe(403);
+  });
+
+  it('refuses without the ownership attestation, not only in the form', async () => {
+    /* the checkbox disables a button, which gates nothing on its own: anything
+     * posting straight here would skip it, and there would be no artifact for a
+     * specific call afterwards */
+    const response = await callDemo({ phone: CALLABLE, token: GOOD_TOKEN });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: string }).error).toContain('your own');
   });
 
   it('refuses an unparseable number', async () => {
-    const response = await callDemo({ phone: 'call me maybe', token: GOOD_TOKEN });
+    const response = await callDemo({ phone: 'call me maybe', token: GOOD_TOKEN, owns: true });
     expect(response.status).toBe(400);
   });
 
   it('refuses a number too expensive to ring, same cap as signup', async () => {
-    const response = await callDemo({ phone: '+4915112345678', token: GOOD_TOKEN }); // DE, $0.3763
+    const response = await callDemo({ phone: '+4915112345678', token: GOOD_TOKEN, owns: true }); // DE, $0.3763
     expect(response.status).toBe(422);
     expect(((await response.json()) as { code: string }).code).toBe('region_unsupported');
   });
@@ -219,7 +228,7 @@ describe('demo call refusals', () => {
     // park a full week's budget in the counter that gates spend
     await new CounterRepo(db).spend(budgetKeyFor(Date.now()), 10_000, 10_000);
 
-    const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN });
+    const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN, owns: true });
     expect(response.status).toBe(429);
 
     const availability = await createApp().request(
@@ -292,7 +301,7 @@ describe('demo call reservations', () => {
      * worth of spend, so this one needs headroom of its own to get as far as
      * the carrier */
     const response = await callDemo(
-      { phone: uniquePhone(), token: GOOD_TOKEN },
+      { phone: uniquePhone(), token: GOOD_TOKEN, owns: true },
       { DEMO_WEEKLY_BUDGET_USD: '1000' },
     );
     // bogus twilio credentials, so placeCall throws
@@ -317,7 +326,7 @@ describe('the hangup refund is self-idempotent', () => {
     const key = `test:${crypto.randomUUID()}`;
 
     await counters.spend(key, 50, 1000);
-    const id = await repo.reserve({ phoneHash: 'p', ipHash: 'i', costUsd: 0.05 });
+    const id = await repo.reserve({ phoneHash: 'p', ipHash: 'i', costUsd: 0.05, ownerAttested: true });
     await repo.release(id);
 
     const row = await repo.findById(id);

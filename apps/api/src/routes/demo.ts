@@ -103,7 +103,7 @@ export const demoRoutes = new Hono<DemoContext>()
     if (!demoConfigured(c.env)) return c.json({ error: 'demo is not available' }, 503);
 
     const ip = clientIp(c.req.raw);
-    const body = await c.req.json<{ phone?: unknown; token?: unknown }>().catch(() => null);
+    const body = await c.req.json<{ phone?: unknown; token?: unknown; owns?: unknown }>().catch(() => null);
     const token = typeof body?.token === 'string' ? body.token : '';
     if (!token) return c.json({ error: 'challenge missing' }, 400);
 
@@ -114,6 +114,13 @@ export const demoRoutes = new Hono<DemoContext>()
     if (!(await verifyChallenge(token, secret, ip))) {
       logEvent('info', 'demo.challenge_failed', { ip });
       return c.json({ error: 'challenge failed' }, 403);
+    }
+
+    /* Required here and not only in the form. A checkbox that gates a button
+     * gates nothing: anything posting straight to this endpoint would skip it,
+     * and there would be no artifact for a specific call afterwards. */
+    if (body?.owns !== true) {
+      return c.json({ error: 'confirm the number is your own' }, 400);
     }
 
     const parsed = typeof body?.phone === 'string' ? parsePhoneNumberFromString(body.phone) : undefined;
@@ -168,7 +175,7 @@ export const demoRoutes = new Hono<DemoContext>()
 
     // recorded after the money is committed, so the audit row can never claim
     // spend the budget did not actually admit
-    const demoId = await container.demoCalls.reserve({ phoneHash, ipHash, costUsd });
+    const demoId = await container.demoCalls.reserve({ phoneHash, ipHash, costUsd, ownerAttested: true });
 
     /* Only the carrier call is guarded. markPlaced used to sit inside this try,
      * so a failure writing the provider id after Twilio had already accepted the

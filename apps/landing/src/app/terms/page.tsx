@@ -1,3 +1,4 @@
+import { TOPUP_PACK } from '@wakeupbabe/shared';
 import { BreadcrumbJsonLd } from '@/components/seo/json-ld';
 import { ArticleShell, Prose, Section } from '@/components/site/article';
 import { Footer } from '@/components/site/footer';
@@ -88,13 +89,16 @@ export default function TermsPage() {
             <Prose>
               Situationship is free and includes 5 calls a month. Ride or Die is $5 a month and includes 50. A
               call counts against your allowance when we place it, whether or not you answer, because the
-              telephony cost lands either way. Retries of the same reminder do not count twice. The Do Not
-              Disturb verification call is free.
+              telephony cost lands either way. A retry after an unanswered call, and a call you asked for by
+              pressing 2, are each a further placed call and count again. The Do Not Disturb verification call
+              is the one exception and is free.
             </Prose>
             <Prose>
               When you run out, we stop calling, tell you in the dashboard and send one email. Nothing is
-              billed automatically beyond your subscription: there is no metered overage. You can top up with
-              a $2 pack of 50 extra calls, up to a limit per period.
+              billed automatically beyond your subscription: there is no metered overage. On Ride or Die you
+              can top up with a ${TOPUP_PACK.priceUsd} pack of {TOPUP_PACK.calls} extra calls, up to{' '}
+              {TOPUP_PACK.maxPerPeriod} packs in a billing period. Top-ups need an active paid plan, so on the
+              free plan the only route to more calls is to upgrade.
             </Prose>
             <Prose>
               Subscriptions renew monthly until cancelled and are handled by Dodo Payments as merchant of

@@ -1,3 +1,4 @@
+import { TOPUP_PACK } from '@wakeupbabe/shared';
 import { BreadcrumbJsonLd, WebPageJsonLd } from '@/components/seo/json-ld';
 import { ArticleShell, Prose, Section } from '@/components/site/article';
 import { Cta } from '@/components/site/cta';
@@ -135,9 +136,10 @@ export default function Page() {
           <Section n="06" title="What it costs">
             <Prose>
               Five calls a month, free, with every feature included. Fifty calls a month for $5 if your
-              calendar is the job, with $2 top-up packs of 50. When you run out we stop calling and tell you,
-              rather than billing you for overage. The whole thing is AGPL-3.0 open source, so you can also
-              run your own copy and pay a telephony provider directly.
+              calendar is the job, with ${TOPUP_PACK.priceUsd} top-up packs of {TOPUP_PACK.calls} on top of
+              that. When you run out we stop calling and tell you, rather than billing you for overage. The
+              whole thing is AGPL-3.0 open source, so you can also run your own copy and pay a telephony
+              provider directly.
             </Prose>
           </Section>
         </ArticleShell>

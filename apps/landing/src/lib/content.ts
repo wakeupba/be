@@ -1,7 +1,17 @@
+import { TOPUP_PACK } from '@wakeupbabe/shared';
+
 /* The copy that two places need to agree on: the visible page and the
  * structured data we hand Google. Google penalises FAQPage markup that does not
  * match on-page text, and the only reliable way to keep them identical is to
- * have one source. Edit the answer here and both move together. */
+ * have one source. Edit the answer here and both move together.
+ *
+ * Pack numbers come from TOPUP_PACK rather than being typed out. They were typed
+ * out first and were wrong: the marketing copy advertised 50 calls for $2 when
+ * the product sells 20, which is 4c a call against a real 10c and would have made
+ * the pack strictly better value than the subscription it is supposed to top up.
+ * The figure also reaches Google through FAQPage structured data, so a stale
+ * number is not just an on-page mistake. */
+const PACK = `$${TOPUP_PACK.priceUsd} pack of ${TOPUP_PACK.calls} calls`;
 
 export interface Faq {
   question: string;
@@ -31,8 +41,10 @@ export const FAQS: Faq[] = [
   },
   {
     question: 'What happens when I run out of calls?',
-    answer:
-      'Nothing surprising. We stop calling, you see it in the dashboard and get an email. You can top up with a $2 pack of 50 calls or upgrade. There is no metered billing and no invoice you did not expect.',
+    /* Top-ups are gated to an active paid plan in the api, so this cannot offer
+     * a free user a pack: on Situationship the only route to more calls is the
+     * upgrade. */
+    answer: `Nothing surprising. We stop calling, you see it in the dashboard and get an email. On Ride or Die you can top up with a ${PACK}, up to ${TOPUP_PACK.maxPerPeriod} packs a billing period. On the free plan the way to get more is to upgrade, because packs are extra calls on a plan rather than an alternative to one. There is no metered billing and no invoice you did not expect.`,
   },
   {
     question: 'Can I self-host it?',
@@ -70,12 +82,7 @@ export const PLANS: Plan[] = [
     priceValue: 5,
     cadence: 'per month',
     description: 'For people whose calendar is the job.',
-    features: [
-      '50 calls a month',
-      'Top up anytime, $2 per 50 extra',
-      'Priority support',
-      'Cancel in one click',
-    ],
+    features: ['50 calls a month', `Top up anytime, ${PACK}`, 'Priority support', 'Cancel in one click'],
     cta: 'Get Ride or Die',
     primary: true,
   },

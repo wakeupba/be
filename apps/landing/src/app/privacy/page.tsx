@@ -155,8 +155,12 @@ export default function PrivacyPage() {
               We send transactional email only, and there are exactly four kinds: a meeting was missed, you
               have spent your last call for the period, your phone number is still unverified, and your
               calendar connection has broken. The last two repeat at most once a week while the problem
-              persists. There is no newsletter, and no marketing email. If your region is not live yet and you
-              joined the waitlist, we email you once when it launches.
+              persists. There is no newsletter, and no marketing email.
+            </Prose>
+            <Prose>
+              Those four are the only senders that exist today. If you joined the region waitlist, the intent
+              is to email you when your region goes live, and that is the only thing we would use the address
+              for, but it is not built yet and we would rather say so than imply a queue is running.
             </Prose>
           </Section>
 
@@ -176,7 +180,11 @@ export default function PrivacyPage() {
             <Prose>
               Marked events and their call records stay while your account exists, because the call history is
               the receipt that the product works. Suppressed-duplicate email markers are pruned after 30 days.
-              Waitlist entries are deleted once your region launches and you have been notified.
+            </Prose>
+            <Prose>
+              A waitlist entry is an email address and a region, and it is kept until that region launches.
+              There is no automatic sweep for them yet, so if you want yours gone sooner, ask and we will
+              delete it by hand.
             </Prose>
             <Prose>
               Disconnecting your calendar from the dashboard revokes our access at Google and deletes your

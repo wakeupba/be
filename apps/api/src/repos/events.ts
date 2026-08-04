@@ -92,6 +92,30 @@ export class EventRepo {
     return result.meta.changes;
   }
 
+  /**
+   * Applies a new lead time to meetings we already track. The delta sync only
+   * ever returns what Google says changed, so without this a lead-time change
+   * would never reach an event already in the table.
+   *
+   * Only upcoming 'scheduled' rows: a snoozed event's callAt came from the
+   * snooze, not from the lead time, and recomputing it would drag the call
+   * back to before the snooze the user just asked for.
+   */
+  async recomputeCallTimes(userId: string, leadMinutes: number): Promise<number> {
+    const now = Date.now();
+    const result = await this.db
+      .update(trackedEvents)
+      .set({ callAt: sql`${trackedEvents.startsAt} - ${leadMinutes * 60_000}`, updatedAt: now })
+      .where(
+        and(
+          eq(trackedEvents.userId, userId),
+          eq(trackedEvents.state, 'scheduled'),
+          gt(trackedEvents.startsAt, now),
+        ),
+      );
+    return result.meta.changes;
+  }
+
   async cancelByGoogleId(userId: string, calendarId: string, googleEventId: string): Promise<void> {
     await this.db
       .update(trackedEvents)

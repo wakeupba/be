@@ -1,6 +1,7 @@
 CREATE TABLE `region_interest` (
 	`user_id` text PRIMARY KEY NOT NULL,
-	`phone_e164` text NOT NULL,
+	`country` text,
+	`prefix` text,
 	`rate_usd` real,
 	`attempts` integer DEFAULT 1 NOT NULL,
 	`created_at` integer NOT NULL,

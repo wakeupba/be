@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e89c2435-7d75-435b-a312-7a5065857b08",
+  "id": "f5a17c65-15d2-41d2-885a-b1a1808af7d6",
   "prevId": "ad8bad98-7891-47ca-97f0-2c04578d5e25",
   "tables": {
     "calls": {
@@ -274,11 +274,18 @@
           "notNull": true,
           "autoincrement": false
         },
-        "phone_e164": {
-          "name": "phone_e164",
+        "country": {
+          "name": "country",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "rate_usd": {

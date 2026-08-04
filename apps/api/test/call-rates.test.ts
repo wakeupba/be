@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
 import { regionInterest, users } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
-import { callRateUsd, isCallableNumber, MAX_CALL_RATE_USD } from '../src/lib/call-rates';
+import { CALL_RATES_USD } from '../src/data/call-rates';
+import { callRateUsd, isCallableNumber, MAX_CALL_RATE_USD, MAX_PREFIX_DIGITS } from '../src/lib/call-rates';
 import { hmacSign } from '../src/lib/crypto';
 import { seedUser, testDb } from './helpers';
 
@@ -12,6 +13,38 @@ async function sessionCookie(userId: string): Promise<string> {
   const body = btoa(JSON.stringify({ userId, expiresAt: Date.now() + 60_000 }));
   return `${SESSION_COOKIE}=${body}.${await hmacSign(body, env.SESSION_SECRET)}`;
 }
+
+describe('the rate table itself', () => {
+  /* The generator is internal tooling and lives outside this repo, so the
+   * invariants it upholds are asserted here instead. Without these, a
+   * regenerated table could break lookup silently rather than loudly. */
+
+  it('has no prefix longer than lookup will reach', () => {
+    const longest = Math.max(...Object.keys(CALL_RATES_USD).map((key) => key.length));
+    // a longer key is unreachable, and its numbers would fall through to a
+    // shorter and cheaper prefix: the exact failure this gate must not have
+    expect(longest).toBeLessThanOrEqual(MAX_PREFIX_DIGITS);
+  });
+
+  it('is keyed by bare digits with a usable price', () => {
+    for (const [prefix, usd] of Object.entries(CALL_RATES_USD)) {
+      // a '+' or a space in a key can never match, so it would be dead weight
+      // that silently widens the fall-through
+      expect(prefix).toMatch(/^[0-9]+$/);
+      expect(Number.isFinite(usd)).toBe(true);
+      expect(usd).toBeGreaterThan(0);
+    }
+  });
+
+  it('still prices the destinations the gate is documented against', () => {
+    // the comments and the PR reasoning quote these; if a regeneration moves
+    // them, the explanations stop matching the code
+    expect(CALL_RATES_USD['1']).toBe(0.014);
+    expect(CALL_RATES_USD['44']).toBe(0.0158);
+    expect(CALL_RATES_USD['4470']).toBeCloseTo(0.5577, 4);
+    expect(CALL_RATES_USD['449']).toBeCloseTo(1.0479, 4);
+  });
+});
 
 describe('call rate lookup', () => {
   it('prices a number from its longest matching prefix', () => {
@@ -22,9 +55,8 @@ describe('call rate lookup', () => {
   });
 
   it('prefers the specific prefix over the country code', () => {
-    // the case that makes longest-prefix mandatory: a UK landline is cheap
-    // while UK premium rate is two orders of magnitude dearer, and both live
-    // under +44
+    // the case that makes longest-prefix mandatory: +44 itself is $0.0158
+    // while +4470 is $0.5577, a 35x spread under one country code
     const london = callRateUsd('+442079460958');
     const premium = callRateUsd('+447003001234');
     expect(london).toBeDefined();
@@ -59,7 +91,7 @@ describe('call rate lookup', () => {
 });
 
 describe('unsupported regions', () => {
-  it('turns the number away without saving it, and records the interest', async () => {
+  it('turns the number away without saving it, and records the destination', async () => {
     const db = testDb();
     const user = await seedUser(db, { phoneE164: null, dndVerifiedAt: null });
     const app = createApp();
@@ -84,9 +116,12 @@ describe('unsupported regions', () => {
     const interest = await db.query.regionInterest.findFirst({
       where: eq(regionInterest.userId, user.id),
     });
-    expect(interest?.phoneE164).toBe('+4915112345678');
+    // the destination, not the person: no phone number is kept here
+    expect(interest?.country).toBe('DE');
+    expect(interest?.prefix).toBe('4915');
     expect(interest?.rateUsd).toBeCloseTo(0.3763, 4);
     expect(interest?.attempts).toBe(1);
+    expect(Object.keys(interest ?? {})).not.toContain('phoneE164');
   });
 
   it('counts a second attempt instead of duplicating the row', async () => {
@@ -110,8 +145,8 @@ describe('unsupported regions', () => {
     const rows = await db.select().from(regionInterest).where(eq(regionInterest.userId, user.id));
     expect(rows).toHaveLength(1);
     expect(rows[0]?.attempts).toBe(2);
-    // the latest number they tried is the one worth contacting
-    expect(rows[0]?.phoneE164).toBe('+393123456789');
+    // the latest destination replaces the first
+    expect(rows[0]?.country).toBe('IT');
   });
 
   it('still accepts a supported number afterwards', async () => {

@@ -117,8 +117,12 @@ export const demoCallRoutes = new Hono<HookContext>()
      * make unanswered calls unlimited.
      *
      * Refunded against the week the call was charged to, not the current one,
-     * which matters for a call that straddled the boundary. */
-    if (demo.answeredAt === null) {
+     * which matters for a call that straddled the boundary.
+     *
+     * costUsd > 0 is what makes a redelivered hangup harmless: release() zeroes
+     * the cost but leaves answeredAt alone, so the answeredAt check alone would
+     * pass again and refund a call that was already refunded. */
+    if (demo.answeredAt === null && demo.costUsd > 0) {
       const { demoCalls, counters } = c.get('container');
       await counters.refund(budgetKeyFor(demo.createdAt), costMills(demo.costUsd));
       await demoCalls.release(demo.id);

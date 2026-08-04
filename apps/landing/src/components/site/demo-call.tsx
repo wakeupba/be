@@ -12,7 +12,13 @@ type Status = 'idle' | 'calling' | 'ringing' | 'error';
 interface Turnstile {
   render: (
     el: HTMLElement,
-    options: { sitekey: string; action: string; callback: (token: string) => void; theme: string },
+    options: {
+      sitekey: string;
+      action: string;
+      callback: (token: string) => void;
+      theme: string;
+      size: string;
+    },
   ) => string;
   reset: (id: string) => void;
 }
@@ -35,6 +41,7 @@ declare global {
 export function DemoCall() {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [phone, setPhone] = useState('');
+  const [owns, setOwns] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -78,6 +85,11 @@ export function DemoCall() {
         sitekey: SITE_KEY,
         action: 'demo-call',
         theme: 'auto',
+        /* compact is ~150px, so it fits the narrowest card we render without
+         * clipping or scaling. The scale-90 this replaced would have shrunk the
+         * checkbox with it, and a Turnstile checkbox is already close to the
+         * 24px floor WCAG 2.5.8 asks for. */
+        size: 'compact',
         callback: (solved) => {
           token.current = solved;
         },
@@ -140,9 +152,15 @@ export function DemoCall() {
        * read how it works, and left in its own band it read as a stray card in
        * a gap. The section below supplies the space underneath */}
       <div className="mx-auto -mt-12 max-w-xl px-6 pb-4 sm:-mt-16">
+        {/* One announcer for the whole section, mounted from the start and never
+         * unmounted. The visible cards carry no live region of their own: they
+         * are created at the same moment as their text, which is precisely when
+         * a screen reader will not announce them. */}
+        <p aria-live="polite" className="sr-only">
+          {status === 'ringing' ? 'Your phone is ringing.' : (message ?? '')}
+        </p>
         {status === 'ringing' ? (
-          // the card swaps rather than appending, so this announces itself
-          <div aria-live="polite" className="rounded-2xl border border-line-soft bg-background p-6">
+          <div className="rounded-2xl border border-line-soft bg-background p-6">
             <p className="text-[15px] font-medium">Your phone is ringing.</p>
             <p className="mt-1 font-mono text-[12px] text-muted-2">
               that is the whole product. pick up, then come back
@@ -152,9 +170,12 @@ export function DemoCall() {
           <div className="rounded-2xl border border-line-soft bg-background p-6">
             <div className="flex flex-col gap-1.5">
               <p className="text-[15px] font-medium">Hear it for yourself</p>
+              {/* says what the code does: the cap needs a way to recognise the
+               * number, so a one-way fingerprint is kept. Claiming we keep
+               * nothing was disprovable from the sentence before it */}
               <p className="text-[14px] text-muted">
-                Put in your number and we will call you now. One call per number, and we do not keep the
-                number afterwards.
+                Put in your own number and we will call you now. We keep a one-way fingerprint of it so the
+                same number cannot be rung repeatedly, and nothing else.
               </p>
             </div>
             <form onSubmit={submit} className="mt-4 flex flex-col gap-2.5 sm:flex-row">
@@ -167,25 +188,32 @@ export function DemoCall() {
                 aria-label="Your phone number"
                 className="h-9 grow rounded-lg border border-line bg-background px-3 font-mono text-sm tabular-nums placeholder:text-muted-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
               />
-              <Button type="submit" disabled={status === 'calling' || phone.length < 8}>
+              <Button type="submit" disabled={status === 'calling' || !owns || phone.length < 8}>
                 {status === 'calling' ? 'Calling' : 'Call me now'}
               </Button>
             </form>
-            {/* Turnstile will not render narrower than 300px, and a 320px phone
-             * leaves 272px of card, so its innards pushed the whole page into
-             * horizontal scroll. Clipping bounds the layout box; scaling keeps
-             * the widget itself whole inside it, since a transform is visual and
-             * would otherwise still occupy 300px. Untouched above ~345px. */}
+            {/* This does not create consent from whoever answers, and it is not
+             * pretended to. What it does is turn "no record" into a statement
+             * made at the point of entry, which is the part that matters if this
+             * is ever questioned. One checkbox is a cheap way to have it. */}
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13px] text-muted">
+              <input
+                type="checkbox"
+                checked={owns}
+                onChange={(event) => setOwns(event.target.checked)}
+                className="mt-0.5 size-3.5 shrink-0 accent-foreground"
+              />
+              This is my own phone number.
+            </label>
+            {/* the compact widget is ~150px so it fits any card we render, but
+             * the clip stays: Turnstile controls its own dimensions and a future
+             * size change should not be able to scroll the page sideways */}
             <div className="mt-3 overflow-hidden">
-              <div ref={widgetRef} className="origin-left max-[345px]:scale-90" />
+              <div ref={widgetRef} />
             </div>
-            {message && (
-              // the form does not move when this appears, so a screen reader
-              // needs telling that anything happened
-              <p aria-live="polite" className="mt-2.5 font-mono text-[12px] text-muted-2">
-                {message}
-              </p>
-            )}
+            {/* height reserved so the card does not resize when a refusal
+             * appears; the announcing is done by the region above */}
+            <p className="mt-2.5 min-h-[1lh] font-mono text-[12px] text-muted-2">{message}</p>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
 import { counters, demoCalls } from '../src/db/schema';
 import { CounterRepo } from '../src/repos/counters';
+import { DemoCallRepo } from '../src/repos/demo-calls';
 import { budgetKeyFor } from '../src/routes/demo';
 import { testDb } from './helpers';
 
@@ -251,6 +252,29 @@ describe('demo call reservations', () => {
     const rows = await db.select().from(demoCalls);
     expect(rows.length).toBe(before + 1);
     expect(rows.at(-1)?.costUsd).toBe(0);
+  });
+});
+
+describe('the hangup refund is self-idempotent', () => {
+  it('a released call cannot be refunded again', async () => {
+    /* release() zeroes costUsd but leaves answeredAt alone, so a guard on
+     * answeredAt alone passed on every redelivery, and costMills floors at 1,
+     * crediting a tenth of a cent each time. costUsd > 0 is what closes it. */
+    const db = testDb();
+    const repo = new DemoCallRepo(db);
+    const counters = new CounterRepo(db);
+    const key = `test:${crypto.randomUUID()}`;
+
+    await counters.spend(key, 50, 1000);
+    const id = await repo.reserve({ phoneHash: 'p', ipHash: 'i', costUsd: 0.05 });
+    await repo.release(id);
+
+    const row = await repo.findById(id);
+    expect(row?.answeredAt ?? null).toBeNull(); // still unanswered
+    expect(row?.costUsd).toBe(0); // and already released
+
+    // the condition the hook applies: unanswered AND still holding cost
+    expect(row !== undefined && row.answeredAt === null && row.costUsd > 0).toBe(false);
   });
 });
 

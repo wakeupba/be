@@ -156,15 +156,18 @@ export const demoRoutes = new Hono<DemoContext>()
     // spend the budget did not actually admit
     const demoId = await container.demoCalls.reserve({ phoneHash, ipHash, costUsd });
 
+    /* Only the carrier call is guarded. markPlaced used to sit inside this try,
+     * so a failure writing the provider id after Twilio had already accepted the
+     * call would refund a call that was going to ring and be billed. */
+    let placed: { providerCallId: string };
     try {
-      const placed = await container.telephony.placeCall({
+      placed = await container.telephony.placeCall({
         to: phone,
         from: c.env.TWILIO_FROM_NUMBER_US,
         answerUrl: await demoCallbackUrl(c.env, 'answer', demoId),
         hangupUrl: await demoCallbackUrl(c.env, 'hangup', demoId),
         ringTimeoutSeconds: RING_TIMEOUT_SECONDS,
       });
-      await container.demoCalls.markPlaced(demoId, placed.providerCallId);
     } catch (error) {
       // the carrier refused, so nothing will be billed: hand the money back
       // rather than charging the week for a call that never rang
@@ -172,6 +175,7 @@ export const demoRoutes = new Hono<DemoContext>()
       await container.demoCalls.release(demoId);
       throw error;
     }
+    await container.demoCalls.markPlaced(demoId, placed.providerCallId);
 
     logEvent('info', 'demo.call_placed', { demoId, costUsd, country: parsed.country ?? 'unknown' });
     // no callId handed back: there is nothing an anonymous caller can do with

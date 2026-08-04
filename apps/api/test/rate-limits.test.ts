@@ -1,10 +1,11 @@
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
+import { SESSION_COOKIE } from '@wakeupbabe/shared';
 import { createApp } from '../src/app';
+import { hmacSign } from '../src/lib/crypto';
 import { seedUser, testDb } from './helpers';
 
 async function sessionCookie(userId: string): Promise<string> {
-  const { hmacSign, SESSION_COOKIE } = await import('@wakeupbabe/shared');
   const body = btoa(JSON.stringify({ userId, expiresAt: Date.now() + 60_000 }));
   return `${SESSION_COOKIE}=${body}.${await hmacSign(body, env.SESSION_SECRET)}`;
 }
@@ -62,21 +63,31 @@ describe('rate limits', () => {
     expect(((await blocked.json()) as { error: string }).error).toContain('number');
   });
 
-  it('oauth callbacks are capped per ip', async () => {
+  it('oauth callbacks are capped per ip, but only past the state check', async () => {
     const app = createApp();
     const ip = `test-ip-${crypto.randomUUID()}`;
-    const attempt = () =>
+    const validState = async () => {
+      const body = btoa(JSON.stringify({ nonce: crypto.randomUUID(), expiresAt: Date.now() + 60_000 }));
+      return `${body}.${await hmacSign(body, env.SESSION_SECRET)}`;
+    };
+    const attempt = (state: string) =>
       app.request(
-        new Request('https://api.test/auth/callback?code=junk&state=junk', {
+        new Request(`https://api.test/auth/callback?code=junk&state=${encodeURIComponent(state)}`, {
           headers: { 'CF-Connecting-IP': ip },
         }),
         undefined,
         env,
       );
 
-    // garbage state fails fast with 400 but still spends a slot
-    for (let n = 0; n < 10; n++) expect((await attempt()).status).toBe(400);
-    expect((await attempt()).status).toBe(429);
+    // garbage fails fast and burns nothing: a shared (cgnat) ip full of junk
+    // must not lock out the neighbor actually completing oauth
+    for (let n = 0; n < 15; n++) expect((await attempt('junk')).status).toBe(400);
+
+    // valid-state requests are the ones that can reach google, so they are
+    // the ones that spend slots. What matters is that they are not refused,
+    // whatever the callback does with a junk code today
+    for (let n = 0; n < 10; n++) expect((await attempt(await validState())).status).not.toBe(429);
+    expect((await attempt(await validState())).status).toBe(429);
   });
 
   it('calendar disconnects are capped per user', async () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BabeMark } from '@/components/brand/mark';
 import { ButtonLink } from '@/components/ui/button';
 import { Shell } from '@/components/ui/panel';
@@ -16,10 +16,20 @@ const LANDING = process.env.NEXT_PUBLIC_LANDING_ORIGIN ?? 'https://wakeupba.be';
  */
 export default function LoginPage() {
   const { state } = useMe();
+  /* the api bounces here for the two failures a person can actually cause:
+   * a sign-in code that is no longer good, and too many attempts inside the
+   * rate-limit window. Saying which beats looking like the button did
+   * nothing. */
+  const [retry, setRetry] = useState<'stale' | 'busy' | null>(null);
 
   useEffect(() => {
     if (state.status === 'ready') window.location.replace('/');
   }, [state.status]);
+
+  useEffect(() => {
+    const retry = new URLSearchParams(window.location.search).get('retry');
+    if (retry === 'stale' || retry === 'busy') setRetry(retry);
+  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-6">
@@ -35,6 +45,13 @@ export default function LoginPage() {
           <ButtonLink href={api.loginUrl()} size="lg" className="w-full">
             Sign in with Google
           </ButtonLink>
+          {retry && (
+            <p className="-mt-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+              {retry === 'busy'
+                ? 'too many attempts just now, wait a minute and try again'
+                : 'that sign in link has expired or was already used, start again'}
+            </p>
+          )}
           <p className="font-mono text-[10px] text-muted-foreground/60">read-only calendar access</p>
         </div>
       </Shell>

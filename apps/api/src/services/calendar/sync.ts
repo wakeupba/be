@@ -5,7 +5,7 @@ import type { EventRepo } from '../../repos/events';
 import type { TokenRepo } from '../../repos/tokens';
 import type { UserRepo, UserRow } from '../../repos/users';
 import type { EmailNotifier } from '../email/notifier';
-import { GoogleAuthRevokedError, type GoogleClient, type GoogleEventItem } from './google-client';
+import { type GoogleClient, type GoogleEventItem, GoogleInvalidGrantError } from './google-client';
 
 const PRIMARY_CALENDAR = 'primary';
 const ACCESS_TOKEN_SLACK_MS = 60_000;
@@ -35,7 +35,7 @@ export class CalendarSyncService {
         // conservative choice: the token row stays, so already-flagged
         // events keep ringing at their last known times; the email copy
         // matches that reality
-        if (error instanceof GoogleAuthRevokedError) {
+        if (error instanceof GoogleInvalidGrantError) {
           await this.notifier?.calendarBroken(user);
         }
       }

@@ -1,4 +1,5 @@
 import { BabeMark } from '@/components/brand/mark';
+import { GITHUB_URL } from '@/lib/site';
 import { AuthButtons } from './auth-buttons';
 
 export function Header() {
@@ -23,7 +24,7 @@ export function Header() {
             FAQ
           </a>
           <a
-            href="https://github.com/spoo-me/wakeupbabe"
+            href={GITHUB_URL}
             className="hidden rounded-md px-3 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-foreground sm:block"
           >
             GitHub

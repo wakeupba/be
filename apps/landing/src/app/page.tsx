@@ -1,3 +1,4 @@
+import { FaqJsonLd, SoftwareJsonLd } from '@/components/seo/json-ld';
 import { Cta } from '@/components/site/cta';
 import { Faq } from '@/components/site/faq';
 import { Features } from '@/components/site/features';
@@ -10,6 +11,8 @@ import { Pricing } from '@/components/site/pricing';
 export default function LandingPage() {
   return (
     <>
+      <SoftwareJsonLd />
+      <FaqJsonLd />
       <Header />
       <main>
         <Hero />

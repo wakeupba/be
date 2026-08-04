@@ -1,0 +1,16 @@
+import type { MetadataRoute } from 'next';
+import { absoluteUrl, ROUTES } from '@/lib/site';
+
+/* required by `output: export`: metadata routes must declare themselves static */
+export const dynamic = 'force-static';
+
+/* Static export renders this to /sitemap.xml at build time. Route inventory and
+ * lastmod dates live in lib/site.ts so adding a page is one edit, not two. */
+export default function sitemap(): MetadataRoute.Sitemap {
+  return ROUTES.map((route) => ({
+    url: absoluteUrl(route.path),
+    lastModified: route.lastModified,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+  }));
+}

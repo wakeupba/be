@@ -29,6 +29,29 @@ function isDocumentPath(pathname: string): boolean {
   return !lastSegment.includes('.');
 }
 
+/*
+ * Nothing on this origin should be indexed. The header, not robots.txt, is what
+ * achieves that: robots.txt can only stop the fetch, and a URL that is never
+ * fetched can still sit in the index forever on the strength of a link. Applied
+ * to the login page and to the redirects too, since those are exactly what a
+ * crawler sees.
+ *
+ * robots.txt is the one exception: marking it noindex is harmless but Google
+ * fetches it before anything else, and leaving it clean keeps the intent legible
+ * to anyone reading the headers.
+ */
+const NOINDEX = 'noindex, nofollow';
+
+function redirectTo(location: string): Response {
+  return new Response(null, { status: 302, headers: { Location: location, 'X-Robots-Tag': NOINDEX } });
+}
+
+function noindex(response: Response): Response {
+  const withHeader = new Response(response.body, response);
+  withHeader.headers.set('X-Robots-Tag', NOINDEX);
+  return withHeader;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -40,13 +63,14 @@ export default {
       );
       const isPublic = PUBLIC_PREFIXES.some((prefix) => startsWithPrefix(url.pathname, prefix));
       if (!userId && !isPublic) {
-        return Response.redirect(new URL('/login/', url).toString(), 302);
+        return redirectTo(new URL('/login/', url).toString());
       }
       if (userId && startsWithPrefix(url.pathname, '/login')) {
-        return Response.redirect(new URL('/', url).toString(), 302);
+        return redirectTo(new URL('/', url).toString());
       }
     }
 
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    return url.pathname === '/robots.txt' ? response : noindex(response);
   },
 };

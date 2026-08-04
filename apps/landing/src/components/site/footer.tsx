@@ -1,5 +1,9 @@
 import { BabeMark } from '@/components/brand/mark';
+import { GITHUB_URL } from '@/lib/site';
 
+/* The footer is also the internal link graph: it is the only thing on the site
+ * that points at the explainer pages, so every page links to them and they are
+ * one hop from anywhere. */
 const LINK_GROUPS = [
   {
     heading: 'Product',
@@ -10,16 +14,25 @@ const LINK_GROUPS = [
     ],
   },
   {
+    heading: 'Learn',
+    links: [
+      { label: 'Calendar call reminders', href: '/google-calendar-phone-call-reminders/' },
+      { label: 'Reminders through DND', href: '/do-not-disturb-meeting-reminders/' },
+      { label: 'Reminder options compared', href: '/calendar-reminder-alternatives/' },
+    ],
+  },
+  {
     heading: 'Open source',
     links: [
-      { label: 'GitHub', href: 'https://github.com/spoo-me/wakeupbabe' },
-      { label: 'Self-hosting', href: 'https://github.com/spoo-me/wakeupbabe#self-hosting' },
-      { label: 'License', href: 'https://github.com/spoo-me/wakeupbabe/blob/main/LICENSE' },
+      { label: 'GitHub', href: GITHUB_URL },
+      { label: 'Self-hosting', href: `${GITHUB_URL}#self-hosting` },
+      { label: 'License', href: `${GITHUB_URL}/blob/main/LICENSE` },
     ],
   },
   {
     heading: 'Legal',
     links: [
+      { label: 'Contact', href: '/contact/' },
       { label: 'Privacy', href: '/privacy/' },
       { label: 'Terms', href: '/terms/' },
     ],
@@ -30,7 +43,7 @@ export function Footer() {
   return (
     <footer className="footer-dawn">
       <div className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-12 py-16 sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-12 py-16 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1.1fr_1fr_0.7fr]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2 font-semibold tracking-tight">
               <BabeMark className="size-7" />

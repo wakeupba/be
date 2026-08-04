@@ -69,6 +69,126 @@ body {
   background: var(--accent-soft);
 }
 
+/*
+ * Body copy for the text pages (legal, explainers). Scoped to .prose so it
+ * never leaks into the marketing sections, which set their own type per block.
+ * The accent shows up here in exactly one place: a link on hover.
+ */
+.prose {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.72;
+}
+
+.prose > * + * {
+  margin-top: 1em;
+}
+
+.prose h3 {
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 1.75em;
+}
+
+.prose strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.prose a {
+  color: var(--foreground);
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s ease;
+}
+
+.prose a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.prose ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+/* ledger ticks rather than bullets: a hairline dash in the margin, same idea as
+ * the rails on the marketing sections */
+.prose li {
+  padding-left: 1.4em;
+  position: relative;
+}
+
+.prose li::before {
+  background: var(--border);
+  content: "";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  top: 0.85em;
+  width: 0.7em;
+}
+
+/*
+ * Comparison table, phone layout. Below sm the table stops behaving like a grid
+ * and each row becomes a small labelled block: the channel name as its heading,
+ * then one "label / value" line per column, with the label taken from the
+ * `data-label` attribute the component writes. Same DOM in both directions, so
+ * there is exactly one copy of the text on the page.
+ */
+@media (width < 40rem) {
+  .compare table,
+  .compare tbody,
+  .compare tr,
+  .compare td {
+    display: block;
+  }
+
+  /* the column headings are the per-cell labels down here */
+  .compare thead {
+    display: none;
+  }
+
+  .compare tr {
+    padding: 1.25rem 0;
+  }
+
+  .compare th[scope="row"] {
+    display: block;
+    padding: 0 0 0.75rem;
+  }
+
+  .compare td {
+    display: grid;
+    gap: 0 1rem;
+    grid-template-columns: 7.5rem 1fr;
+    padding: 0.3rem 0;
+  }
+
+  .compare td::before {
+    color: var(--muted-2);
+    content: attr(data-label);
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    line-height: 1.9;
+    text-transform: uppercase;
+  }
+}
+
+.prose code {
+  background: var(--surface);
+  border: 1px solid var(--border-structural);
+  border-radius: 4px;
+  color: var(--foreground);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.86em;
+  padding: 0.12em 0.36em;
+}
+
 /* the one atmosphere gradient on the page: a soft warm wash inside the stage */
 .stage-glow {
   background: radial-gradient(60% 50% at 50% 0%, rgba(217, 45, 32, 0.05), transparent 70%), var(--paper);

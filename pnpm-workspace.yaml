@@ -6,3 +6,8 @@ allowBuilds:
   lefthook: true
   sharp: true
   workerd: true
+# one copy of the react types workspace-wide: tsc treats two patch versions as
+# unrelated types, which breaks every jsx file that passes a ref
+overrides:
+  '@types/react': 19.2.17
+  '@types/react-dom': 19.2.3

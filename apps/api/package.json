@@ -13,7 +13,8 @@
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",
     "sim:dodo": "node scripts/simulate-dodo.mjs",
-    "dev:bare": "wrangler dev --test-scheduled"
+    "dev:bare": "wrangler dev --test-scheduled",
+    "email": "email dev --dir src/services/email --port 3005"
   },
   "dependencies": {
     "@sentry/cloudflare": "^10.69.0",
@@ -22,11 +23,16 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.6.0",
     "libphonenumber-js": "^1.13.10",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-email": "^6.9.1",
     "resend": "^6.18.1"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.18.6",
     "@cloudflare/workers-types": "^4.20250405.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "drizzle-kit": "^0.31.10",
     "typescript": "^5.7.0",
     "vitest": "^4.1.10",

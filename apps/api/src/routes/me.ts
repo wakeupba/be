@@ -15,12 +15,17 @@ import type { Container } from '../container';
 import type { Env } from '../env';
 import { decryptSecret } from '../lib/crypto';
 import { claimRateSlot } from '../lib/rate-limit';
+import type { TrackedEventRow } from '../repos/events';
 import { billingConfigured, fakeBillingActive } from '../services/billing/dodo';
+import { ON_DEMAND_COOLDOWN_MS } from '../services/calendar/sync';
 
 const GOOGLE_COLOR_IDS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']);
 const VERIFY_CALLS_PER_HOUR = 3;
 const BILLING_ATTEMPTS_PER_WINDOW = 5;
 const WRITE_ATTEMPTS_PER_WINDOW = 30;
+// the dashboard refreshes on mount and on tab focus, so this sits well above
+// what tabbing around can produce while still walling off a script
+const SYNCS_PER_WINDOW = 60;
 const RATE_WINDOW_MS = 10 * 60_000;
 const HOUR_MS = 60 * 60_000;
 
@@ -37,6 +42,17 @@ function browserReachable(url: string, requestUrl: string, env: Env): string {
 }
 
 type MeContext = { Bindings: Env; Variables: { container: Container; userId: string } };
+
+function upcomingDtos(rows: TrackedEventRow[]): UpcomingEventDto[] {
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    startsAt: row.startsAt,
+    callAt: row.callAt,
+    state: row.state,
+    attendeeCount: row.attendeeCount,
+  }));
+}
 
 function isValidTimezone(tz: string): boolean {
   try {
@@ -228,15 +244,37 @@ export const meRoutes = new Hono<MeContext>()
   .get('/me/events', async (c) => {
     const { events } = c.get('container');
     const rows = await events.listUpcomingForUser(c.get('userId'), Date.now());
-    const dtos: UpcomingEventDto[] = rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      startsAt: row.startsAt,
-      callAt: row.callAt,
-      state: row.state,
-      attendeeCount: row.attendeeCount,
-    }));
-    return c.json(dtos);
+    return c.json(upcomingDtos(rows));
+  })
+
+  /*
+   * On-demand calendar refresh. The cron is the guarantee that a flagged
+   * meeting gets called; this endpoint is for the impatience in between —
+   * flag something, open the dashboard, see it. Returns the event list with
+   * it so the page needs one round trip, and reports the cooldown so the UI
+   * can say "checked just now" instead of appearing to ignore the click.
+   */
+  .post('/me/sync', async (c) => {
+    const { users, tokens, events, sync } = c.get('container');
+    // the cooldown already caps Google traffic; this caps the D1 reads a
+    // script could drive by hammering a cooling-down endpoint
+    if (
+      !(await claimRateSlot(c.get('container'), `sync:${c.get('userId')}`, SYNCS_PER_WINDOW, RATE_WINDOW_MS))
+    ) {
+      return c.json({ error: 'too many refreshes, try again in a few minutes' }, 429);
+    }
+    const user = await users.findById(c.get('userId'));
+    if (!user) return c.json({ error: 'not found' }, 404);
+    if (!(await tokens.find(user.id))) return c.json({ error: 'calendar is not connected' }, 409);
+
+    const result = await sync.syncOnDemand(user);
+    const rows = await events.listUpcomingForUser(user.id, Date.now());
+    return c.json({
+      status: result.status,
+      checkedAt: result.lastAttemptAt,
+      nextRefreshAt: result.lastAttemptAt + ON_DEMAND_COOLDOWN_MS,
+      events: upcomingDtos(rows),
+    });
   })
 
   /** one call's outcome, for the verification step's status poll: fetching

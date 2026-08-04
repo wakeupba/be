@@ -63,6 +63,19 @@ export interface UpcomingEventDto {
   attendeeCount: number;
 }
 
+/**
+ * Answer to an on-demand calendar refresh. 'cooling_down' means the list is
+ * the one from the last check rather than a new one, which the UI should say
+ * out loud: a refresh that looks like it did nothing is what makes people
+ * click it again.
+ */
+export interface CalendarSyncDto {
+  status: 'synced' | 'cooling_down' | 'failed';
+  checkedAt: number;
+  nextRefreshAt: number;
+  events: UpcomingEventDto[];
+}
+
 export interface CallHistoryDto {
   id: string;
   /** null for DND verification test calls, which have no calendar event */

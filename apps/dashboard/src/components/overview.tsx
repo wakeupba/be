@@ -85,7 +85,7 @@ export function Overview({ me }: { me: MeDto }) {
                   Color a meeting{' '}
                   {triggerColor && (
                     <span
-                      className="inline-block size-2.5 translate-y-px rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]"
+                      className="inline-block size-2.5 translate-y-px rounded-full shadow-swatch"
                       style={{ backgroundColor: triggerColor.hex }}
                       aria-hidden
                     />

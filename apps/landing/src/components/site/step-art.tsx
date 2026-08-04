@@ -61,10 +61,13 @@ const WEEK: Array<{ label: string; date: string; chips: WeekChip[] }> = [
   },
 ];
 
+/* the art runs past the bottom of its frame on purpose; this fades it into
+ * the surface it sits on rather than into a hardcoded white, which read as a
+ * bright band across the artwork in dark mode */
 function ArtFade() {
   return (
     <span
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-white to-transparent"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-background to-transparent"
       aria-hidden
     />
   );

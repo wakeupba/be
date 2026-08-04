@@ -23,7 +23,7 @@ const swap = {
 function ColorDot({ hex, className }: { hex: string; className?: string }) {
   return (
     <span
-      className={cn('size-3.5 shrink-0 rounded-full shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]', className)}
+      className={cn('size-3.5 shrink-0 rounded-full shadow-swatch', className)}
       style={{ backgroundColor: hex }}
       aria-hidden
     />
@@ -88,7 +88,7 @@ function TriggerColorSelect({
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             role="listbox"
             aria-label="Trigger color"
-            className="absolute right-0 top-full z-30 mt-1.5 w-44 rounded-lg bg-popover p-1 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-6px_rgb(0_0_0/0.12)] ring-1 ring-foreground/10"
+            className="absolute right-0 top-full z-30 mt-1.5 w-44 rounded-lg bg-popover p-1 shadow-pop ring-1 ring-foreground/10"
           >
             {GCAL_COLORS.map((color) => {
               const selected = color.id === value;
@@ -241,7 +241,7 @@ function CalendarRow({
                       exit={{ opacity: 0, y: -2 }}
                       transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
                       role="menu"
-                      className="absolute right-0 top-full z-30 mt-1.5 w-44 rounded-lg bg-popover p-1 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-6px_rgb(0_0_0/0.12)] ring-1 ring-foreground/10"
+                      className="absolute right-0 top-full z-30 mt-1.5 w-44 rounded-lg bg-popover p-1 shadow-pop ring-1 ring-foreground/10"
                     >
                       <a
                         href="https://myaccount.google.com/permissions"

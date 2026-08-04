@@ -2,13 +2,15 @@ import { ButtonLink } from '@/components/ui/button';
 
 import { APP_URL } from '@/lib/site';
 
-/* The one palette inversion on the page: a night panel right before the
- * dawn footer. Dark is DND territory, which is exactly where we work. */
+/* A night panel right before the dawn footer. It rides --panel, which stays
+ * dark in both themes: an inversion on the light page, and merely a shade
+ * apart on the dark one, which is what chrome's auto-dark does and what
+ * keeps the bottom of the page calm. */
 export function Cta() {
   return (
     <section>
       <div className="mx-auto max-w-6xl px-6 pb-24 pt-16 sm:pb-32">
-        <div className="rounded-[2rem] bg-foreground px-6 py-20 text-center sm:py-24">
+        <div className="rounded-[2rem] bg-panel px-6 py-20 text-center sm:py-24">
           <p className="font-mono text-[12px] uppercase tracking-[0.14em] text-white/45">
             Even on do not disturb
           </p>

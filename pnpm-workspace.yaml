@@ -6,6 +6,9 @@ allowBuilds:
   lefthook: true
   sharp: true
   workerd: true
+  # carried over from the landing app's own workspace file, which was removed
+  # so that landing resolves workspace packages from this root
+  unrs-resolver: false
 # one copy of the react types workspace-wide: tsc treats two patch versions as
 # unrelated types, which breaks every jsx file that passes a ref
 overrides:

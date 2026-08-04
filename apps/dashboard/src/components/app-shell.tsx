@@ -13,11 +13,13 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { creditsUsable, type MeDto } from '@wakeupbabe/shared';
+import { applyTheme, bindThemeHotkey, themeTransition, writeThemePref } from '@wakeupbabe/shared/theme';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { BabeMark } from '@/components/brand/mark';
+import { ThemeControl } from '@/components/theme-control';
 import { buttonVariants } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { clearMe } from '@/lib/use-me';
@@ -88,7 +90,7 @@ function SidebarLink({
         <motion.span
           layoutId={pillId}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 rounded-lg border border-border/50 bg-card shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+          className="absolute inset-0 rounded-lg border border-border/50 bg-card shadow-bevel"
           aria-hidden
         />
       )}
@@ -100,7 +102,7 @@ function SidebarLink({
 
 /** identity pill anchoring the rail, spoo anatomy: avatar + name/email +
  * stepper chevron opening the account menu upward */
-function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void }) {
+function ProfilePill({ me, onNavigate, thumbId }: { me: MeDto; onNavigate?: () => void; thumbId: string }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const name = me.displayName?.trim() || me.email.split('@')[0];
@@ -147,7 +149,7 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
             exit={{ opacity: 0, y: 2 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             role="menu"
-            className="absolute bottom-full left-0 z-40 mb-1.5 w-full rounded-lg bg-popover p-1 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-6px_rgb(0_0_0/0.12)] ring-1 ring-foreground/10"
+            className="absolute bottom-full left-0 z-40 mb-1.5 w-full rounded-lg bg-popover p-1 shadow-pop ring-1 ring-foreground/10"
           >
             <div className="px-1.5 py-1">
               <p className="truncate text-xs font-medium text-foreground">{name}</p>
@@ -166,6 +168,11 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
               <PhoneCall size={13} aria-hidden />
               Call setup
             </Link>
+            <div className="my-1 border-t border-border/60" />
+            <div className="flex items-center justify-between gap-2 px-1.5 py-1">
+              <span className="text-xs text-muted-foreground">Theme</span>
+              <ThemeControl thumbId={thumbId} />
+            </div>
             <div className="my-1 border-t border-border/60" />
             <button
               type="button"
@@ -317,7 +324,11 @@ function RailBody({
           ))}
         </div>
         {me && <UsageMeter me={me} />}
-        {me ? <ProfilePill me={me} onNavigate={onNavigate} /> : <div aria-hidden className="h-[52px]" />}
+        {me ? (
+          <ProfilePill me={me} onNavigate={onNavigate} thumbId={`${pillId}-theme`} />
+        ) : (
+          <div aria-hidden className="h-[52px]" />
+        )}
       </div>
     </>
   );
@@ -429,6 +440,18 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
   const closeNav = useCallback(() => setNavOpen(false), []);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
+
+  /* the theme hotkey binds here because the shell is always mounted. Inside
+   * the switcher it would only be live while the account flyout is open,
+   * which is precisely when the control is already on screen. */
+  useEffect(
+    () =>
+      bindThemeHotkey((next) => {
+        writeThemePref(next);
+        themeTransition(() => applyTheme(next));
+      }),
+    [],
+  );
 
   /* any route change closes the drawer, including a back-button one no link
    * handler sees; reset during render so it never paints over the new page */

@@ -2,12 +2,13 @@ import type { SVGProps } from 'react';
 
 /*
  * The Wake Up Babe mark: half-lidded eyes, mid-wake-up, thoroughly
- * unimpressed that you almost missed the board review. Ink on paper by
- * default; pass ink/paper to invert on dark surfaces.
+ * unimpressed that you almost missed the board review. Ink and paper follow
+ * the theme tokens, so the mark inverts with the surface it sits on the same
+ * way the favicon does; pass either to override on a fixed background.
  */
 type MarkProps = SVGProps<SVGSVGElement> & { ink?: string; paper?: string };
 
-export function BabeMark({ ink = '#18181b', paper = '#ffffff', ...props }: MarkProps) {
+export function BabeMark({ ink = 'var(--foreground)', paper = 'var(--background)', ...props }: MarkProps) {
   return (
     <svg viewBox="0 0 32 32" role="img" aria-label="Wake Up Babe" {...props}>
       <path

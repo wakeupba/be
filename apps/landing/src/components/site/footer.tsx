@@ -1,5 +1,6 @@
 import { BabeMark } from '@/components/brand/mark';
 import { GITHUB_URL } from '@/lib/site';
+import { ThemeControl } from './theme-control';
 
 /* The footer is also the internal link graph: it is the only thing on the site
  * that points at the explainer pages, so every page links to them and they are
@@ -75,9 +76,12 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-line-soft py-7 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-t border-line-soft py-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-[12px] text-muted-2">© 2026 Wake Up Babe</p>
-          <p className="font-mono text-[12px] text-muted-2">wakeupba.be</p>
+          <div className="flex items-center gap-4">
+            <p className="font-mono text-[12px] text-muted-2">wakeupba.be</p>
+            <ThemeControl />
+          </div>
         </div>
       </div>
     </footer>

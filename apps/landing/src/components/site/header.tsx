@@ -4,7 +4,7 @@ import { AuthButtons } from './auth-buttons';
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-line-soft bg-white/85 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-line-soft bg-header backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <BabeMark className="blink size-7" />

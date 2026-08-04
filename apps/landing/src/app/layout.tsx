@@ -1,3 +1,4 @@
+import { THEME_BOOT_SCRIPT } from '@wakeupbabe/shared/theme';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
@@ -79,13 +80,29 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#18181b',
-  colorScheme: 'light',
+  /* the browser chrome follows the theme; the cookie override cannot reach a
+   * static meta tag, so the OS preference is the closest honest signal */
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#18181b' },
+    { media: '(prefers-color-scheme: dark)', color: '#121212' },
+  ],
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // the boot script sets .dark before react hydrates, which is the point
+      suppressHydrationWarning
+    >
+      <head>
+        {/* blocking and inline: it has to beat first paint, or dark-mode
+         * visitors get a white flash on every cold landing */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a build-time constant with no interpolation, and a script tag is the only way to run before paint */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body className="min-h-full">
         <SiteJsonLd />
         <SmoothScroll />

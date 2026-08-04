@@ -1,10 +1,11 @@
 import { BabeMark } from '@/components/brand/mark';
 import { GITHUB_URL } from '@/lib/site';
 import { AuthButtons } from './auth-buttons';
+import { ThemeControl } from './theme-control';
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-line-soft bg-white/85 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-line-soft bg-header backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <BabeMark className="blink size-7" />
@@ -30,6 +31,7 @@ export function Header() {
             GitHub
           </a>
           <div className="ml-2 flex items-center gap-2">
+            <ThemeControl />
             <AuthButtons />
           </div>
         </nav>

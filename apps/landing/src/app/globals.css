@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* class-based: the theme control offers explicit light and dark, and
+ * "system" simply means no class is pinned */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Wake Up Babe landing tokens. Light only, two whites: pure white pages and
  * a warm paper tone for bands and the artifact stage. The zinc ramp does the
@@ -19,6 +23,40 @@
   --accent-soft: rgba(217, 45, 32, 0.08);
   --success: #16a34a;
   --radius: 10px;
+  color-scheme: light;
+  /* the sticky header floats over content, so it needs its own translucent
+   * fill rather than borrowing the page background */
+  --header: rgba(255, 255, 255, 0.85);
+  --pulse: rgba(22, 163, 74, 0.28);
+  /* keycap top highlight; polarity flips in dark so the bevel points down */
+  --bevel-primary: inset 0 0.7px 0 rgba(255, 255, 255, 0.25);
+  --bevel-secondary: inset 0 0.7px 0 rgba(255, 255, 255, 0.7);
+}
+
+/*
+ * Dark keeps the light theme's two-surface idea, cool page against a warmer
+ * paper for bands and the artifact stage, so the warm/cool relationship that
+ * carries the design survives inversion. AA measured on the page background:
+ * foreground 16.88:1, muted 7.24:1 (light measures 7.73:1), muted-2 5.49:1,
+ * accent 6.10:1, success 7.38:1; on paper the floor is muted-2 at 5.20:1.
+ */
+.dark {
+  --background: #131315;
+  --paper: #1a1917;
+  --foreground: #f4f4f5;
+  --muted: #a1a1aa;
+  --muted-2: #8b8b94;
+  --surface: #18181a;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-structural: rgba(255, 255, 255, 0.07);
+  --accent: #f2685a;
+  --accent-soft: rgba(242, 104, 90, 0.12);
+  --success: #35b886;
+  color-scheme: dark;
+  --header: rgba(19, 19, 21, 0.85);
+  --pulse: rgba(53, 184, 134, 0.32);
+  --bevel-primary: inset 0 -0.7px 0 rgba(255, 255, 255, 0.12);
+  --bevel-secondary: inset 0 -0.7px 0 rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
@@ -33,6 +71,9 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
+  --color-header: var(--header);
+  --shadow-bevel-primary: var(--bevel-primary);
+  --shadow-bevel-secondary: var(--bevel-secondary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --radius-card: var(--radius);
@@ -193,6 +234,9 @@ body {
 .stage-glow {
   background: radial-gradient(60% 50% at 50% 0%, rgba(217, 45, 32, 0.05), transparent 70%), var(--paper);
 }
+.dark .stage-glow {
+  background: radial-gradient(60% 50% at 50% 0%, rgba(242, 104, 90, 0.07), transparent 70%), var(--paper);
+}
 
 /* footer dawn: the page ends on a soft sunrise built from the accent hue */
 .footer-dawn {
@@ -204,6 +248,17 @@ body {
       transparent 75%
     ),
     linear-gradient(180deg, #ffffff 0%, #f7f6f3 100%);
+}
+/* the same sunrise, read against night: the page ends on a horizon either way */
+.dark .footer-dawn {
+  background:
+    radial-gradient(
+      90% 65% at 50% 105%,
+      rgba(242, 104, 90, 0.2),
+      rgba(246, 191, 38, 0.06) 45%,
+      transparent 75%
+    ),
+    linear-gradient(180deg, #131315 0%, #1a1917 100%);
 }
 
 /* heading-tier scroll reveal, applied by a tiny IntersectionObserver wrapper */
@@ -262,10 +317,10 @@ body {
   @keyframes ring-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.28);
+      box-shadow: 0 0 0 0 var(--pulse);
     }
     50% {
-      box-shadow: 0 0 0 7px rgba(22, 163, 74, 0);
+      box-shadow: 0 0 0 7px transparent;
     }
   }
 

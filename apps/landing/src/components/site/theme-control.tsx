@@ -1,21 +1,20 @@
 'use client';
 
-import { Desktop, Moon, Sun } from '@phosphor-icons/react';
 import { applyTheme, readThemePref, type ThemePref, writeThemePref } from '@wakeupbabe/shared/theme';
-import { motion } from 'motion/react';
+import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const OPTIONS: Array<{ pref: ThemePref; label: string; icon: typeof Sun }> = [
-  { pref: 'system', label: 'System theme', icon: Desktop },
+  { pref: 'system', label: 'System theme', icon: Monitor },
   { pref: 'light', label: 'Light theme', icon: Sun },
   { pref: 'dark', label: 'Dark theme', icon: Moon },
 ];
 
 /*
  * Three explicit states, not a toggle: "system" is what most people want and
- * a binary switch cannot express it. Segmented control, same anatomy as the
- * lead-time picker, so the app has one grammar for "pick one of a few".
+ * a binary switch cannot express it. The preference is a cookie on the apex
+ * domain, so a choice made here is already in force inside the app.
  */
 export function ThemeControl() {
   // resolved after mount: the boot script owns the class before hydration,
@@ -40,9 +39,8 @@ export function ThemeControl() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 px-1.5 py-1">
-      <span className="text-xs text-muted-foreground">Theme</span>
-      <div className="flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5">
+    <div className="flex items-center">
+      <div className="flex items-center gap-0.5 rounded-md border border-line-soft bg-surface p-0.5">
         {OPTIONS.map((option) => {
           const selected = pref === option.pref;
           return (
@@ -54,23 +52,12 @@ export function ThemeControl() {
               onClick={() => choose(option.pref)}
               className={cn(
                 'relative flex size-6 items-center justify-center rounded transition-colors duration-150',
-                selected ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                selected
+                  ? 'bg-background text-foreground shadow-bevel-secondary'
+                  : 'text-muted-2 hover:text-foreground',
               )}
             >
-              {selected && (
-                <motion.span
-                  layoutId="theme-thumb"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  className="absolute inset-0 rounded border border-border/60 bg-card"
-                  aria-hidden
-                />
-              )}
-              <option.icon
-                size={12}
-                weight={selected ? 'fill' : 'regular'}
-                className="relative"
-                aria-hidden
-              />
+              <option.icon size={12} className="relative" aria-hidden />
             </button>
           );
         })}

@@ -34,6 +34,24 @@ const ALL: Array<[string, Promise<RenderedEmail>]> = [
     }),
   ],
   [
+    'missed call, placement failed',
+    missedCallEmail({
+      eventTitle: 'Quarterly review',
+      startsAt: STARTS_AT,
+      timezone: TZ,
+      reason: 'failed',
+      appOrigin: APP,
+    }),
+  ],
+  [
+    'out of calls, a single meeting',
+    outOfCallsEmail({
+      upcoming: [{ id: 'evt_1', title: 'Board meeting', startsAt: STARTS_AT }],
+      timezone: TZ,
+      appOrigin: APP,
+    }),
+  ],
+  [
     'out of calls',
     outOfCallsEmail({
       upcoming: [
@@ -50,9 +68,16 @@ const ALL: Array<[string, Promise<RenderedEmail>]> = [
 
 const FOOTER_PREFIX = 'Wake Up Babe ·';
 
-/** everything except the brand line in the footer */
+/** the preheader is the grey snippet next to the subject, and react-email
+ * marks it data-skip-in-text so it never reaches the plain-text render. It is
+ * pulled out of the html here so the voice guard can police it. */
+function preheader(email: RenderedEmail): string {
+  return email.html.match(/<title>([^<]*)<\/title>/)?.[1] ?? '';
+}
+
+/** subject, preheader and body, minus the brand line in the footer */
 function bodyOnly(email: RenderedEmail): string {
-  return `${email.subject}\n${email.text.split(FOOTER_PREFIX)[0]}`;
+  return `${email.subject}\n${preheader(email)}\n${email.text.split(FOOTER_PREFIX)[0]}`;
 }
 
 describe('email templates', () => {
@@ -88,11 +113,15 @@ describe('email templates', () => {
     expect(email.html).not.toMatch(/<button/i);
   });
 
-  it.each(ALL)('%s carries preheader text and a document title', async (_name, pending) => {
+  it.each(ALL)('%s carries a preheader, hidden, and not a copy of the body', async (_name, pending) => {
     const email = await pending;
-    expect(email.html).toMatch(/<title>/i);
-    // the preheader is hidden text, so it must not repeat the first body line verbatim
+    const snippet = preheader(email);
+    expect(snippet.length).toBeGreaterThan(20);
+    // rendered as hidden text, so gmail reads it as the snippet rather than
+    // showing it twice
     expect(email.html).toMatch(/display:none/i);
+    // and it earns its place: repeating the opening line wastes the slot
+    expect(email.text.split('\n')[0]).not.toBe(snippet);
   });
 
   it('escapes calendar titles instead of trusting them', async () => {

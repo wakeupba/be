@@ -129,10 +129,12 @@ export function OutOfCalls({
 }) {
   const shown = upcoming.slice(0, 5);
   return (
-    <Shell preview={`${shown.length} flagged meetings will not ring until you have calls again.`}>
+    <Shell preview="Flagged meetings will not ring until you have calls again.">
       <Text style={styles.text}>
-        That was the last call on your plan this month. These meetings are still flagged, and we will not be
-        able to ring you for them:
+        That was the last call on your plan this month.{' '}
+        {shown.length === 1
+          ? 'This meeting is still flagged, and we will not be able to ring you for it:'
+          : 'These meetings are still flagged, and we will not be able to ring you for them:'}
       </Text>
       <Section style={{ margin: '0 0 16px' }}>
         {shown.map((meeting) => (

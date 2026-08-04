@@ -5,7 +5,7 @@ import { EventRepo, LATE_GRACE_MS } from '../src/repos/events';
 import { TokenRepo } from '../src/repos/tokens';
 import { UserRepo } from '../src/repos/users';
 import { WebhookEventRepo } from '../src/repos/webhook-events';
-import { GoogleAuthRevokedError, type GoogleClient } from '../src/services/calendar/google-client';
+import { GoogleInvalidGrantError, type GoogleClient } from '../src/services/calendar/google-client';
 import { CalendarSyncService } from '../src/services/calendar/sync';
 import { CallDispatchService } from '../src/services/calls/dispatcher';
 import { CallLifecycleService } from '../src/services/calls/lifecycle';
@@ -185,7 +185,7 @@ describe('transactional emails', () => {
     await tokens.upsertRefreshToken(user.id, await encryptSecret('refresh-token', ENC_KEY));
     const revokedGoogle = {
       refreshAccessToken: async () => {
-        throw new GoogleAuthRevokedError('google grant revoked: 400 {"error":"invalid_grant"}');
+        throw new GoogleInvalidGrantError('google grant revoked: 400 {"error":"invalid_grant"}');
       },
     } as unknown as GoogleClient;
     const sync = new CalendarSyncService(revokedGoogle, users, tokens, new EventRepo(db), ENC_KEY, notifier);

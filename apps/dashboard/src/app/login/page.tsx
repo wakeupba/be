@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BabeMark } from '@/components/brand/mark';
 import { ButtonLink } from '@/components/ui/button';
 import { Shell } from '@/components/ui/panel';
@@ -16,10 +16,18 @@ const LANDING = process.env.NEXT_PUBLIC_LANDING_ORIGIN ?? 'https://wakeupba.be';
  */
 export default function LoginPage() {
   const { state } = useMe();
+  /* the api bounces here when a sign-in code was already spent, which is
+   * what refreshing the callback url does; say so instead of looking like
+   * the button silently failed */
+  const [staleAttempt, setStaleAttempt] = useState(false);
 
   useEffect(() => {
     if (state.status === 'ready') window.location.replace('/');
   }, [state.status]);
+
+  useEffect(() => {
+    setStaleAttempt(new URLSearchParams(window.location.search).get('retry') === 'stale');
+  }, []);
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-6">
@@ -35,6 +43,11 @@ export default function LoginPage() {
           <ButtonLink href={api.loginUrl()} size="lg" className="w-full">
             Sign in with Google
           </ButtonLink>
+          {staleAttempt && (
+            <p className="-mt-2 font-mono text-[11px] leading-relaxed text-muted-foreground">
+              that sign in link was already used, start again
+            </p>
+          )}
           <p className="font-mono text-[10px] text-muted-foreground/60">read-only calendar access</p>
         </div>
       </Shell>

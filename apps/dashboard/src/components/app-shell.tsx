@@ -6,15 +6,17 @@ import {
   ClockCounterClockwise,
   CreditCard,
   House,
+  List,
   MapTrifold,
   PhoneCall,
   SignOut,
+  X,
 } from '@phosphor-icons/react';
 import { creditsUsable, type MeDto } from '@wakeupbabe/shared';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { BabeMark } from '@/components/brand/mark';
 import { buttonVariants } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -45,11 +47,27 @@ function isActive(href: string, pathname: string): boolean {
   return pathname.replace(/\/+$/, '/') === href || pathname.startsWith(href);
 }
 
-function SidebarLink({ item, pathname, enabled }: { item: NavItem; pathname: string; enabled: boolean }) {
+/* pillId scopes the sliding active pill to one rail: the desktop aside stays
+ * mounted under `hidden lg:flex` while the drawer is open, and two live
+ * elements sharing a layoutId make the pill fly between them. */
+function SidebarLink({
+  item,
+  pathname,
+  enabled,
+  pillId,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  enabled: boolean;
+  pillId: string;
+  onNavigate?: () => void;
+}) {
   const active = isActive(item.href, pathname);
   return (
     <Link
       href={enabled ? item.href : '/'}
+      onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-150',
@@ -58,7 +76,7 @@ function SidebarLink({ item, pathname, enabled }: { item: NavItem; pathname: str
     >
       {active && (
         <motion.span
-          layoutId="nav-pill"
+          layoutId={pillId}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
           className="absolute inset-0 rounded-lg border border-border/50 bg-card shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
           aria-hidden
@@ -72,7 +90,7 @@ function SidebarLink({ item, pathname, enabled }: { item: NavItem; pathname: str
 
 /** identity pill anchoring the rail, spoo anatomy: avatar + name/email +
  * stepper chevron opening the account menu upward */
-function ProfilePill({ me }: { me: MeDto }) {
+function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const name = me.displayName?.trim() || me.email.split('@')[0];
@@ -129,7 +147,10 @@ function ProfilePill({ me }: { me: MeDto }) {
             <Link
               href="/call-setup/"
               role="menuitem"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                onNavigate?.();
+              }}
               className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-muted/50 hover:text-foreground"
             >
               <PhoneCall size={13} aria-hidden />
@@ -230,6 +251,154 @@ function UsageMeter({ me }: { me: MeDto }) {
 }
 
 /*
+ * The rail's body, shared by the desktop aside and the mobile drawer so the
+ * two can never drift apart. `compact` trims the breathing zone, which the
+ * drawer cannot afford on short viewports.
+ */
+function RailBody({
+  me,
+  pathname,
+  pillId,
+  compact,
+  onNavigate,
+}: {
+  me: MeDto | null;
+  pathname: string;
+  pillId: string;
+  compact?: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <>
+      <nav className="flex flex-col">
+        {NAV_GROUPS.map((group, index) => (
+          <div key={group[0]?.href} className="flex flex-col gap-0.5">
+            {index > 0 && <div className="mx-2 my-2.5 border-t border-border/60" />}
+            {group.map((item) => (
+              <SidebarLink
+                key={item.href}
+                item={item}
+                pathname={pathname}
+                enabled={me !== null}
+                pillId={pillId}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      {/* breathing zone: the rail stays unfilled by design */}
+      <div className={cn('flex-1', compact ? 'min-h-6' : 'min-h-[90px]')} />
+
+      {/* pinned footer: meta nav, the usage card, and the identity pill,
+          separated from the scroll zone by a full-bleed hairline */}
+      <div className="-mx-4 border-t border-border/60 px-4 py-4">
+        <div className="mb-3 space-y-0.5">
+          {UTILITY_NAV.map((item) => (
+            <SidebarLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              enabled={me !== null}
+              pillId={pillId}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+        {me && <UsageMeter me={me} />}
+        {me ? <ProfilePill me={me} onNavigate={onNavigate} /> : <div aria-hidden className="h-[52px]" />}
+      </div>
+    </>
+  );
+}
+
+/*
+ * Small screens get the same rail as a floating sheet over a scrim, summoned
+ * by the topbar hamburger: the nav is too tall to live in a 56px header, and
+ * icon-only tabs dropped both the labels and the usage/identity footer.
+ */
+function NavDrawer({
+  me,
+  pathname,
+  open,
+  onClose,
+}: {
+  me: MeDto | null;
+  pathname: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.focus();
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="lg:hidden">
+          {/* tap-out target only: Escape and the panel's own close button carry
+              the keyboard and screen-reader paths, so it stays out of the tree */}
+          <motion.button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 cursor-default bg-foreground/20"
+          />
+          <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation"
+            tabIndex={-1}
+            initial={reduceMotion ? { opacity: 0 } : { x: -284 }}
+            animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { x: -284 }}
+            transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overflow-y-auto rounded-2xl border border-border bg-background px-4 shadow-card focus-visible:outline-none"
+          >
+            <div className="flex h-14 shrink-0 items-center justify-between">
+              <Link
+                href="/"
+                onClick={onClose}
+                className="flex items-center gap-2 text-[15px] font-semibold tracking-tight"
+              >
+                {/* the wordmark beside it already names the link */}
+                <BabeMark className="size-6" aria-hidden />
+                Wake Up Babe
+              </Link>
+              <button
+                type="button"
+                aria-label="Close navigation"
+                onClick={onClose}
+                className="-mr-1.5 flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted/60 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <X size={15} aria-hidden />
+              </button>
+            </div>
+            <RailBody me={me} pathname={pathname} pillId="nav-pill-drawer" compact onNavigate={onClose} />
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/*
  * Real-dashboard architecture: a sidebar living on the canvas floor beside an
  * elevated content sheet with its own sticky topbar and scroll. Rendered once
  * from the (app) layout so it survives route changes; the active-nav pill
@@ -238,6 +407,16 @@ function UsageMeter({ me }: { me: MeDto }) {
 export function AppShell({ me, children }: { me: MeDto | null; children: ReactNode }) {
   const pathname = usePathname();
   const title = titleFor(pathname, me);
+  const [navOpen, setNavOpen] = useState(false);
+  const closeNav = useCallback(() => setNavOpen(false), []);
+
+  /* any route change closes the drawer, including a back-button one no link
+   * handler sees; reset during render so it never paints over the new page */
+  const [navPath, setNavPath] = useState(pathname);
+  if (navPath !== pathname) {
+    setNavPath(pathname);
+    setNavOpen(false);
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas">
@@ -248,67 +427,31 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
           href="/"
           className="flex h-18 shrink-0 items-center gap-2 text-[15px] font-semibold tracking-tight"
         >
-          <BabeMark className="size-6" />
+          {/* the wordmark beside it already names the link */}
+          <BabeMark className="size-6" aria-hidden />
           Wake Up Babe
         </Link>
 
-        <nav className="flex flex-col">
-          {NAV_GROUPS.map((group, index) => (
-            <div key={group[0]?.href} className="flex flex-col gap-0.5">
-              {index > 0 && <div className="mx-2 my-2.5 border-t border-border/60" />}
-              {group.map((item) => (
-                <SidebarLink key={item.href} item={item} pathname={pathname} enabled={me !== null} />
-              ))}
-            </div>
-          ))}
-        </nav>
-
-        {/* breathing zone: the rail stays unfilled by design */}
-        <div className="min-h-[90px] flex-1" />
-
-        {/* pinned footer: meta nav, the usage card, and the identity pill,
-            separated from the scroll zone by a full-bleed hairline */}
-        <div className="-mx-4 border-t border-border/60 px-4 py-4">
-          <div className="mb-3 space-y-0.5">
-            {UTILITY_NAV.map((item) => (
-              <SidebarLink key={item.href} item={item} pathname={pathname} enabled={me !== null} />
-            ))}
-          </div>
-          {me && <UsageMeter me={me} />}
-          {me ? <ProfilePill me={me} /> : <div aria-hidden className="h-[52px]" />}
-        </div>
+        <RailBody me={me} pathname={pathname} pillId="nav-pill" />
       </aside>
+
+      <NavDrawer me={me} pathname={pathname} open={navOpen} onClose={closeNav} />
 
       {/* elevated content sheet */}
       <div className="m-3 flex min-w-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border bg-background shadow-card lg:ml-0">
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background px-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight lg:hidden">
-              <BabeMark className="size-6" />
-            </Link>
-            <h1 className="text-[15px] font-medium tracking-tight">{title}</h1>
-          </div>
-          {/* small screens get icon-only tabs; the sidebar covers large */}
-          <nav className="flex items-center gap-0.5 lg:hidden">
-            {me &&
-              NAV.map((item) => {
-                const active = isActive(item.href, pathname);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-label={item.label}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex size-8 items-center justify-center rounded-lg transition-colors duration-150',
-                      active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    <item.icon size={17} weight={active ? 'fill' : 'regular'} aria-hidden />
-                  </Link>
-                );
-              })}
-          </nav>
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border/60 bg-background px-4 sm:px-6">
+          {/* the drawer carries the brand on small screens, so the trigger
+              takes the mark's slot instead of crowding beside it */}
+          <button
+            type="button"
+            aria-label="Open navigation"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(true)}
+            className="-ml-1 flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-colors duration-150 hover:bg-muted/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:translate-y-px lg:hidden"
+          >
+            <List size={16} aria-hidden />
+          </button>
+          <h1 className="text-[15px] font-medium tracking-tight">{title}</h1>
         </header>
         <main className="flex flex-1 flex-col px-4 py-6 sm:px-6">{children}</main>
       </div>

@@ -105,6 +105,31 @@ export const waitlist = sqliteTable('waitlist', {
   createdAt: integer('created_at').notNull(),
 });
 
+/*
+ * What each top-up payment granted, keyed by the payment it came from.
+ *
+ * Refund and dispute events carry only a payment_id, never the cart, so
+ * without this there is nothing to reverse against: we would be guessing at
+ * how many credits to take back. revokedAt makes the reversal idempotent, for
+ * the case where a dispute is lost and then also refunded.
+ */
+export const creditGrants = sqliteTable(
+  'credit_grants',
+  {
+    paymentId: text('payment_id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    packs: integer('packs').notNull(),
+    calls: integer('calls').notNull(),
+    grantedAt: integer('granted_at').notNull(),
+    revokedAt: integer('revoked_at'),
+    /** which event took it back, for reconciling against Dodo's ledger */
+    revokedReason: text('revoked_reason'),
+  },
+  (table) => [index('idx_credit_grants_user').on(table.userId)],
+);
+
 // processed billing webhook ids: providers redeliver with the same id on
 // retry, and credit grants must not double-apply
 export const webhookEvents = sqliteTable('webhook_events', {

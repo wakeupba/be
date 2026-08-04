@@ -101,6 +101,30 @@ export class UserRepo {
   }
 
   /**
+   * Takes back credits whose payment came back: a refund, or a dispute the
+   * cardholder won. Both counters floor at zero in SQL rather than in JS,
+   * because the user may already have spent what we are reversing and a
+   * negative balance would read as a debt we never intend to collect.
+   *
+   * Returns how many credits were actually reclaimed, so the caller can say
+   * plainly when a reversal could not be made whole.
+   */
+  async revokeCallCredits(id: string, credits: number, packs: number): Promise<number> {
+    const before = await this.findById(id);
+    if (!before) return 0;
+    const reclaimed = Math.min(before.extraCallCredits, credits);
+    await this.db
+      .update(users)
+      .set({
+        extraCallCredits: sql`MAX(0, ${users.extraCallCredits} - ${credits})`,
+        topupPacksThisPeriod: sql`MAX(0, ${users.topupPacksThisPeriod} - ${packs})`,
+        updatedAt: Date.now(),
+      })
+      .where(eq(users.id, id));
+    return reclaimed;
+  }
+
+  /**
    * Consumes one call from the monthly allowance, falling back to prepaid
    * credits. Returns false when the user has nothing left. The guarded
    * UPDATE keeps two concurrent cron ticks from double-spending. Credits

@@ -1,6 +1,7 @@
 import { createDb } from './db/client';
 import type { Env } from './env';
 import { CallRepo } from './repos/calls';
+import { CreditGrantRepo } from './repos/credit-grants';
 import { EventRepo } from './repos/events';
 import { TokenRepo } from './repos/tokens';
 import { UserRepo } from './repos/users';
@@ -33,6 +34,7 @@ export function buildContainer(env: Env) {
   const calls = new CallRepo(db);
   const votes = new VoteRepo(db);
   const webhookEvents = new WebhookEventRepo(db);
+  const creditGrants = new CreditGrantRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
   // callback URLs handed to Twilio (and verified on the way back) must be
@@ -74,6 +76,7 @@ export function buildContainer(env: Env) {
     calls,
     votes,
     webhookEvents,
+    creditGrants,
     google,
     telephony,
     sync,

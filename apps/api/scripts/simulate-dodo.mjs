@@ -11,9 +11,19 @@
  *   pnpm sim:dodo expire               # paid term ends -> downgrade
  *   pnpm sim:dodo hold                 # renewal payment failed
  *   pnpm sim:dodo topup [--packs 2]    # buy prepaid call packs
+ *   pnpm sim:dodo refund               # refund the last top-up, credits come back
+ *   pnpm sim:dodo refund-partial       # partial refund, left for ops to decide
+ *   pnpm sim:dodo dispute-lost         # chargeback settled against us
+ *   pnpm sim:dodo dispute-won          # chargeback we kept, changes nothing
+ *
+ * The reversal events reuse the payment id of the most recent grant for this
+ * user, so `topup` then `refund` is a round trip. Pass --payment to aim at a
+ * specific one, which is how the "subscription charge reversed" path is
+ * reached (any payment id with no grant behind it).
  *
  * Flags: --user <id> (default: first user in the local D1)
  *        --origin <url> (default: http://localhost:8787)
+ *        --payment <id> (default: newest grant for the user)
  */
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -71,6 +81,30 @@ const metadata = { userId };
 const subscription_id = arg('sub', 'sub_local_sim');
 const packs = Number(arg('packs', '1'));
 
+/* a real top-up carries the payment it was bought with, and a reversal is the
+ * only way back to it. So a purchase always invents a fresh payment id, while a
+ * reversal aims at the newest grant by default: `topup` then `refund` round
+ * trips without anyone copying ids around. */
+const escapedUser = userId.replaceAll("'", "''");
+const newestGrant = (() => {
+  try {
+    return d1(
+      `SELECT payment_id FROM credit_grants WHERE user_id = '${escapedUser}' ORDER BY granted_at DESC LIMIT 1`,
+    )[0];
+  } catch {
+    // table not migrated yet, which is fine: there are no grants to reverse
+    return undefined;
+  }
+})();
+const freshPaymentId = `pay_local_${crypto.randomUUID().slice(0, 8)}`;
+const purchasePaymentId = arg('payment', freshPaymentId);
+// with no grant to point at, a reversal exercises the subscription-charge path
+const reversalPaymentId = arg('payment', newestGrant?.payment_id ?? freshPaymentId);
+const reversal = (type, extra = {}) => ({
+  type,
+  data: { customer, metadata, payment_id: reversalPaymentId, ...extra },
+});
+
 // payload shapes mirror real deliveries observed in test mode: subscription
 // events carry the status snapshot, and a portal cancel arrives as
 // subscription.updated with status still active
@@ -95,9 +129,14 @@ const payloads = {
     data: {
       customer,
       metadata,
+      payment_id: purchasePaymentId,
       product_cart: [{ product_id: vars.DODO_PRODUCT_TOPUP || 'prod_local_topup', quantity: packs }],
     },
   },
+  refund: reversal('refund.succeeded', { is_partial: false, status: 'succeeded' }),
+  'refund-partial': reversal('refund.succeeded', { is_partial: true, status: 'succeeded' }),
+  'dispute-lost': reversal('dispute.lost', { dispute_status: 'dispute_lost', dispute_stage: 'dispute' }),
+  'dispute-won': reversal('dispute.won', { dispute_status: 'dispute_won', dispute_stage: 'dispute' }),
 };
 
 const payload = payloads[event];

@@ -1,6 +1,7 @@
 import { createDb } from './db/client';
 import type { Env } from './env';
 import { CallRepo } from './repos/calls';
+import { CounterRepo } from './repos/counters';
 import { DemoCallRepo } from './repos/demo-calls';
 import { EventRepo } from './repos/events';
 import { RegionInterestRepo } from './repos/region-interest';
@@ -37,6 +38,7 @@ export function buildContainer(env: Env) {
   const webhookEvents = new WebhookEventRepo(db);
   const regionInterest = new RegionInterestRepo(db);
   const demoCalls = new DemoCallRepo(db);
+  const counters = new CounterRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
   // callback URLs handed to Twilio (and verified on the way back) must be
@@ -84,6 +86,7 @@ export function buildContainer(env: Env) {
     webhookEvents,
     regionInterest,
     demoCalls,
+    counters,
     google,
     telephony,
     sync,

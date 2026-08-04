@@ -1,7 +1,9 @@
 import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
-import { demoCalls } from '../src/db/schema';
+import { counters, demoCalls } from '../src/db/schema';
+import { CounterRepo } from '../src/repos/counters';
+import { budgetKeyFor } from '../src/routes/demo';
 import { testDb } from './helpers';
 
 /*
@@ -136,16 +138,18 @@ describe('demo call refusals', () => {
     expect(((await response.json()) as { code: string }).code).toBe('region_unsupported');
   });
 
-  it('rings a number only once, whoever asks for it', async () => {
+  it('caps a number across visitors, not just per visitor', async () => {
     const phone = uniquePhone();
-    // the first attempt gets as far as Twilio, which the bogus creds reject
-    await callDemoFrom(`ip-${crypto.randomUUID()}`, phone).catch(() => undefined);
+    // two attempts from unrelated addresses use up the number's daily pair
+    for (let n = 0; n < 2; n++) {
+      await callDemoFrom(`ip-${crypto.randomUUID()}`, phone).catch(() => undefined);
+    }
 
-    // a different visitor, same number: refused, and the wording gives away
-    // nothing about who rang it before
-    const second = await callDemoFrom(`ip-${crypto.randomUUID()}`, phone);
-    expect(second.status).toBe(429);
-    expect(((await second.json()) as { error: string }).error).toContain('number');
+    // a third visitor is refused on the number's allowance, and the wording
+    // gives away nothing about who rang it before
+    const third = await callDemoFrom(`ip-${crypto.randomUUID()}`, phone);
+    expect(third.status).toBe(429);
+    expect(((await third.json()) as { error: string }).error).toContain('number');
   });
 
   it('caps one visitor across different numbers', async () => {
@@ -160,14 +164,8 @@ describe('demo call refusals', () => {
 
   it('stops when the week is spent, and says so through availability', async () => {
     const db = testDb();
-    // a week's worth of spend already on the books
-    await db.insert(demoCalls).values({
-      id: `dmo_${crypto.randomUUID()}`,
-      phoneHash: 'spent',
-      ipHash: 'spent',
-      costUsd: 10,
-      createdAt: Date.now(),
-    });
+    // park a full week's budget in the counter that gates spend
+    await new CounterRepo(db).spend(budgetKeyFor(Date.now()), 10_000, 10_000);
 
     const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN });
     expect(response.status).toBe(429);
@@ -178,6 +176,58 @@ describe('demo call refusals', () => {
       demoEnv(),
     );
     expect(await availability.json()).toEqual({ available: false });
+  });
+});
+
+describe('the budget counter', () => {
+  /* This is what replaced a per-10-minutes cap. That cap existed because the
+   * old budget was read-then-write and could be raced, and it meant a viral
+   * page would refuse people while the budget still had room. It can only be
+   * gone if the counter is genuinely exact, so that is what these check. */
+
+  it('admits spend up to the ceiling and refuses the unit that would exceed it', async () => {
+    const repo = new CounterRepo(testDb());
+    const key = `test:${crypto.randomUUID()}`;
+    expect(await repo.spend(key, 6, 10)).toBe(true);
+    expect(await repo.spend(key, 4, 10)).toBe(true); // exactly at the ceiling
+    expect(await repo.spend(key, 1, 10)).toBe(false);
+    expect(await repo.read(key)).toBe(10);
+  });
+
+  it('refuses an amount larger than the ceiling without creating the row', async () => {
+    // the insert branch has no WHERE to guard it, so this is the one case that
+    // could have slipped a single oversized spend through
+    const repo = new CounterRepo(testDb());
+    const key = `test:${crypto.randomUUID()}`;
+    expect(await repo.spend(key, 11, 10)).toBe(false);
+    expect(await repo.read(key)).toBe(0);
+  });
+
+  it('cannot be raced past the ceiling by simultaneous callers', async () => {
+    const repo = new CounterRepo(testDb());
+    const key = `test:${crypto.randomUUID()}`;
+    // twenty at once against room for five: exactly five may win, whatever
+    // order they interleave in
+    const results = await Promise.all(Array.from({ length: 20 }, () => repo.spend(key, 1, 5)));
+    expect(results.filter(Boolean)).toHaveLength(5);
+    expect(await repo.read(key)).toBe(5);
+  });
+
+  it('gives spend back, and floors at zero so a double refund mints nothing', async () => {
+    const repo = new CounterRepo(testDb());
+    const key = `test:${crypto.randomUUID()}`;
+    await repo.spend(key, 5, 10);
+    await repo.refund(key, 3);
+    expect(await repo.read(key)).toBe(2);
+    await repo.refund(key, 50);
+    expect(await repo.read(key)).toBe(0);
+  });
+
+  it('charges a fresh window when the week rolls over', async () => {
+    const week = 7 * 24 * 60 * 60_000;
+    expect(budgetKeyFor(0)).not.toBe(budgetKeyFor(week));
+    // a call placed near the boundary refunds where it was charged
+    expect(budgetKeyFor(week - 1)).toBe(budgetKeyFor(0));
   });
 });
 

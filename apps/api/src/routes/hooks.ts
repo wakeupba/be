@@ -8,6 +8,7 @@ import { logEvent } from '../lib/log';
 import type { CallRow } from '../repos/calls';
 import { DEMO_SCRIPT, VERIFICATION_SCRIPT } from '../services/calls/script';
 import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
+import { budgetKeyFor, costMills } from './demo';
 
 type HookContext = { Bindings: Env; Variables: { container: Container } };
 
@@ -110,9 +111,18 @@ export const demoCallRoutes = new Hono<HookContext>()
   .post('/hangup', async (c) => {
     const demo = await authenticateDemo(c, c.env.SESSION_SECRET);
     if (!demo) return c.text('forbidden', 403);
-    // never answered, so nothing is billed and the week's budget gets it back.
-    // The row stays and still counts against the per-number cap
-    if (demo.answeredAt === null) await c.get('container').demoCalls.release(demo.id);
+    /* Never answered, so Twilio bills nothing and the week gets its money back.
+     * The row stays, and still counts against the per-number cap: ringing
+     * someone is the harm whether or not they picked up, and releasing it would
+     * make unanswered calls unlimited.
+     *
+     * Refunded against the week the call was charged to, not the current one,
+     * which matters for a call that straddled the boundary. */
+    if (demo.answeredAt === null) {
+      const { demoCalls, counters } = c.get('container');
+      await counters.refund(budgetKeyFor(demo.createdAt), costMills(demo.costUsd));
+      await demoCalls.release(demo.id);
+    }
     return c.text('ok');
   });
 

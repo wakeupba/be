@@ -126,6 +126,20 @@ export const regionInterest = sqliteTable(
 );
 
 /*
+ * Integer counters with a ceiling, incremented atomically.
+ *
+ * Exists because the slot-claiming limiter costs one write per slot it probes,
+ * which is fine for a cap of five and unusable for a cap of thousands: the
+ * busiest moment would spend the most writes refusing people. A single guarded
+ * UPDATE is one round trip whatever the ceiling, and cannot overshoot it.
+ */
+export const counters = sqliteTable('counters', {
+  key: text('key').primaryKey(),
+  value: integer('value').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+/*
  * Every demo call the landing page placed. One table serves four jobs, which is
  * why it holds cost rather than just a count: the weekly budget sums costUsd,
  * the per-visitor and per-number caps count rows, and the whole thing is the

@@ -1,3 +1,9 @@
+CREATE TABLE `counters` (
+	`key` text PRIMARY KEY NOT NULL,
+	`value` integer NOT NULL,
+	`updated_at` integer NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `demo_calls` (
 	`id` text PRIMARY KEY NOT NULL,
 	`phone_hash` text NOT NULL,

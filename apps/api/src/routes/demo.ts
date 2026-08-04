@@ -5,7 +5,7 @@ import type { Env } from '../env';
 import { callRateUsd, isCallableNumber } from '../lib/call-rates';
 import { hmacSign } from '../lib/crypto';
 import { logEvent } from '../lib/log';
-import { claimRateSlot, clientIp } from '../lib/rate-limit';
+import { clientIp } from '../lib/rate-limit';
 
 /*
  * "Type your number, your phone rings." The strongest proof this product can
@@ -26,17 +26,14 @@ const DEFAULT_WEEKLY_BUDGET_USD = 10;
 const WEEK_MS = 7 * 24 * 60 * 60_000;
 const DAY_MS = 24 * 60 * 60_000;
 
-/** one visitor: enough to try it and show a friend, not enough to be a service */
-const PER_IP_PER_DAY = 2;
-const PER_IP_PER_WEEK = 3;
-/** one number: this is what stops the demo being pointed at someone else's
- * phone, and it counts unanswered calls too, since ringing is the harm */
-const PER_NUMBER_PER_DAY = 1;
-const PER_NUMBER_PER_WEEK = 2;
-/** a coarse global burst cap. The weekly budget bounds total spend, but its
- * SUM is read-then-write, so a coordinated burst could overshoot it; this is
- * the atomic backstop that keeps the overshoot small */
-const GLOBAL_PER_10_MIN = 20;
+/* Budget is counted in thousandths of a dollar so it can live in an integer
+ * counter. Costs round up, so the budget is never overspent by rounding. */
+const MILLS_PER_USD = 1000;
+
+/** per visitor, and per number, on the same allowance: a number is as likely
+ * to be a person trying the product as an address is */
+const PER_DAY = 2;
+const PER_WEEK = 3;
 
 const RING_TIMEOUT_SECONDS = 25;
 
@@ -59,9 +56,20 @@ function fingerprint(value: string, secret: string): Promise<string> {
   return hmacSign(`demo:${value}`, secret);
 }
 
-async function budgetLeft(container: Container, env: Env): Promise<number> {
-  const spent = await container.demoCalls.spentSince(Date.now() - WEEK_MS);
-  return weeklyBudgetUsd(env) - spent;
+function budgetMills(env: Env): number {
+  return Math.round(weeklyBudgetUsd(env) * MILLS_PER_USD);
+}
+
+/** rounds up, so a fractional cost can never be spent for free */
+export function costMills(costUsd: number): number {
+  return Math.max(1, Math.ceil(costUsd * MILLS_PER_USD));
+}
+
+/** the week a demo call was charged to, derived from when it happened rather
+ * than from now, so a refund lands in the same window as the spend even if the
+ * call outlived the boundary */
+export function budgetKeyFor(atMs: number): string {
+  return `demo:mills:${Math.floor(atMs / WEEK_MS)}`;
 }
 
 export const demoRoutes = new Hono<DemoContext>()
@@ -72,8 +80,8 @@ export const demoRoutes = new Hono<DemoContext>()
    */
   .get('/demo/availability', async (c) => {
     if (!demoConfigured(c.env)) return c.json({ available: false });
-    const left = await budgetLeft(c.get('container'), c.env);
-    return c.json({ available: left > 0 });
+    const spent = await c.get('container').counters.read(budgetKeyFor(Date.now()));
+    return c.json({ available: spent < budgetMills(c.env) });
   })
 
   .post('/demo/call', async (c) => {
@@ -107,11 +115,6 @@ export const demoRoutes = new Hono<DemoContext>()
     }
     const costUsd = callRateUsd(phone) ?? 0;
 
-    if (!(await claimRateSlot(container, 'demo:global', GLOBAL_PER_10_MIN, 10 * 60_000))) {
-      logEvent('warn', 'demo.global_burst_cap', { ip });
-      return c.json({ error: 'the demo is busy, try again in a few minutes' }, 429);
-    }
-
     const [phoneHash, ipHash] = await Promise.all([
       fingerprint(phone, c.env.SESSION_SECRET),
       fingerprint(ip, c.env.SESSION_SECRET),
@@ -128,21 +131,29 @@ export const demoRoutes = new Hono<DemoContext>()
     /* the per-number answer is deliberately the same whether this visitor rang
      * it or somebody else did, so the demo cannot be used to find out whether
      * a number has been entered before */
-    if (numberToday >= PER_NUMBER_PER_DAY || numberWeek >= PER_NUMBER_PER_WEEK) {
-      return c.json({ error: 'this number has already had its demo call' }, 429);
+    if (numberToday >= PER_DAY || numberWeek >= PER_WEEK) {
+      return c.json({ error: 'this number has had its demo calls for now' }, 429);
     }
-    if (ipToday >= PER_IP_PER_DAY || ipWeek >= PER_IP_PER_WEEK) {
+    if (ipToday >= PER_DAY || ipWeek >= PER_WEEK) {
       return c.json({ error: 'you have used your demo calls, sign up to get the real thing' }, 429);
     }
 
-    const left = await budgetLeft(container, c.env);
-    if (left < costUsd) {
+    /* The budget is the only ceiling on how fast this can run, on purpose.
+     * There is no per-minute cap: if the page goes viral, the thing that should
+     * stop the demo is running out of money, not an arbitrary window that
+     * refuses people while the budget still has room.
+     *
+     * That is only safe because this is exact. One guarded statement, so a
+     * thousand simultaneous requests cannot all be told yes. */
+    const mills = costMills(costUsd);
+    const budgetKey = budgetKeyFor(Date.now());
+    if (!(await container.counters.spend(budgetKey, mills, budgetMills(c.env)))) {
       await warnBudgetSpent(container, c.env);
       return c.json({ error: 'the demo is out for this week' }, 429);
     }
 
-    // reserved before dialling, so a crash between the two leaves us having
-    // counted a call we might not have placed rather than the reverse
+    // recorded after the money is committed, so the audit row can never claim
+    // spend the budget did not actually admit
     const demoId = await container.demoCalls.reserve({ phoneHash, ipHash, costUsd });
 
     try {
@@ -155,8 +166,9 @@ export const demoRoutes = new Hono<DemoContext>()
       });
       await container.demoCalls.markPlaced(demoId, placed.providerCallId);
     } catch (error) {
-      // the carrier refused, so nothing will be billed: hand the reservation
-      // back rather than charging the week's budget for a call that never rang
+      // the carrier refused, so nothing will be billed: hand the money back
+      // rather than charging the week for a call that never rang
+      await container.counters.refund(budgetKey, mills);
       await container.demoCalls.release(demoId);
       throw error;
     }

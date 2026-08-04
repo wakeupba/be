@@ -7,10 +7,9 @@ export class DemoCallRepo {
   constructor(private readonly db: Db) {}
 
   /**
-   * Reserves the cost before the call is placed. Money is spent in the order
-   * it is committed to, not the order it is confirmed: a reservation that ends
-   * up unanswered is released, whereas a call placed before its cost was
-   * recorded is spend nobody counted.
+   * Records a call the budget has already admitted. costUsd is kept here as the
+   * audit trail and as what a refund reverses, but it is not what gates spend:
+   * the counter is, so the two cannot disagree about whether a call was allowed.
    */
   async reserve(input: { phoneHash: string; ipHash: string; costUsd: number }): Promise<string> {
     const id = newId('dmo');
@@ -35,14 +34,6 @@ export class DemoCallRepo {
 
   async findById(id: string) {
     return this.db.query.demoCalls.findFirst({ where: eq(demoCalls.id, id) });
-  }
-
-  async spentSince(sinceMs: number): Promise<number> {
-    const [row] = await this.db
-      .select({ total: sql<number>`COALESCE(SUM(${demoCalls.costUsd}), 0)` })
-      .from(demoCalls)
-      .where(gte(demoCalls.createdAt, sinceMs));
-    return row?.total ?? 0;
   }
 
   async countByPhoneSince(phoneHash: string, sinceMs: number): Promise<number> {

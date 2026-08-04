@@ -39,6 +39,11 @@ export class TokenRepo {
    * statement. The state guard is the rate limit: a double-tapped refresh
    * finds the slot held and is served the data we already have. Same idiom as
    * events.tryClaimForCalling, and like it, safe across isolates.
+   *
+   * Deliberately the one write here that leaves `updatedAt` alone: it marks
+   * when we last asked Google, which is not a change to the credential, and
+   * bumping it on every refresh would make the column useless for the thing
+   * it exists to date.
    */
   async tryClaimSync(userId: string, notSince: number): Promise<boolean> {
     const result = await this.db

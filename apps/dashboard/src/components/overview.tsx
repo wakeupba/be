@@ -11,7 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import { type CallHistoryDto, type MeDto, PLAN_LIMITS, type UpcomingEventDto } from '@wakeupbabe/shared';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Kpi } from '@/components/ui/kpi';
 import { Panel, SectionHeader } from '@/components/ui/panel';
 import { api } from '@/lib/api';
@@ -20,34 +20,49 @@ import { gcalColor } from '@/lib/gcal-colors';
 import { cn } from '@/lib/utils';
 
 const RECENT_CALLS = 5;
-/** how long the button says it just checked, so a refresh never looks ignored */
-const CHECKED_LABEL_MS = 4000;
+/** how long the button reports the outcome, so a refresh never looks ignored */
+const OUTCOME_LABEL_MS = 4000;
+
+/*
+ * Server-declared end of the per-user cooldown. Module scope, not a ref: the
+ * cooldown belongs to the user, not to one mount, and Overview → Calls →
+ * Overview would otherwise reset it and spend a /me/sync that can only come
+ * back cooling_down. Same reasoning as the session store in use-me.
+ */
+let nextRefreshAt = 0;
+
+/* 'stale' covers both a sync google refused and a refresh we never got to run
+ * (no calendar, rate limited, network): in all of them the list on screen is
+ * the old one, and saying "up to date" would be a lie */
+type Outcome = 'checked' | 'stale';
 
 export function Overview({ me }: { me: MeDto }) {
   const [events, setEvents] = useState<UpcomingEventDto[] | null>(null);
   const [calls, setCalls] = useState<CallHistoryDto[] | null>(null);
   const [syncing, setSyncing] = useState(false);
-  const [justChecked, setJustChecked] = useState(false);
-  /* server-declared end of the cooldown: a refetch on tab focus inside it
-   * would only be handed back the answer we are already showing */
-  const nextRefreshAt = useRef(0);
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
 
   const refresh = useCallback(async () => {
     setSyncing(true);
     try {
       const result = await api.syncEvents();
       setEvents(result.events);
-      nextRefreshAt.current = result.nextRefreshAt;
+      nextRefreshAt = result.nextRefreshAt;
+      // cooling_down is still an honest "up to date": the list is the one from
+      // the last check, and that was inside the cooldown. 'failed' is not —
+      // it comes back 200 with the events we already had, so only status
+      // distinguishes it from a real sync
+      setOutcome(result.status === 'failed' ? 'stale' : 'checked');
     } catch {
-      // a refresh we were not allowed to run (no calendar, rate limited) still
-      // has to leave the page showing whatever we already know
+      // a refresh we were not allowed to run still has to leave the page
+      // showing whatever we already know
       await api
         .events()
         .then(setEvents)
         .catch(() => setEvents([]));
+      setOutcome('stale');
     } finally {
       setSyncing(false);
-      setJustChecked(true);
     }
   }, []);
 
@@ -69,16 +84,16 @@ export function Overview({ me }: { me: MeDto }) {
   }, [refresh, me.calendarConnected]);
 
   useEffect(() => {
-    if (!justChecked) return;
-    const timer = setTimeout(() => setJustChecked(false), CHECKED_LABEL_MS);
+    if (outcome === null) return;
+    const timer = setTimeout(() => setOutcome(null), OUTCOME_LABEL_MS);
     return () => clearTimeout(timer);
-  }, [justChecked]);
+  }, [outcome]);
 
   /* coming back to the tab is the other half of the paranoid refresh: you
    * flagged the meeting in Google Calendar and switched back here */
   useEffect(() => {
     const onFocus = () => {
-      if (!me.calendarConnected || Date.now() < nextRefreshAt.current) return;
+      if (!me.calendarConnected || Date.now() < nextRefreshAt) return;
       void refresh();
     };
     window.addEventListener('focus', onFocus);
@@ -129,10 +144,19 @@ export function Overview({ me }: { me: MeDto }) {
                 type="button"
                 onClick={() => void refresh()}
                 disabled={syncing}
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground disabled:opacity-60"
+                className={cn(
+                  'inline-flex items-center gap-1.5 text-xs transition-colors duration-150 hover:text-foreground disabled:opacity-60',
+                  !syncing && outcome === 'stale' ? 'text-destructive' : 'text-muted-foreground',
+                )}
               >
                 <ArrowsClockwise size={12} className={cn(syncing && 'animate-spin')} aria-hidden />
-                {syncing ? 'Checking…' : justChecked ? 'Up to date' : 'Refresh'}
+                {syncing
+                  ? 'Checking…'
+                  : outcome === 'stale'
+                    ? "Couldn't reach Google"
+                    : outcome === 'checked'
+                      ? 'Up to date'
+                      : 'Refresh'}
               </button>
             ) : undefined
           }

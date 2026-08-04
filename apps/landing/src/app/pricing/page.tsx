@@ -3,13 +3,19 @@ import { Cta } from '@/components/site/cta';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
 import { Pricing } from '@/components/site/pricing';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 
 const TITLE = 'Pricing';
 const DESCRIPTION =
   'Situationship is free with 5 calls a month. Ride or Die is $5 a month for 50 calls. Top up anytime, cancel in one click, no surprises.';
 
-export const metadata = pageMetadata({ title: TITLE, description: DESCRIPTION, path: '/pricing/' });
+export const metadata = pageMetadata({
+  title: TITLE,
+  description: DESCRIPTION,
+  path: '/pricing/',
+  card: OG_CARDS.pricing,
+  imageAlt: 'Five free. Fifty for $5. No metered billing, no surprise invoice.',
+});
 
 export default function PricingPage() {
   return (

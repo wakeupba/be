@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { SmoothScroll } from '@/components/motion/smooth-scroll';
 import { SiteJsonLd } from '@/components/seo/json-ld';
-import { SITE_NAME, SITE_TAGLINE, SITE_URL } from '@/lib/site';
+import { SITE_NAME, SITE_TAGLINE, SITE_URL, TWITTER_HANDLE } from '@/lib/site';
 import './globals.css';
 
 const geistSans = Geist({
@@ -53,6 +53,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    site: TWITTER_HANDLE,
+    creator: TWITTER_HANDLE,
     title: `${SITE_NAME} | Color a meeting red. Your phone rings before it.`,
     description:
       'Color a meeting red in Google Calendar. Your phone rings before it, through Do Not Disturb.',

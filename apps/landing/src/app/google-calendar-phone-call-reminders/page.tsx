@@ -3,18 +3,20 @@ import { ArticleShell, Prose, Section } from '@/components/site/article';
 import { Cta } from '@/components/site/cta';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 
 const PATH = '/google-calendar-phone-call-reminders/';
 const TITLE = 'Google Calendar phone call reminders';
 const DESCRIPTION =
-  'How to get an actual phone call before a Google Calendar event instead of a notification you will swipe away. Colour the event, answer the phone, press 1.';
+  'How to get an actual phone call before a Google Calendar event instead of a notification you will swipe away. Color the event, answer the phone, press 1.';
 const UPDATED = '2026-08-04';
 
 export const metadata = pageMetadata({
   title: TITLE,
   description: DESCRIPTION,
   path: PATH,
+  card: OG_CARDS.calendarReminders,
+  imageAlt: 'Color it red. The phone rings before the meeting.',
   type: 'article',
 });
 
@@ -49,20 +51,20 @@ export default function Page() {
             </Prose>
           </Section>
 
-          <Section n="02" title="Using event colour as the trigger">
+          <Section n="02" title="Using event color as the trigger">
             <Prose>
               The awkward part of any escalated-reminder setup is telling it which events deserve escalation.
               Building a separate list means maintaining a separate list. Tagging titles with keywords means
               your calendar reads like a filing system to everyone you invite.
             </Prose>
             <Prose>
-              Event colour is already there, already private to your view, and already something you can
-              change in two clicks from the event. Wake Up Babe watches for one colour, Tomato red by default,
-              and treats it as the instruction to call. You can point it at any of the eleven Google Calendar
-              colours instead, if red already means something else in your system.
+              Event color is already there, already private to your view, and already something you can change
+              in two clicks from the event. Wake Up Babe watches for one color, Tomato red by default, and
+              treats it as the instruction to call. You can point it at any of the eleven Google Calendar
+              colors instead, if red already means something else in your system.
             </Prose>
             <Prose>
-              Nothing about the event changes for anyone else. The colour is yours, the access is read-only,
+              Nothing about the event changes for anyone else. The color is yours, the access is read-only,
               and there is no new interface to keep up to date.
             </Prose>
           </Section>
@@ -125,8 +127,8 @@ export default function Page() {
             </Prose>
             <Prose>
               Current limits, plainly: Google Calendar only, with Outlook on the roadmap behind a vote on the
-              dashboard. Calls reach United States numbers, with other regions on a waitlist. Events you
-              colour minutes before they start may not survive the five-minute poll in time.
+              dashboard. Calls reach United States numbers, with other regions on a waitlist. Events you color
+              minutes before they start may not survive the five-minute poll in time.
             </Prose>
           </Section>
 

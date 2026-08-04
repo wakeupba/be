@@ -76,7 +76,7 @@ export function SoftwareJsonLd() {
         isAccessibleForFree: true,
         license: `${GITHUB_URL}/blob/main/LICENSE`,
         featureList: [
-          'Phone call reminders for colour-marked Google Calendar events',
+          'Phone call reminders for color-marked Google Calendar events',
           'Rings through Do Not Disturb on iOS and Android',
           'Keypad acknowledge and snooze',
           'Read-only calendar access',

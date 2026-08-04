@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { canonicalPath, SITE_NAME } from './site';
+import { canonicalPath, SITE_NAME, TWITTER_HANDLE } from './site';
 
 /*
  * Page metadata builder.
@@ -11,30 +11,54 @@ import { canonicalPath, SITE_NAME } from './site';
  * it. The result is a page that looks fine in the head and shares as a bare
  * link. Every subpage had that bug before this function existed.
  *
- * So: pages describe themselves, this assembles the whole block, and the card
- * image is impossible to forget.
+ * So: pages describe themselves, this assembles the whole block, and the card is
+ * impossible to forget.
  */
 
-const OG_IMAGE = '/opengraph-image.png';
-const TWITTER_IMAGE = '/twitter-image.png';
-const IMAGE_ALT =
-  'Wake Up Babe. Color a meeting red in Google Calendar and your phone rings before it starts.';
+/* Per-page cards live in public/og. The homepage keeps the brand card from the
+ * app-directory file convention, so it is not listed here. */
+export const OG_CARDS = {
+  pricing: '/og/pricing.png',
+  calendarReminders: '/og/calendar-reminders.png',
+  dnd: '/og/dnd.png',
+  alternatives: '/og/alternatives.png',
+  legal: '/og/legal.png',
+} as const;
+
+type OgCard = (typeof OG_CARDS)[keyof typeof OG_CARDS];
+
+/* Every card is 1200x600. Exactly 2:1 is what X wants for a large-image card;
+ * Facebook and LinkedIn prefer 1.91:1 and trim a few pixels off the long edge,
+ * which is why nothing load-bearing sits near the top or bottom of the art. */
+const CARD_WIDTH = 1200;
+const CARD_HEIGHT = 600;
 
 export function pageMetadata({
   title,
   description,
   path,
+  card,
+  imageAlt,
   type = 'website',
 }: {
   /* without the site name: the layout's title template appends it */
   title: string;
   description: string;
   path: string;
+  card: OgCard;
+  /* what the card actually says, not a description of the page */
+  imageAlt: string;
   type?: 'website' | 'article';
 }): Metadata {
   const canonical = canonicalPath(path);
   const shareTitle = `${title} | ${SITE_NAME}`;
-  const image = { url: OG_IMAGE, width: 1200, height: 600, alt: IMAGE_ALT };
+  const image = {
+    url: card,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    alt: imageAlt,
+    type: 'image/png',
+  };
 
   return {
     title,
@@ -51,9 +75,11 @@ export function pageMetadata({
     },
     twitter: {
       card: 'summary_large_image',
+      site: TWITTER_HANDLE,
+      creator: TWITTER_HANDLE,
       title: shareTitle,
       description,
-      images: [{ ...image, url: TWITTER_IMAGE }],
+      images: [image],
     },
   };
 }

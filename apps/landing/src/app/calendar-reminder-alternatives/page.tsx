@@ -3,7 +3,7 @@ import { ArticleShell, CompareTable, Prose, Section } from '@/components/site/ar
 import { Cta } from '@/components/site/cta';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 
 const PATH = '/calendar-reminder-alternatives/';
 const TITLE = 'Calendar reminder options, compared honestly';
@@ -15,6 +15,8 @@ export const metadata = pageMetadata({
   title: TITLE,
   description: DESCRIPTION,
   path: PATH,
+  card: OG_CARDS.alternatives,
+  imageAlt: 'Six ways. One rings. Notifications, email, SMS, alarms, assistants, calls.',
   type: 'article',
 });
 

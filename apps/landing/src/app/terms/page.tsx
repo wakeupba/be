@@ -2,7 +2,7 @@ import { BreadcrumbJsonLd } from '@/components/seo/json-ld';
 import { ArticleShell, Prose, Section } from '@/components/site/article';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 import { GITHUB_URL, SUPPORT_EMAIL } from '@/lib/site';
 
 const TITLE = 'Terms of Service';
@@ -14,6 +14,8 @@ export const metadata = pageMetadata({
   title: TITLE,
   description: DESCRIPTION,
   path: '/terms/',
+  card: OG_CARDS.legal,
+  imageAlt: 'Read-only. No recordings. What we store, and who else sees it.',
   type: 'article',
 });
 
@@ -44,9 +46,9 @@ export default function TermsPage() {
           <Section n="02" title="What the service does">
             <Prose>
               We poll your Google Calendar with read-only access, look for events in your chosen trigger
-              colour, and place an automated phone call to your verified number ahead of those events. The
-              call reads a short briefing and accepts a keypress: 1 acknowledges, 2 asks us to call again in
-              about five minutes. If you do not answer, we try once more.
+              color, and place an automated phone call to your verified number ahead of those events. The call
+              reads a short briefing and accepts a keypress: 1 acknowledges, 2 asks us to call again in about
+              five minutes. If you do not answer, we try once more.
             </Prose>
             <Prose>
               Google Calendar is the only calendar we support today. Calls currently reach United States

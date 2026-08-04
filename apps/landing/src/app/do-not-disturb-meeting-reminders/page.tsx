@@ -3,7 +3,7 @@ import { ArticleShell, Prose, Section } from '@/components/site/article';
 import { Cta } from '@/components/site/cta';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 
 const PATH = '/do-not-disturb-meeting-reminders/';
 const TITLE = 'Meeting reminders that ring through Do Not Disturb';
@@ -15,6 +15,8 @@ export const metadata = pageMetadata({
   title: TITLE,
   description: DESCRIPTION,
   path: PATH,
+  card: OG_CARDS.dnd,
+  imageAlt: 'It rings anyway. Emergency bypass, starred contacts, repeat calls.',
   type: 'article',
 });
 

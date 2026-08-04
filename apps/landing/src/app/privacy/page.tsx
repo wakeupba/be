@@ -2,7 +2,7 @@ import { BreadcrumbJsonLd } from '@/components/seo/json-ld';
 import { ArticleShell, DataRow, Prose, Section } from '@/components/site/article';
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
-import { pageMetadata } from '@/lib/seo';
+import { OG_CARDS, pageMetadata } from '@/lib/seo';
 import { GITHUB_URL, SUPPORT_EMAIL } from '@/lib/site';
 
 const TITLE = 'Privacy Policy';
@@ -14,6 +14,8 @@ export const metadata = pageMetadata({
   title: TITLE,
   description: DESCRIPTION,
   path: '/privacy/',
+  card: OG_CARDS.legal,
+  imageAlt: 'Read-only. No recordings. What we store, and who else sees it.',
   type: 'article',
 });
 
@@ -60,16 +62,16 @@ export default function PrivacyPage() {
               calendar without asking you to sign in every five minutes.
             </DataRow>
             <DataRow label="Marked events">
-              For events matching your trigger colour only: the title, start time, timezone, colour and how
-              many people are invited. Events you have not marked are read during the sync and then discarded,
-              not stored.
+              For events matching your trigger color only: the title, start time, timezone, color and how many
+              people are invited. Events you have not marked are read during the sync and then discarded, not
+              stored.
             </DataRow>
             <DataRow label="Call records">
               For each call: when we placed it, whether it was answered, when it ended, how it turned out, and
               the telephony provider&rsquo;s reference for it. No audio and no transcript.
             </DataRow>
             <DataRow label="Settings and usage">
-              Your trigger colour, how far ahead you want the call, your timezone, your plan, and how many
+              Your trigger color, how far ahead you want the call, your timezone, your plan, and how many
               calls you have used this period.
             </DataRow>
             <DataRow label="Billing references">
@@ -86,11 +88,10 @@ export default function PrivacyPage() {
 
           <Section n="03" title="How we use your Google Calendar data">
             <Prose>
-              We poll your calendar roughly every five minutes, looking only for events in your trigger
-              colour. When we find one, we schedule a call and store the handful of fields listed above so the
-              call can say something useful when it rings. That is the entire purpose. We do not profile you,
-              mine your meetings, or read your calendar for any reason unrelated to placing the call you asked
-              for.
+              We poll your calendar roughly every five minutes, looking only for events in your trigger color.
+              When we find one, we schedule a call and store the handful of fields listed above so the call
+              can say something useful when it rings. That is the entire purpose. We do not profile you, mine
+              your meetings, or read your calendar for any reason unrelated to placing the call you asked for.
             </Prose>
             <Prose>
               <strong>

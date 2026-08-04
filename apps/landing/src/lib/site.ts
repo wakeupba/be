@@ -19,6 +19,10 @@ export const GITHUB_URL = 'https://github.com/wakeupba/be';
 
 export const SUPPORT_EMAIL = 'hey@wakeupba.be';
 
+/* Used for twitter:site and twitter:creator. Personal handle until the project
+ * has its own, which is the honest attribution either way. */
+export const TWITTER_HANDLE = '@AdityaSinghi5';
+
 /* One sentence, used as the default description and the JSON-LD one. Kept here
  * so the meta tag and the structured data can never drift apart. */
 export const SITE_TAGLINE =

@@ -457,6 +457,10 @@ export default function CallSetupPage() {
     setBusy(true);
     try {
       await api.updateSettings(patch);
+      /* a new trigger color only dropped the sync token server-side; ask
+       * google now, or the meetings list stays wrong until the next tick.
+       * Best effort: the cron is still the backstop if this fails. */
+      if (patch.triggerColorId !== undefined) await api.syncEvents().catch(() => undefined);
       await refresh();
     } finally {
       setBusy(false);

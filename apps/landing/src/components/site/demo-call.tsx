@@ -121,7 +121,9 @@ export function DemoCall() {
       const response = await fetch(`${API}/demo/call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, token: token.current }),
+        // owns goes to the server, which requires it: the attestation is a
+        // property of the call, not of this browser session
+        body: JSON.stringify({ phone, token: token.current, owns }),
       });
       if (response.ok) {
         setStatus('ringing');
@@ -195,7 +197,9 @@ export function DemoCall() {
             {/* This does not create consent from whoever answers, and it is not
              * pretended to. What it does is turn "no record" into a statement
              * made at the point of entry, which is the part that matters if this
-             * is ever questioned. One checkbox is a cheap way to have it. */}
+             * is ever questioned. It is sent with the request and stored on the
+             * call, and the API refuses without it, so it is a fact about the
+             * call rather than a button this page disabled. */}
             <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13px] text-muted">
               <input
                 type="checkbox"

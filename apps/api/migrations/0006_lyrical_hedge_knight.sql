@@ -11,6 +11,7 @@ CREATE TABLE `demo_calls` (
 	`cost_usd` real NOT NULL,
 	`provider_call_id` text,
 	`answered_at` integer,
+	`owner_attested` integer DEFAULT false NOT NULL,
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint

@@ -11,7 +11,12 @@ export class DemoCallRepo {
    * audit trail and as what a refund reverses, but it is not what gates spend:
    * the counter is, so the two cannot disagree about whether a call was allowed.
    */
-  async reserve(input: { phoneHash: string; ipHash: string; costUsd: number }): Promise<string> {
+  async reserve(input: {
+    phoneHash: string;
+    ipHash: string;
+    costUsd: number;
+    ownerAttested: boolean;
+  }): Promise<string> {
     const id = newId('dmo');
     await this.db.insert(demoCalls).values({ ...input, id, createdAt: Date.now() });
     return id;

@@ -100,6 +100,23 @@ Useful to know:
 
 Secrets live in `wrangler secret` / `.dev.vars`, never in this repo. See `apps/api/.dev.vars.example`.
 
+### One thing the code cannot do for you
+
+`wakeupba.be` and `www.wakeupba.be` are both custom domains on the landing
+worker, so the two hostnames serve byte-identical HTML. A static export cannot
+redirect by host, and Workers' `_redirects` file explicitly does not support
+domain-level redirects, so every page carries a canonical tag pointing at the
+apex and that is what keeps search engines from treating www as a second site.
+
+To close it properly, add a **Single Redirect** rule on the zone in the
+Cloudflare dashboard (Rules, then Redirect Rules):
+
+- **If** hostname equals `www.wakeupba.be`
+- **Then** dynamic redirect to `concat("https://wakeupba.be", http.request.uri.path)`, status 301, preserve query string
+
+Until that rule exists the canonical tags carry the whole load, which works but
+splits crawl budget across two hostnames.
+
 ## Self-hosting
 
 You can. You will need your own Google Cloud OAuth app, a Twilio account, and a rented phone number. The hosted version at [wakeupba.be](https://wakeupba.be) exists so you do not have to do any of that for $5/month.

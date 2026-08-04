@@ -1,0 +1,76 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`email templates > calendar broken renders stable copy 1`] = `
+{
+  "subject": "Google Calendar access needs reconnecting",
+  "text": "Google revoked our read access to your calendar.
+
+Meetings we already flagged will still ring at their last known times, but new events, changes, and cancellations are invisible to us until you reconnect.
+
+Reconnect: https://app.wakeupba.be/call-setup/
+
+Wake Up Babe · you received this because a scheduled call could not reach you.",
+}
+`;
+
+exports[`email templates > calendar broken renders stable html 1`] = `"<div style="max-width:480px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#18181b"><p style="margin:0 0 16px">Google revoked our read access to your calendar.</p><p style="margin:0 0 16px;color:#52525b">Meetings we already flagged will still ring at their last known times, but new events, changes, and cancellations are invisible to us until you reconnect.</p><p style="margin:0"><a href="https://app.wakeupba.be/call-setup/" style="color:#18181b;text-decoration:underline">Reconnect</a></p><div style="margin-top:28px;border-top:1px solid #e4e4e7;padding-top:12px"><p style="margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;line-height:1.5;color:#71717a">Wake Up Babe · you received this because a scheduled call could not reach you.</p></div></div>"`;
+
+exports[`email templates > missed call, no answer renders stable copy 1`] = `
+{
+  "subject": "Missed call: Quarterly review",
+  "text": ""Quarterly review" started at 9:15 AM and we could not reach you.
+
+We called and there was no answer.
+
+Call history: https://app.wakeupba.be/calls/
+
+Wake Up Babe · you received this because a scheduled call could not reach you.",
+}
+`;
+
+exports[`email templates > missed call, no answer renders stable html 1`] = `"<div style="max-width:480px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#18181b"><p style="margin:0 0 16px">"Quarterly review" started at <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:14px">9:15 AM</span> and we could not reach you.</p><p style="margin:0 0 16px;color:#52525b">We called and there was no answer.</p><p style="margin:0"><a href="https://app.wakeupba.be/calls/" style="color:#18181b;text-decoration:underline">Call history</a></p><div style="margin-top:28px;border-top:1px solid #e4e4e7;padding-top:12px"><p style="margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;line-height:1.5;color:#71717a">Wake Up Babe · you received this because a scheduled call could not reach you.</p></div></div>"`;
+
+exports[`email templates > missed call, out of calls renders stable copy 1`] = `
+{
+  "subject": "Missed call: Quarterly review",
+  "text": ""Quarterly review" started at 9:15 AM and we could not reach you.
+
+You had no calls left this month, so we did not dial.
+
+Call history: https://app.wakeupba.be/calls/
+
+Wake Up Babe · you received this because a scheduled call could not reach you.",
+}
+`;
+
+exports[`email templates > missed call, out of calls renders stable html 1`] = `"<div style="max-width:480px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#18181b"><p style="margin:0 0 16px">"Quarterly review" started at <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:14px">9:15 AM</span> and we could not reach you.</p><p style="margin:0 0 16px;color:#52525b">You had no calls left this month, so we did not dial.</p><p style="margin:0"><a href="https://app.wakeupba.be/calls/" style="color:#18181b;text-decoration:underline">Call history</a></p><div style="margin-top:28px;border-top:1px solid #e4e4e7;padding-top:12px"><p style="margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;line-height:1.5;color:#71717a">Wake Up Babe · you received this because a scheduled call could not reach you.</p></div></div>"`;
+
+exports[`email templates > number unverified renders stable copy 1`] = `
+{
+  "subject": "Calls paused: your number is not verified",
+  "text": "Your phone number has not passed the test call, so we cannot ring it. Flagged meetings are being missed.
+
+Verify your number: https://app.wakeupba.be/call-setup/
+
+Wake Up Babe · you received this because a scheduled call could not reach you.",
+}
+`;
+
+exports[`email templates > number unverified renders stable html 1`] = `"<div style="max-width:480px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#18181b"><p style="margin:0 0 16px">Your phone number has not passed the test call, so we cannot ring it. Flagged meetings are being missed.</p><p style="margin:0"><a href="https://app.wakeupba.be/call-setup/" style="color:#18181b;text-decoration:underline">Verify your number</a></p><div style="margin-top:28px;border-top:1px solid #e4e4e7;padding-top:12px"><p style="margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;line-height:1.5;color:#71717a">Wake Up Babe · you received this because a scheduled call could not reach you.</p></div></div>"`;
+
+exports[`email templates > out of calls renders stable copy 1`] = `
+{
+  "subject": "No calls left on your plan this month",
+  "text": "That was the last call on your plan this month. These meetings are still
+flagged, and we will not be able to ring you for them:
+
+  Tue 9:15 AM  Board meeting
+  Wed 9:15 AM  One on one
+
+Plan and top-ups: https://app.wakeupba.be/billing/
+
+Wake Up Babe · you received this because a scheduled call could not reach you.",
+}
+`;
+
+exports[`email templates > out of calls renders stable html 1`] = `"<div style="max-width:480px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;font-size:15px;line-height:1.6;color:#18181b"><p style="margin:0 0 16px">That was the last call on your plan this month. These meetings are still flagged, and we will not be able to ring you for them:</p><table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-collapse:collapse"><tr><td style="padding:0 16px 4px 0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;color:#52525b;white-space:nowrap">Tue 9:15 AM</td><td style="padding:0 0 4px">Board meeting</td></tr><tr><td style="padding:0 16px 4px 0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:13px;color:#52525b;white-space:nowrap">Wed 9:15 AM</td><td style="padding:0 0 4px">One on one</td></tr></table><p style="margin:0"><a href="https://app.wakeupba.be/billing/" style="color:#18181b;text-decoration:underline">Plan and top-ups</a></p><div style="margin-top:28px;border-top:1px solid #e4e4e7;padding-top:12px"><p style="margin:0;font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;font-size:11px;line-height:1.5;color:#71717a">Wake Up Babe · you received this because a scheduled call could not reach you.</p></div></div>"`;

@@ -1,20 +1,28 @@
 import { Resend } from 'resend';
 import { errorFields, logEvent } from '../../lib/log';
+import {
+  calendarBrokenEmail,
+  type MissedReason,
+  missedCallEmail,
+  numberUnverifiedEmail,
+  outOfCallsEmail,
+  type RenderedEmail,
+  type UpcomingMeeting,
+} from './templates';
 
 /*
- * Transactional email, and nothing else. The product's whole pitch is that
- * notifications are noise, so email is reserved for exactly two moments
- * where the phone call itself can no longer do the talking:
- *
- *   1. a call we promised did not reach you (missed after retries, failed
- *      placement, or you ran out of calls)
- *   2. calendar access broke, so no calls are coming at all
+ * Transactional email, and nothing else. Email is reserved for the moments
+ * the phone call itself can no longer do the talking: a call that did not
+ * connect, a plan out of runway with meetings still flagged, or a broken
+ * connection that stops calls entirely.
  *
  * No welcome mail, no digests, no upsells, no receipts (Dodo is the
  * merchant of record and already sends those).
+ *
+ * This class is transport only. The wording lives in ./templates.
  */
 
-export type MissedReason = 'no_answer' | 'failed' | 'out_of_calls';
+export type { MissedReason, UpcomingMeeting };
 
 export interface MissedCallEmail {
   to: string;
@@ -24,12 +32,6 @@ export interface MissedCallEmail {
   startsAt: number;
   timezone: string;
   reason: MissedReason;
-}
-
-export interface UpcomingMeeting {
-  id: string;
-  title: string;
-  startsAt: number;
 }
 
 export interface EmailService {
@@ -46,37 +48,6 @@ export interface EmailService {
 
 const FROM = 'Wake Up Babe <info@wakeupba.be>';
 
-const REASON_LINES: Record<MissedReason, string> = {
-  no_answer: 'we called. no answer.',
-  failed: 'we tried to call, the call could not be placed.',
-  out_of_calls: 'you were out of calls this month, so the phone never rang.',
-};
-
-function dayAndTime(startsAt: number, timezone: string): string {
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: timezone,
-    }).format(new Date(startsAt));
-  } catch {
-    return new Date(startsAt).toISOString();
-  }
-}
-
-function timeIn(startsAt: number, timezone: string): string {
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: timezone,
-    }).format(new Date(startsAt));
-  } catch {
-    return new Date(startsAt).toISOString();
-  }
-}
-
 export class ResendEmailService implements EmailService {
   private readonly resend: Resend;
 
@@ -87,31 +58,31 @@ export class ResendEmailService implements EmailService {
     this.resend = new Resend(apiKey);
   }
 
-  /** a failed email must never take a call flow down with it */
-  private async send(to: string, subject: string, text: string, idempotencyKey: string): Promise<void> {
+  /** a failed email must never take a call flow down with it. Both parts go
+   * out: text keeps the message readable anywhere, html is what gmail shows */
+  private async send(to: string, email: RenderedEmail, idempotencyKey: string): Promise<void> {
     try {
-      const { error } = await this.resend.emails.send({ from: FROM, to, subject, text }, { idempotencyKey });
+      const { error } = await this.resend.emails.send(
+        { from: FROM, to, subject: email.subject, text: email.text, html: email.html },
+        { idempotencyKey },
+      );
       if (error) throw new Error(error.message);
-      logEvent('info', 'email.sent', { to, subject });
+      logEvent('info', 'email.sent', { to, subject: email.subject });
     } catch (error) {
-      logEvent('error', 'email.send_failed', { to, subject, ...errorFields(error) });
+      logEvent('error', 'email.send_failed', { to, subject: email.subject, ...errorFields(error) });
     }
   }
 
   async missedCall(input: MissedCallEmail): Promise<void> {
-    const time = timeIn(input.startsAt, input.timezone);
     await this.send(
       input.to,
-      `you missed "${input.eventTitle}"`,
-      [
-        `babe. "${input.eventTitle}" started at ${time} and we couldn't reach you.`,
-        '',
-        REASON_LINES[input.reason],
-        '',
-        `what happened: ${this.appOrigin}/calls/`,
-        '',
-        'wake up babe · this email only exists because the phone call failed',
-      ].join('\n'),
+      missedCallEmail({
+        eventTitle: input.eventTitle,
+        startsAt: input.startsAt,
+        timezone: input.timezone,
+        reason: input.reason,
+        appOrigin: this.appOrigin,
+      }),
       `missed-call/${input.eventId}/${input.reason}`,
     );
   }
@@ -122,55 +93,14 @@ export class ResendEmailService implements EmailService {
     timezone: string,
     idempotencyKey: string,
   ): Promise<void> {
-    const lines = upcoming.slice(0, 5).map((m) => `  ${dayAndTime(m.startsAt, timezone)}  ${m.title}`);
-    await this.send(
-      to,
-      'that was your last call this month',
-      [
-        'babe. that was your last call this month. these meetings are still',
-        'flagged, and the phone will not ring for them:',
-        '',
-        ...lines,
-        '',
-        `more calls: ${this.appOrigin}/billing/`,
-        '',
-        'wake up babe · this email only exists because the phone call failed',
-      ].join('\n'),
-      idempotencyKey,
-    );
+    await this.send(to, outOfCallsEmail({ upcoming, timezone, appOrigin: this.appOrigin }), idempotencyKey);
   }
 
   async numberUnverified(to: string, idempotencyKey: string): Promise<void> {
-    await this.send(
-      to,
-      'calls are paused, your number is not verified',
-      [
-        'babe. your number never passed the test call, so nothing we',
-        'schedule can actually ring you. flagged meetings are being missed.',
-        '',
-        `verify it: ${this.appOrigin}/call-setup/`,
-        '',
-        'wake up babe · this email only exists because the phone call failed',
-      ].join('\n'),
-      idempotencyKey,
-    );
+    await this.send(to, numberUnverifiedEmail({ appOrigin: this.appOrigin }), idempotencyKey);
   }
 
   async calendarBroken(to: string, idempotencyKey: string): Promise<void> {
-    await this.send(
-      to,
-      'we lost sight of your calendar',
-      [
-        'babe. google stopped letting us read your calendar. meetings we',
-        'already flagged will still ring at their last known times, but new',
-        'ones, moves, and cancellations are invisible to us until you',
-        'reconnect.',
-        '',
-        `reconnect: ${this.appOrigin}/call-setup/`,
-        '',
-        'wake up babe · this email only exists because the phone call failed',
-      ].join('\n'),
-      idempotencyKey,
-    );
+    await this.send(to, calendarBrokenEmail({ appOrigin: this.appOrigin }), idempotencyKey);
   }
 }

@@ -439,8 +439,8 @@ function PhoneRow({
       {error && <p className="w-full font-mono text-[11px] text-destructive sm:text-right">{error}</p>}
       {waitlisted && !error && (
         <p className="w-full max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-right">
-          We cannot place calls to {waitlisted} yet, so your number is unchanged. Your spot is saved, and we
-          will email you the day we can.
+          We cannot place calls to {waitlisted} yet, so your number is unchanged. We have noted the country,
+          and it counts towards which one we open next.
         </p>
       )}
     </Row>

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import * as templates from '../src/services/email/templates';
 import {
   calendarBrokenEmail,
   missedCallEmail,
+  numberUnreachableEmail,
   numberUnverifiedEmail,
   outOfCallsEmail,
   type RenderedEmail,
@@ -63,6 +65,7 @@ const ALL: Array<[string, Promise<RenderedEmail>]> = [
     }),
   ],
   ['number unverified', numberUnverifiedEmail({ appOrigin: APP })],
+  ['number unreachable', numberUnreachableEmail({ appOrigin: APP })],
   ['calendar broken', calendarBrokenEmail({ appOrigin: APP })],
 ];
 
@@ -81,6 +84,20 @@ function bodyOnly(email: RenderedEmail): string {
 }
 
 describe('email templates', () => {
+  /* ALL is written by hand, so a new template is easy to add and easy to forget
+   * to list, and forgetting means it ships having never met the voice guard
+   * below, which exists because the first draft of these was too cheeky to
+   * send. If this fails you added a template: add it to ALL too, then here. */
+  it('has every exported template accounted for in ALL', () => {
+    expect(Object.keys(templates).filter((name) => name.endsWith('Email')).sort()).toEqual([
+      'calendarBrokenEmail',
+      'missedCallEmail',
+      'numberUnreachableEmail',
+      'numberUnverifiedEmail',
+      'outOfCallsEmail',
+    ]);
+  });
+
   it.each(ALL)('%s renders stable copy', async (_name, pending) => {
     const email = await pending;
     expect({ subject: email.subject, text: email.text }).toMatchSnapshot();

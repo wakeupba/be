@@ -119,8 +119,8 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
         <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>
       ) : waitlisted ? (
         <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-          We cannot place calls to {waitlisted} yet. Your spot is saved, and we will email you the day we can.
-          If you have a number somewhere else, try that one.
+          We cannot place calls to {waitlisted} yet. We have noted the country, and it counts towards which
+          one we open next. If you have a number somewhere else, try that one.
         </p>
       ) : parsed.country ? (
         <p className="mt-2 font-mono text-[11px] text-muted-foreground/70">

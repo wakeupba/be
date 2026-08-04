@@ -53,6 +53,7 @@ export interface EmailService {
     idempotencyKey: string,
   ): Promise<void>;
   numberUnverified(to: string, idempotencyKey: string): Promise<void>;
+  numberUnreachable(to: string, idempotencyKey: string): Promise<void>;
 }
 
 const FROM = 'Wake Up Babe <info@wakeupba.be>';
@@ -112,6 +113,11 @@ export class ResendEmailService implements EmailService {
   async numberUnverified(to: string, idempotencyKey: string): Promise<void> {
     const { numberUnverifiedEmail } = await templates();
     await this.send(to, await numberUnverifiedEmail({ appOrigin: this.appOrigin }), idempotencyKey);
+  }
+
+  async numberUnreachable(to: string, idempotencyKey: string): Promise<void> {
+    const { numberUnreachableEmail } = await templates();
+    await this.send(to, await numberUnreachableEmail({ appOrigin: this.appOrigin }), idempotencyKey);
   }
 
   async calendarBroken(to: string, idempotencyKey: string): Promise<void> {

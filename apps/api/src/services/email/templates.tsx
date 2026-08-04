@@ -166,6 +166,30 @@ export function NumberUnverified({ appOrigin }: { appOrigin: string }) {
   );
 }
 
+/*
+ * The number on file costs more to ring than the plan covers. Distinct from
+ * NumberUnverified on purpose: that one asks for a test call, and here the test
+ * call is refused too, so sending them to run it would be a loop. The only
+ * action that helps is a different number, so that is the only one offered.
+ */
+export function NumberUnreachable({ appOrigin }: { appOrigin: string }) {
+  return (
+    <Shell preview="We cannot place calls to your number, so flagged meetings will not ring.">
+      <Text style={styles.text}>
+        We can no longer place calls to the number on your account, so flagged meetings are not ringing.
+      </Text>
+      <Text style={styles.muted}>
+        Call costs to some networks have risen past what the plan covers. This is not something you did, and
+        it is not a problem with your phone. If you have a number on another network, adding it will start the
+        calls again.
+      </Text>
+      <Link href={`${appOrigin}/call-setup/`} style={styles.link}>
+        Change your number
+      </Link>
+    </Shell>
+  );
+}
+
 export function CalendarBroken({ appOrigin }: { appOrigin: string }) {
   return (
     <Shell preview="We can no longer see new events, changes, or cancellations.">
@@ -207,6 +231,10 @@ export function outOfCallsEmail(input: {
 
 export function numberUnverifiedEmail(input: { appOrigin: string }): Promise<RenderedEmail> {
   return renderBoth('Calls paused: your number is not verified', <NumberUnverified {...input} />);
+}
+
+export function numberUnreachableEmail(input: { appOrigin: string }): Promise<RenderedEmail> {
+  return renderBoth('Calls paused: we cannot reach your number', <NumberUnreachable {...input} />);
 }
 
 export function calendarBrokenEmail(input: { appOrigin: string }): Promise<RenderedEmail> {

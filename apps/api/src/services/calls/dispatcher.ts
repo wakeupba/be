@@ -90,6 +90,11 @@ export class CallDispatchService {
         eventId,
         rateUsd: callRateUsd(user.phoneE164) ?? null,
       });
+      /* Persistent unreachability, so it gets the weekly notice rather than one
+       * mail per meeting: the dashboard still shows a verified phone and a
+       * connected calendar, so without this every flagged meeting would go
+       * missed forever with nothing said. */
+      await this.notifier?.numberUnreachable(user);
       return;
     }
 

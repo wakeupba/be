@@ -13,7 +13,7 @@ import { Hono } from 'hono';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
-import { callRateUsd, isCallableNumber } from '../lib/call-rates';
+import { isCallableNumber, priceCall } from '../lib/call-rates';
 import { decryptSecret } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import { claimRateSlot } from '../lib/rate-limit';
@@ -205,17 +205,21 @@ export const meRoutes = new Hono<MeContext>()
        * believe this user has a reachable phone. */
       if (!isCallableNumber(parsed.number)) {
         const { regionInterest } = c.get('container');
-        await regionInterest.record(c.get('userId'), parsed.number, callRateUsd(parsed.number) ?? null);
+        // the destination, never the number: this is what decides which region
+        // to open next, and the subscriber digits add nothing to that
+        const priced = priceCall(parsed.number);
+        await regionInterest.record(c.get('userId'), {
+          country: parsed.country ?? null,
+          prefix: priced?.prefix ?? null,
+          rateUsd: priced?.usd ?? null,
+        });
         logEvent('info', 'phone.region_unsupported', {
           userId: c.get('userId'),
           country: parsed.country ?? 'unknown',
-          rateUsd: callRateUsd(parsed.number) ?? null,
+          rateUsd: priced?.usd ?? null,
         });
         return c.json(
-          {
-            error: 'we cannot ring numbers in your country yet, but we saved your spot',
-            code: 'region_unsupported',
-          },
+          { error: 'we cannot ring numbers in your country yet', code: 'region_unsupported' },
           422,
         );
       }

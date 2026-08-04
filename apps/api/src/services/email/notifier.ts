@@ -82,6 +82,20 @@ export class EmailNotifier {
     });
   }
 
+  /**
+   * Once a week while the state persists. Separate from numberUnverified
+   * because the states are different and only one of them has an action the
+   * user can take: an unverified number wants a test call, and this one cannot
+   * pass a test call at all.
+   */
+  async numberUnreachable(user: UserRow): Promise<void> {
+    await this.guard('numberUnreachable', async () => {
+      const key = this.weeklyKey(`email:unreachable:${user.id}`);
+      if (!(await this.dedup.claim(key, 'email-dedup'))) return;
+      await this.email.numberUnreachable(user.email, key);
+    });
+  }
+
   /** once a week while the state persists */
   async calendarBroken(user: UserRow): Promise<void> {
     await this.guard('calendarBroken', async () => {

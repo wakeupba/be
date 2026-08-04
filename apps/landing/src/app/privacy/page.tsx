@@ -84,6 +84,11 @@ export default function PrivacyPage() {
             <DataRow label="Waitlist">
               If your region is not live yet: the email address and region you submitted, and nothing else.
             </DataRow>
+            <DataRow label="Unsupported destinations">
+              If we cannot yet call the country your number belongs to: that country, the dialling prefix that
+              priced it, what a call there would cost us, and how many times you tried. Not the number itself.
+              It tells us which country to open next, and nothing about you.
+            </DataRow>
           </Section>
 
           <Section n="03" title="How we use your Google Calendar data">

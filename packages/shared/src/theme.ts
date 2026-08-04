@@ -9,6 +9,19 @@
 
 export type ThemePref = 'system' | 'light' | 'dark';
 
+/** the order the switcher presents, and the order arrow keys walk */
+export const THEME_MODES: readonly ThemePref[] = ['system', 'light', 'dark'];
+
+/**
+ * Wrapping neighbour in THEME_MODES. Lives here so the two switchers cannot
+ * drift, since the index arithmetic was byte-identical in both.
+ */
+export function nextThemePref(current: ThemePref | null, direction: 1 | -1): ThemePref {
+  const at = current === null ? 0 : THEME_MODES.indexOf(current);
+  const index = (Math.max(at, 0) + (direction === 1 ? 1 : THEME_MODES.length - 1)) % THEME_MODES.length;
+  return THEME_MODES[index] ?? 'system';
+}
+
 export const THEME_COOKIE = 'wub_theme';
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
@@ -59,7 +72,10 @@ export function themeTransition(apply: () => void): void {
     apply();
     return;
   }
-  doc.startViewTransition(apply);
+  // ready rejects when a transition is skipped, which is what a second one
+  // starting first does (double-tapping the hotkey). Nothing here needs to
+  // know, but an unobserved rejection reaches the console.
+  doc.startViewTransition(apply).ready.catch(() => {});
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {

@@ -13,6 +13,7 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { creditsUsable, type MeDto } from '@wakeupbabe/shared';
+import { applyTheme, bindThemeHotkey, themeTransition, writeThemePref } from '@wakeupbabe/shared/theme';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -101,7 +102,7 @@ function SidebarLink({
 
 /** identity pill anchoring the rail, spoo anatomy: avatar + name/email +
  * stepper chevron opening the account menu upward */
-function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void }) {
+function ProfilePill({ me, onNavigate, thumbId }: { me: MeDto; onNavigate?: () => void; thumbId: string }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const name = me.displayName?.trim() || me.email.split('@')[0];
@@ -170,7 +171,7 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
             <div className="my-1 border-t border-border/60" />
             <div className="flex items-center justify-between gap-2 px-1.5 py-1">
               <span className="text-xs text-muted-foreground">Theme</span>
-              <ThemeControl />
+              <ThemeControl thumbId={thumbId} />
             </div>
             <div className="my-1 border-t border-border/60" />
             <button
@@ -323,7 +324,11 @@ function RailBody({
           ))}
         </div>
         {me && <UsageMeter me={me} />}
-        {me ? <ProfilePill me={me} onNavigate={onNavigate} /> : <div aria-hidden className="h-[52px]" />}
+        {me ? (
+          <ProfilePill me={me} onNavigate={onNavigate} thumbId={`${pillId}-theme`} />
+        ) : (
+          <div aria-hidden className="h-[52px]" />
+        )}
       </div>
     </>
   );
@@ -435,6 +440,18 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
   const closeNav = useCallback(() => setNavOpen(false), []);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
+
+  /* the theme hotkey binds here because the shell is always mounted. Inside
+   * the switcher it would only be live while the account flyout is open,
+   * which is precisely when the control is already on screen. */
+  useEffect(
+    () =>
+      bindThemeHotkey((next) => {
+        writeThemePref(next);
+        themeTransition(() => applyTheme(next));
+      }),
+    [],
+  );
 
   /* any route change closes the drawer, including a back-button one no link
    * handler sees; reset during render so it never paints over the new page */

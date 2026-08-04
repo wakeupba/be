@@ -3,20 +3,23 @@
 import {
   applyTheme,
   bindThemeHotkey,
+  nextThemePref,
   readThemePref,
+  THEME_MODES,
   type ThemePref,
   themeTransition,
   writeThemePref,
 } from '@wakeupbabe/shared/theme';
 import { Monitor, Moon, Sun } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const MODES: Array<{ value: ThemePref; icon: typeof Sun; label: string }> = [
-  { value: 'system', icon: Monitor, label: 'System theme' },
-  { value: 'light', icon: Sun, label: 'Light theme' },
-  { value: 'dark', icon: Moon, label: 'Dark theme' },
-];
+const ICONS: Record<ThemePref, typeof Sun> = { system: Monitor, light: Sun, dark: Moon };
+const LABELS: Record<ThemePref, string> = {
+  system: 'System theme',
+  light: 'Light theme',
+  dark: 'Dark theme',
+};
 
 /** one cell, so the thumb can be positioned arithmetically */
 const CELL = 28;
@@ -25,7 +28,8 @@ const CELL = 28;
  * The spoo theme switcher: a radiogroup pill with a sliding thumb, three
  * explicit states because "follow system" is what most people want and a
  * binary toggle cannot say it. Switching rides a View Transition so the page
- * cross-fades, and "d" flips light/dark from anywhere.
+ * cross-fades, and "d" flips light/dark, bound here because the footer this
+ * sits in is mounted for the life of the page.
  *
  * Spoo animates the thumb with motion's layoutId. Here it is a transform
  * transition instead: this is a static marketing export whose weight is the
@@ -35,6 +39,7 @@ export function ThemeControl() {
   // resolved after mount: the boot script owns the class before hydration, so
   // the server-rendered markup has no idea which theme is live
   const [pref, setPref] = useState<ThemePref | null>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setPref(readThemePref()), []);
 
@@ -55,24 +60,25 @@ export function ThemeControl() {
     return () => query.removeEventListener('change', sync);
   }, [pref]);
 
-  const index = pref === null ? -1 : MODES.findIndex((mode) => mode.value === pref);
-
-  /* a radiogroup is expected to move selection with the arrow keys. Native
-   * inputs give that for free; this control needs button semantics to host
-   * the thumb, so the behaviour is implemented rather than lost. */
+  /* a radiogroup moves selection with the arrows and keeps one tab stop.
+   * Focus has to follow the selection or the announcement never happens:
+   * screen readers read the focused element, not the checked one. */
   function onGroupKeyDown(event: React.KeyboardEvent) {
     const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
     const back = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
     if (!forward && !back) return;
     event.preventDefault();
-    const current = index < 0 ? 0 : index;
-    const next = (current + (forward ? 1 : MODES.length - 1)) % MODES.length;
-    const mode = MODES[next];
-    if (mode) choose(mode.value);
+    const next = nextThemePref(pref, forward ? 1 : -1);
+    choose(next);
+    const radios = groupRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
+    radios?.[THEME_MODES.indexOf(next)]?.focus();
   }
+
+  const index = pref === null ? -1 : THEME_MODES.indexOf(pref);
 
   return (
     <div
+      ref={groupRef}
       role="radiogroup"
       aria-label="Theme"
       onKeyDown={onGroupKeyDown}
@@ -86,16 +92,19 @@ export function ThemeControl() {
           style={{ transform: `translateX(${index * CELL}px)` }}
         />
       )}
-      {MODES.map(({ value, icon: Icon, label }) => {
+      {THEME_MODES.map((value) => {
+        const Icon = ICONS[value];
         const active = pref === value;
         return (
-          // biome-ignore lint/a11y/useSemanticElements: a native radio cannot host the sliding thumb, and the arrow-key selection it would have provided is implemented on the group
+          // biome-ignore lint/a11y/useSemanticElements: a native radio cannot host the sliding thumb; the roving tabindex, arrow-key selection and focus move it would have provided are implemented here
           <button
             key={value}
             type="button"
             role="radio"
             aria-checked={active}
-            aria-label={label}
+            aria-label={LABELS[value]}
+            // one tab stop for the group, arrows move within it
+            tabIndex={active || pref === null ? 0 : -1}
             suppressHydrationWarning
             onClick={() => {
               if (value === pref) return;

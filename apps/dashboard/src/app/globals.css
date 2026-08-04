@@ -51,39 +51,46 @@
 }
 
 /*
- * Dark is charcoal, never black, and depth comes from a lightness ladder
- * (canvas floor -> shell -> card sheet -> popover -> muted fill) rather than
- * from shadow. AA floors measured against the card sheet: foreground 15.19:1,
- * muted-foreground 5.29:1 (light measures 5.19:1, so the hierarchy reads the
- * same in both themes), brand 5.51:1, live 6.69:1, destructive 5.05:1. Worst
- * case anywhere is muted-foreground on muted at 4.71:1. The accent hues keep
- * their identity and gain lightness; none clip the sRGB gamut.
+ * Dark, ported from the spoo dashboard's dark ramp: zero-chroma neutrals, no
+ * zinc tint, and a deeper floor than a tinted charcoal gives. Structure is
+ * wakeupbabe's own, a canvas floor the rail sits on under an elevated sheet,
+ * so the lightness ladder maps spoo's tiers onto our two-surface layout.
+ *
+ * AA measured on the sheet: foreground 17.16:1, muted-foreground 6.91:1,
+ * brand 5.72:1, live 9.27:1, destructive 6.19:1; worst case is
+ * muted-foreground on muted at 5.83:1. live and destructive are spoo's
+ * gamut-edge values and clip a hair outside sRGB by design, which browsers
+ * clamp; brand keeps tomato's hue at that ramp's lightness.
+ *
+ * Borders stay solid lightness steps rather than spoo's white-alpha, because
+ * this codebase composes them with opacity modifiers (border-border/50) and
+ * alpha-on-alpha renders unpredictably.
  */
 .dark {
-  --canvas: oklch(0.192 0.004 286);
-  --shell: oklch(0.215 0.004 286);
-  --background: oklch(0.232 0.005 286);
-  --card: oklch(0.232 0.005 286);
-  --popover: oklch(0.255 0.005 286);
-  --muted: oklch(0.272 0.005 286);
-  --foreground: oklch(0.965 0.002 286);
-  --muted-foreground: oklch(0.655 0.014 286);
-  --border: oklch(0.31 0.006 286);
-  --input: oklch(0.31 0.006 286);
-  --ring: oklch(0.45 0.01 286);
-  --primary: oklch(0.92 0.002 286);
-  --primary-foreground: oklch(0.205 0.005 286);
-  --brand: oklch(0.685 0.175 30);
-  --live: oklch(0.7 0.135 163);
-  --destructive: oklch(0.665 0.185 22);
+  --canvas: oklch(0.115 0 0);
+  --shell: oklch(0.175 0 0);
+  --background: oklch(0.205 0 0);
+  --card: oklch(0.205 0 0);
+  --popover: oklch(0.225 0 0);
+  --muted: oklch(0.269 0 0);
+  --foreground: oklch(0.985 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --border: oklch(0.3 0 0);
+  --input: oklch(0.34 0 0);
+  --ring: oklch(0.556 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --brand: oklch(0.68 0.19 30);
+  --live: oklch(0.765 0.177 163.223);
+  --destructive: oklch(0.704 0.191 22.216);
   color-scheme: dark;
 
-  --elev-soft: 0 1px 2px oklch(0 0 0 / 0.3);
-  --elev-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 16px 40px -16px oklch(0 0 0 / 0.5);
-  --elev-float: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 20px -6px oklch(0 0 0 / 0.45);
-  --elev-pop: 0 1px 2px oklch(0 0 0 / 0.4), 0 10px 24px -8px oklch(0 0 0 / 0.55);
-  --bevel: inset 0 -1px 0 oklch(1 0 0 / 0.05);
-  --swatch-ring: inset 0 0 0 1px oklch(1 0 0 / 0.16);
+  --elev-soft: 0 1px 2px oklch(0 0 0 / 0.4);
+  --elev-card: 0 1px 2px oklch(0 0 0 / 0.4), 0 16px 40px -16px oklch(0 0 0 / 0.6);
+  --elev-float: 0 1px 2px oklch(0 0 0 / 0.45), 0 8px 20px -6px oklch(0 0 0 / 0.5);
+  --elev-pop: 0 1px 2px oklch(0 0 0 / 0.5), 0 10px 24px -8px oklch(0 0 0 / 0.6);
+  --bevel: inset 0 -1px 0 oklch(1 0 0 / 0.04);
+  --swatch-ring: inset 0 0 0 1px oklch(1 0 0 / 0.18);
 }
 
 @theme inline {

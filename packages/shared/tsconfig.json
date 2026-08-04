@@ -3,8 +3,12 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    // WebWorker: the crypto/session modules use Web Crypto, TextEncoder, atob
-    "lib": ["ES2022", "WebWorker"],
+    // WebWorker: the crypto/session modules use Web Crypto, TextEncoder, atob.
+    // DOM: theme.ts reads and writes the theme cookie and toggles the html
+    // class. It is browser-only and reachable solely through the ./theme
+    // subpath, so the worker never imports it; the lib here only widens what
+    // this package can typecheck, not what consumers see.
+    "lib": ["ES2022", "WebWorker", "DOM"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

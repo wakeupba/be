@@ -31,32 +31,43 @@
   /* keycap top highlight; polarity flips in dark so the bevel points down */
   --bevel-primary: inset 0 0.7px 0 rgba(255, 255, 255, 0.25);
   --bevel-secondary: inset 0 0.7px 0 rgba(255, 255, 255, 0.7);
+  --panel: #18181b;
 }
 
 /*
- * Dark keeps the light theme's two-surface idea, cool page against a warmer
- * paper for bands and the artifact stage, so the warm/cool relationship that
- * carries the design survives inversion. AA measured on the page background:
- * foreground 16.88:1, muted 7.24:1 (light measures 7.73:1), muted-2 5.49:1,
- * accent 6.10:1, success 7.38:1; on paper the floor is muted-2 at 5.20:1.
+ * Dark, sampled pixel for pixel out of Chrome's auto-dark rendering of this
+ * page, because that inversion read better than a hand-built palette. Values
+ * come from screenshotting the page with WebContentsForceDark enabled and
+ * reading the rendered pixels, not from getComputedStyle, which reports the
+ * authored light colors since Chrome inverts at paint time.
+ *
+ * Two consequences worth keeping deliberately:
+ *
+ * 1. The surface relationship flips. In light, white cards sit on warm paper
+ *    bands. Here the band is the lighter surface and cards recede into the
+ *    page colour, which is what makes it read flat and calm.
+ * 2. Chrome leaves already-dark surfaces alone, so the CTA panel and the
+ *    primary buttons keep #18181b instead of inverting to daylight. The page
+ *    is night either way, so the panel only needs to be a shade apart.
  */
 .dark {
-  --background: #131315;
-  --paper: #1a1917;
-  --foreground: #f4f4f5;
-  --muted: #a1a1aa;
-  --muted-2: #8b8b94;
-  --surface: #18181a;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-structural: rgba(255, 255, 255, 0.07);
+  --background: #121212;
+  --paper: #222220;
+  --foreground: #ffffff;
+  --muted: #b8b8c2;
+  --muted-2: #a3a3a4;
+  --surface: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-structural: rgba(255, 255, 255, 0.045);
   --accent: #f2685a;
   --accent-soft: rgba(242, 104, 90, 0.12);
   --success: #35b886;
   color-scheme: dark;
-  --header: rgba(19, 19, 21, 0.85);
+  --header: rgba(26, 26, 26, 0.85);
   --pulse: rgba(53, 184, 134, 0.32);
-  --bevel-primary: inset 0 -0.7px 0 rgba(255, 255, 255, 0.12);
+  --bevel-primary: inset 0 0.7px 0 rgba(255, 255, 255, 0.12);
   --bevel-secondary: inset 0 -0.7px 0 rgba(255, 255, 255, 0.06);
+  --panel: #18181b;
 }
 
 @theme inline {
@@ -72,6 +83,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-success: var(--success);
   --color-header: var(--header);
+  --color-panel: var(--panel);
   --shadow-bevel-primary: var(--bevel-primary);
   --shadow-bevel-secondary: var(--bevel-secondary);
   --font-sans: var(--font-geist-sans);

@@ -40,6 +40,16 @@ const NAV_GROUPS: NavItem[][] = [
 
 const UTILITY_NAV: NavItem[] = [{ href: '/roadmap/', label: 'Roadmap', icon: MapTrifold }];
 
+/* shared so the trigger's aria-controls always names the panel it opens */
+const NAV_DRAWER_ID = 'mobile-nav-drawer';
+
+/* the drawer's geometry, in px, as the single source for both its box and the
+ * offscreen start of its slide, so the two can't drift apart the way a
+ * hand-computed x does */
+const DRAWER_WIDTH = 272;
+const DRAWER_INSET = 12;
+const DRAWER_OFFSCREEN_X = -(DRAWER_WIDTH + DRAWER_INSET);
+
 const NAV: NavItem[] = [...NAV_GROUPS.flat(), ...UTILITY_NAV];
 
 function isActive(href: string, pathname: string): boolean {
@@ -336,7 +346,11 @@ function NavDrawer({
     if (!open) return;
     panelRef.current?.focus();
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      /* innermost layer first: the account menu lives inside the panel and
+       * runs its own Escape listener, so let it take the key alone */
+      if (panelRef.current?.querySelector('[role="menu"]')) return;
+      onClose();
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -361,15 +375,17 @@ function NavDrawer({
           />
           <motion.div
             ref={panelRef}
+            id={NAV_DRAWER_ID}
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"
             tabIndex={-1}
-            initial={reduceMotion ? { opacity: 0 } : { x: -284 }}
+            initial={reduceMotion ? { opacity: 0 } : { x: DRAWER_OFFSCREEN_X }}
             animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { x: -284 }}
+            exit={reduceMotion ? { opacity: 0 } : { x: DRAWER_OFFSCREEN_X }}
             transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overflow-y-auto rounded-2xl border border-border bg-background px-4 shadow-card focus-visible:outline-none"
+            style={{ width: DRAWER_WIDTH, left: DRAWER_INSET }}
+            className="fixed inset-y-3 z-50 flex flex-col overflow-y-auto rounded-2xl border border-border bg-background px-4 shadow-card focus-visible:outline-none"
           >
             {/* taller than the topbar it replaces: the wordmark needs air
                 before the first nav pill, closer to the desktop rail's h-18 */}
@@ -411,6 +427,8 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
   const title = titleFor(pathname, me);
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = useCallback(() => setNavOpen(false), []);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
   /* any route change closes the drawer, including a back-button one no link
    * handler sees; reset during render so it never paints over the new page */
@@ -419,6 +437,18 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
     setNavPath(pathname);
     setNavOpen(false);
   }
+
+  /* hand focus back to the trigger, never to document.body. Runs after the
+   * render that drops `inert`, so the button is focusable again by then */
+  useEffect(() => {
+    if (navOpen) {
+      wasOpen.current = true;
+      return;
+    }
+    if (!wasOpen.current) return;
+    wasOpen.current = false;
+    triggerRef.current?.focus();
+  }, [navOpen]);
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas">
@@ -439,16 +469,24 @@ export function AppShell({ me, children }: { me: MeDto | null; children: ReactNo
 
       <NavDrawer me={me} pathname={pathname} open={navOpen} onClose={closeNav} />
 
-      {/* elevated content sheet */}
-      <div className="m-3 flex min-w-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border bg-background shadow-card lg:ml-0">
+      {/* elevated content sheet. `inert` while the drawer is open makes its
+          aria-modal honest: without it Tab walks out of the panel into the page
+          behind the scrim, which matters because lg:hidden is a width query and
+          a narrow desktop window has a real keyboard */}
+      <div
+        inert={navOpen}
+        className="m-3 flex min-w-0 flex-1 flex-col overflow-y-auto rounded-2xl border border-border bg-background shadow-card lg:ml-0"
+      >
         <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border/60 bg-background px-4 sm:px-6">
           {/* the drawer carries the brand on small screens, so the trigger
               takes the mark's slot instead of crowding beside it */}
           <button
+            ref={triggerRef}
             type="button"
-            aria-label="Open navigation"
+            aria-label={navOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={navOpen}
-            onClick={() => setNavOpen(true)}
+            aria-controls={NAV_DRAWER_ID}
+            onClick={() => setNavOpen((v) => !v)}
             className="-ml-1 flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-colors duration-150 hover:bg-muted/60 hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none active:translate-y-px lg:hidden"
           >
             <List size={16} aria-hidden />

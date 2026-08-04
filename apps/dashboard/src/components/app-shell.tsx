@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { BabeMark } from '@/components/brand/mark';
+import { ThemeControl } from '@/components/theme-control';
 import { buttonVariants } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { clearMe } from '@/lib/use-me';
@@ -88,7 +89,7 @@ function SidebarLink({
         <motion.span
           layoutId={pillId}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 rounded-lg border border-border/50 bg-card shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+          className="absolute inset-0 rounded-lg border border-border/50 bg-card shadow-bevel"
           aria-hidden
         />
       )}
@@ -147,7 +148,7 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
             exit={{ opacity: 0, y: 2 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             role="menu"
-            className="absolute bottom-full left-0 z-40 mb-1.5 w-full rounded-lg bg-popover p-1 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-6px_rgb(0_0_0/0.12)] ring-1 ring-foreground/10"
+            className="absolute bottom-full left-0 z-40 mb-1.5 w-full rounded-lg bg-popover p-1 shadow-pop ring-1 ring-foreground/10"
           >
             <div className="px-1.5 py-1">
               <p className="truncate text-xs font-medium text-foreground">{name}</p>
@@ -166,6 +167,8 @@ function ProfilePill({ me, onNavigate }: { me: MeDto; onNavigate?: () => void })
               <PhoneCall size={13} aria-hidden />
               Call setup
             </Link>
+            <div className="my-1 border-t border-border/60" />
+            <ThemeControl />
             <div className="my-1 border-t border-border/60" />
             <button
               type="button"

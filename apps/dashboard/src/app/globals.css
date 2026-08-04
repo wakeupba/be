@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* class-based, not media-query based: the theme control offers an explicit
+ * light and dark, and "system" simply means no class is pinned */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Wake Up Babe dashboard tokens. Light-first, adapted from the spoo.me
  * dashboard system: a canvas floor, an elevated content sheet, hairline-fused
@@ -28,6 +32,58 @@
   --live: oklch(0.527 0.11 163);
   --destructive: oklch(0.49 0.155 20);
   --radius: 0.625rem;
+  color-scheme: light;
+
+  /* depth, as tokens so both themes can disagree about it. Light lifts with
+   * soft zinc-tinted shadow; dark leans on the surface ladder and keeps
+   * shadow for true overlays only. */
+  --elev-soft: 0 1px 2px oklch(0.21 0.015 286 / 0.06), 0 3px 6px -3px oklch(0.21 0.015 286 / 0.08);
+  --elev-card:
+    0 1px 2px oklch(0.21 0.015 286 / 0.03), 0 8px 16px -4px oklch(0.21 0.015 286 / 0.04),
+    0 24px 48px -12px oklch(0.21 0.015 286 / 0.07);
+  --elev-float: 0 1px 2px oklch(0.21 0.015 286 / 0.05), 0 8px 20px -6px oklch(0.21 0.015 286 / 0.1);
+  --elev-pop: 0 1px 2px oklch(0 0 0 / 0.05), 0 8px 20px -6px oklch(0 0 0 / 0.12);
+  /* the keycap top highlight; polarity flips in dark so the bevel points down */
+  --bevel: inset 0 1px 0 oklch(1 0 0 / 0.6);
+  /* hairline around a fixed color swatch, so google's palette reads as chips
+   * on either canvas */
+  --swatch-ring: inset 0 0 0 1px oklch(0 0 0 / 0.12);
+}
+
+/*
+ * Dark is charcoal, never black, and depth comes from a lightness ladder
+ * (canvas floor -> shell -> card sheet -> popover -> muted fill) rather than
+ * from shadow. AA floors measured against the card sheet: foreground 15.19:1,
+ * muted-foreground 5.29:1 (light measures 5.19:1, so the hierarchy reads the
+ * same in both themes), brand 5.51:1, live 6.69:1, destructive 5.05:1. Worst
+ * case anywhere is muted-foreground on muted at 4.71:1. The accent hues keep
+ * their identity and gain lightness; none clip the sRGB gamut.
+ */
+.dark {
+  --canvas: oklch(0.192 0.004 286);
+  --shell: oklch(0.215 0.004 286);
+  --background: oklch(0.232 0.005 286);
+  --card: oklch(0.232 0.005 286);
+  --popover: oklch(0.255 0.005 286);
+  --muted: oklch(0.272 0.005 286);
+  --foreground: oklch(0.965 0.002 286);
+  --muted-foreground: oklch(0.655 0.014 286);
+  --border: oklch(0.31 0.006 286);
+  --input: oklch(0.31 0.006 286);
+  --ring: oklch(0.45 0.01 286);
+  --primary: oklch(0.92 0.002 286);
+  --primary-foreground: oklch(0.205 0.005 286);
+  --brand: oklch(0.685 0.175 30);
+  --live: oklch(0.7 0.135 163);
+  --destructive: oklch(0.665 0.185 22);
+  color-scheme: dark;
+
+  --elev-soft: 0 1px 2px oklch(0 0 0 / 0.3);
+  --elev-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 16px 40px -16px oklch(0 0 0 / 0.5);
+  --elev-float: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 20px -6px oklch(0 0 0 / 0.45);
+  --elev-pop: 0 1px 2px oklch(0 0 0 / 0.4), 0 10px 24px -8px oklch(0 0 0 / 0.55);
+  --bevel: inset 0 -1px 0 oklch(1 0 0 / 0.05);
+  --swatch-ring: inset 0 0 0 1px oklch(1 0 0 / 0.16);
 }
 
 @theme inline {
@@ -53,11 +109,12 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --shadow-soft: 0 1px 2px oklch(0.21 0.015 286 / 0.06), 0 3px 6px -3px oklch(0.21 0.015 286 / 0.08);
-  --shadow-card:
-    0 1px 2px oklch(0.21 0.015 286 / 0.03), 0 8px 16px -4px oklch(0.21 0.015 286 / 0.04),
-    0 24px 48px -12px oklch(0.21 0.015 286 / 0.07);
-  --shadow-float: 0 1px 2px oklch(0.21 0.015 286 / 0.05), 0 8px 20px -6px oklch(0.21 0.015 286 / 0.1);
+  --shadow-soft: var(--elev-soft);
+  --shadow-card: var(--elev-card);
+  --shadow-float: var(--elev-float);
+  --shadow-pop: var(--elev-pop);
+  --shadow-bevel: var(--bevel);
+  --shadow-swatch: var(--swatch-ring);
 }
 
 body {

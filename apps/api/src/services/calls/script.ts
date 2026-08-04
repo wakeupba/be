@@ -30,6 +30,15 @@ export class TemplateScriptBuilder implements BriefingScriptBuilder {
 export const VERIFICATION_SCRIPT =
   'Wake up babe, it works. This is your verification call. Press 1 to prove you heard me through Do Not Disturb.';
 
+/* The landing page demo. Says what it is in the first breath, because whoever
+ * picks up did not necessarily type the number, and a mystery robocall is a
+ * worse first impression than no demo at all. No prompt to press anything:
+ * there is no account behind this call for a keypress to mean something to. */
+export const DEMO_SCRIPT =
+  'Hey, this is Wake Up Babe, calling because someone asked for a demo on our website. ' +
+  'This is what you get before a meeting you painted red, straight through Do Not Disturb. ' +
+  'That is the whole product. See you at wakeupba.be.';
+
 export function defaultScriptBuilder(): BriefingScriptBuilder {
   return new TemplateScriptBuilder();
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `oauth_tokens` ADD `last_sync_attempt_at` integer;

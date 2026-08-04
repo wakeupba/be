@@ -1,3 +1,5 @@
+import EXAMPLE_MOBILES from 'libphonenumber-js/examples.mobile.json';
+import { type CountryCode, getExampleNumber } from 'libphonenumber-js/min';
 import { CALL_RATES_USD } from '../data/call-rates';
 
 /*
@@ -64,4 +66,25 @@ export function callRateUsd(e164: string): number | undefined {
 export function isCallableNumber(e164: string): boolean {
   const rate = callRateUsd(e164);
   return rate !== undefined && rate <= MAX_CALL_RATE_USD;
+}
+
+/**
+ * Whether a country is one we could ring at all, judged by pricing a typical
+ * mobile number there.
+ *
+ * A country is not really the unit we gate on, so this is an approximation and
+ * only ever used to decide what to *show* someone: a real number is still
+ * checked on its own prefix. It has to be the mobile example rather than the
+ * country's calling code, because the code alone is the wrong granularity in
+ * both directions. +49 prices a German landline at 3 cents while German mobile
+ * is 38, and +44 has ranges from 1.5 cents to a dollar.
+ *
+ * Unknown or unset country means yes: this decides whether to offer something,
+ * and being coy with someone we could serve is the worse mistake. Nothing about
+ * spending money rests on it.
+ */
+export function isSupportedCountry(iso: string): boolean {
+  const example = getExampleNumber(iso.toUpperCase() as CountryCode, EXAMPLE_MOBILES);
+  if (!example) return true;
+  return isCallableNumber(example.number);
 }

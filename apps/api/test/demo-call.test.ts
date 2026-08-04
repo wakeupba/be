@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
 import { counters, demoCalls } from '../src/db/schema';
+import { isSupportedCountry } from '../src/lib/call-rates';
 import { CounterRepo } from '../src/repos/counters';
 import { DemoCallRepo } from '../src/repos/demo-calls';
 import { budgetKeyFor } from '../src/routes/demo';
@@ -111,6 +112,56 @@ describe('demo availability', () => {
       demoEnv(),
     );
     expect(await response.json()).toEqual({ available: true });
+  });
+
+  it('is off for a visitor in a country we cannot ring', async () => {
+    /* they can still sign up, and the limit turns up at onboarding where their
+     * country gets recorded. Offering a demo call on the landing page and then
+     * refusing it reads as "this product is not for you" */
+    const response = await createApp().request(
+      new Request('https://api.test/demo/availability', { headers: { 'CF-IPCountry': 'DE' } }),
+      undefined,
+      demoEnv(),
+    );
+    expect(await response.json()).toEqual({ available: false });
+  });
+
+  it('is on for a visitor in a country we can ring', async () => {
+    const response = await createApp().request(
+      new Request('https://api.test/demo/availability', { headers: { 'CF-IPCountry': 'IN' } }),
+      undefined,
+      demoEnv(),
+    );
+    expect(await response.json()).toEqual({ available: true });
+  });
+
+  it('shows the demo when the country is unknown, since nothing spends on it', async () => {
+    // XX is Cloudflare's unknown-network value; a missing header is dev
+    for (const headers of [{ 'CF-IPCountry': 'XX' }, {}]) {
+      const response = await createApp().request(
+        new Request('https://api.test/demo/availability', { headers }),
+        undefined,
+        demoEnv(),
+      );
+      expect(await response.json()).toEqual({ available: true });
+    }
+  });
+});
+
+describe('country support', () => {
+  it('judges a country by a typical mobile number there, not by its calling code', () => {
+    // +49 prices a German landline at 3 cents, so the calling code alone would
+    // say Germany is fine while German mobile is 38 cents
+    expect(isSupportedCountry('DE')).toBe(false);
+    expect(isSupportedCountry('IN')).toBe(true);
+    expect(isSupportedCountry('US')).toBe(true);
+    expect(isSupportedCountry('GB')).toBe(true);
+  });
+
+  it('says yes to a country it has never heard of', () => {
+    // this only decides what to offer, and being coy with someone we could
+    // serve is the worse mistake
+    expect(isSupportedCountry('ZZ')).toBe(true);
   });
 });
 

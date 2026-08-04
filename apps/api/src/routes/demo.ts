@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
-import { callRateUsd, isCallableNumber } from '../lib/call-rates';
+import { callRateUsd, isCallableNumber, isSupportedCountry } from '../lib/call-rates';
 import { hmacSign } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import { clientIp } from '../lib/rate-limit';
@@ -80,6 +80,20 @@ export const demoRoutes = new Hono<DemoContext>()
    */
   .get('/demo/availability', async (c) => {
     if (!demoConfigured(c.env)) return c.json({ available: false });
+
+    /* Hidden rather than offered-then-refused for visitors in countries we
+     * cannot ring. They can still sign up: the plan is that the limit turns up
+     * at onboarding, where their country gets recorded, not on the landing page
+     * where it would read as "this product is not for you".
+     *
+     * Cloudflare sets this header; absent means dev or an unknown network, and
+     * the CTA shows. Nothing about spending money depends on it, since the
+     * number itself is checked when the call is asked for. */
+    const country = c.req.header('CF-IPCountry');
+    if (country && country !== 'XX' && !isSupportedCountry(country)) {
+      return c.json({ available: false });
+    }
+
     const spent = await c.get('container').counters.read(budgetKeyFor(Date.now()));
     return c.json({ available: spent < budgetMills(c.env) });
   })

@@ -1,14 +1,20 @@
 import { Resend } from 'resend';
 import { errorFields, logEvent } from '../../lib/log';
-import {
-  calendarBrokenEmail,
-  type MissedReason,
-  missedCallEmail,
-  numberUnverifiedEmail,
-  outOfCallsEmail,
-  type RenderedEmail,
-  type UpcomingMeeting,
-} from './templates';
+import type { MissedReason, RenderedEmail, UpcomingMeeting } from './templates';
+
+/*
+ * The templates pull in react and react-dom/server, which is a quarter of
+ * this worker's compressed size. Loading them lazily keeps that parse cost
+ * off every isolate start, and specifically off the telephony webhooks,
+ * which have to answer a ringing phone immediately. Emails are rare and
+ * never latency sensitive, so they can pay for it.
+ */
+type Templates = typeof import('./templates');
+let pending: Promise<Templates> | null = null;
+function templates(): Promise<Templates> {
+  pending ??= import('./templates');
+  return pending;
+}
 
 /*
  * Transactional email, and nothing else. Email is reserved for the moments
@@ -76,7 +82,7 @@ export class ResendEmailService implements EmailService {
   async missedCall(input: MissedCallEmail): Promise<void> {
     await this.send(
       input.to,
-      missedCallEmail({
+      await (await templates()).missedCallEmail({
         eventTitle: input.eventTitle,
         startsAt: input.startsAt,
         timezone: input.timezone,
@@ -93,14 +99,20 @@ export class ResendEmailService implements EmailService {
     timezone: string,
     idempotencyKey: string,
   ): Promise<void> {
-    await this.send(to, outOfCallsEmail({ upcoming, timezone, appOrigin: this.appOrigin }), idempotencyKey);
+    await this.send(
+      to,
+      await (await templates()).outOfCallsEmail({ upcoming, timezone, appOrigin: this.appOrigin }),
+      idempotencyKey,
+    );
   }
 
   async numberUnverified(to: string, idempotencyKey: string): Promise<void> {
-    await this.send(to, numberUnverifiedEmail({ appOrigin: this.appOrigin }), idempotencyKey);
+    const { numberUnverifiedEmail } = await templates();
+    await this.send(to, await numberUnverifiedEmail({ appOrigin: this.appOrigin }), idempotencyKey);
   }
 
   async calendarBroken(to: string, idempotencyKey: string): Promise<void> {
-    await this.send(to, calendarBrokenEmail({ appOrigin: this.appOrigin }), idempotencyKey);
+    const { calendarBrokenEmail } = await templates();
+    await this.send(to, await calendarBrokenEmail({ appOrigin: this.appOrigin }), idempotencyKey);
   }
 }

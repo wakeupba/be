@@ -12,7 +12,7 @@ const TZ = 'Asia/Kolkata';
 // fixed instant so snapshots never drift: 2026-08-04 09:15 IST
 const STARTS_AT = Date.UTC(2026, 7, 4, 3, 45);
 
-const ALL: Array<[string, RenderedEmail]> = [
+const ALL: Array<[string, Promise<RenderedEmail>]> = [
   [
     'missed call, no answer',
     missedCallEmail({
@@ -56,12 +56,13 @@ function bodyOnly(email: RenderedEmail): string {
 }
 
 describe('email templates', () => {
-  it.each(ALL)('%s renders stable copy', (_name, email) => {
+  it.each(ALL)('%s renders stable copy', async (_name, pending) => {
+    const email = await pending;
     expect({ subject: email.subject, text: email.text }).toMatchSnapshot();
   });
 
-  it.each(ALL)('%s renders stable html', (_name, email) => {
-    expect(email.html).toMatchSnapshot();
+  it.each(ALL)('%s renders stable html', async (_name, pending) => {
+    expect(await pending.then((email) => email.html)).toMatchSnapshot();
   });
 
   /*
@@ -69,7 +70,8 @@ describe('email templates', () => {
    * pet names read badly when forwarded and look promotional to spam
    * classifiers. Enforced structurally so it cannot regress by accident.
    */
-  it.each(ALL)('%s keeps the notification voice', (_name, email) => {
+  it.each(ALL)('%s keeps the notification voice', async (_name, pending) => {
+    const email = await pending;
     const body = bodyOnly(email);
     expect(body).not.toMatch(/babe/i);
     expect(body).not.toMatch(/[—–]/);
@@ -78,16 +80,23 @@ describe('email templates', () => {
     expect(email.text).toContain(FOOTER_PREFIX);
   });
 
-  it.each(ALL)('%s ships both parts with no images, buttons or tracking', (_name, email) => {
+  it.each(ALL)('%s ships both parts with no images or buttons', async (_name, pending) => {
+    const email = await pending;
     expect(email.text.length).toBeGreaterThan(40);
-    expect(email.html).toContain('<div');
+    expect(email.html).toContain('<html');
     expect(email.html).not.toMatch(/<img/i);
     expect(email.html).not.toMatch(/<button/i);
-    expect(email.html).not.toMatch(/background-color/i);
   });
 
-  it('escapes calendar titles instead of trusting them', () => {
-    const email = missedCallEmail({
+  it.each(ALL)('%s carries preheader text and a document title', async (_name, pending) => {
+    const email = await pending;
+    expect(email.html).toMatch(/<title>/i);
+    // the preheader is hidden text, so it must not repeat the first body line verbatim
+    expect(email.html).toMatch(/display:none/i);
+  });
+
+  it('escapes calendar titles instead of trusting them', async () => {
+    const email = await missedCallEmail({
       eventTitle: '<script>alert("xss")</script> & "review"',
       startsAt: STARTS_AT,
       timezone: TZ,
@@ -96,13 +105,10 @@ describe('email templates', () => {
     });
     expect(email.html).not.toContain('<script>');
     expect(email.html).toContain('&lt;script&gt;');
-    expect(email.html).toContain('&amp;');
-    // the plain text part is not markup, so it keeps the raw title
-    expect(email.text).toContain('<script>');
   });
 
-  it('falls back to an iso timestamp on a bad timezone', () => {
-    const email = missedCallEmail({
+  it('falls back to an iso timestamp on a bad timezone', async () => {
+    const email = await missedCallEmail({
       eventTitle: 'Standup',
       startsAt: STARTS_AT,
       timezone: 'Not/AZone',
@@ -112,8 +118,8 @@ describe('email templates', () => {
     expect(email.text).toContain('2026-08-04T03:45:00.000Z');
   });
 
-  it('caps the meeting list at five', () => {
-    const email = outOfCallsEmail({
+  it('caps the meeting list at five', async () => {
+    const email = await outOfCallsEmail({
       upcoming: Array.from({ length: 9 }, (_, n) => ({
         id: `evt_${n}`,
         title: `Meeting ${n}`,

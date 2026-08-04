@@ -28,8 +28,7 @@ export function writeThemePref(pref: ThemePref): void {
   const secure = document.location.protocol === 'https:' ? '; Secure' : '';
   const value = pref === 'system' ? '' : pref;
   const maxAge = pref === 'system' ? 0 : ONE_YEAR;
-  // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is
-  // still absent in Safari, and this writes a first-party literal
+  // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is still absent in Safari, and this writes a first-party literal
   document.cookie = `${THEME_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax${domain}${secure}`;
 }
 

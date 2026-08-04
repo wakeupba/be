@@ -97,20 +97,28 @@ export class EventRepo {
    * ever returns what Google says changed, so without this a lead-time change
    * would never reach an event already in the table.
    *
-   * Only upcoming 'scheduled' rows: a snoozed event's callAt came from the
-   * snooze, not from the lead time, and recomputing it would drag the call
-   * back to before the snooze the user just asked for.
+   * Two exclusions, both for the same reason — a recomputed callAt must never
+   * land in the past, because listDue would then dial on the very next tick
+   * and a dropdown would have rung the phone:
+   *
+   * - snoozed rows, whose callAt came from the snooze rather than the lead
+   *   time, so rewriting it would undo the delay the user just asked for
+   * - rows starting sooner than the *new* lead time, which is exactly where
+   *   start-minus-lead is already behind us. Raising 15 to 30 on a meeting
+   *   twenty minutes out leaves it on its existing, sooner schedule: still a
+   *   call before the meeting, just not a surprise one right now
    */
   async recomputeCallTimes(userId: string, leadMinutes: number): Promise<number> {
     const now = Date.now();
+    const leadMs = leadMinutes * 60_000;
     const result = await this.db
       .update(trackedEvents)
-      .set({ callAt: sql`${trackedEvents.startsAt} - ${leadMinutes * 60_000}`, updatedAt: now })
+      .set({ callAt: sql`${trackedEvents.startsAt} - ${leadMs}`, updatedAt: now })
       .where(
         and(
           eq(trackedEvents.userId, userId),
           eq(trackedEvents.state, 'scheduled'),
-          gt(trackedEvents.startsAt, now),
+          gt(trackedEvents.startsAt, sql`${now} + ${leadMs}`),
         ),
       );
     return result.meta.changes;

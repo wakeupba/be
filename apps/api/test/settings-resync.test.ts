@@ -56,6 +56,37 @@ describe('settings changes reach meetings we already track', () => {
     expect((await events.findById(snoozed.id))?.callAt).toBe(snoozedCallAt);
   });
 
+  it('raising the lead time past a meeting does not ring it immediately', async () => {
+    const db = testDb();
+    const events = new EventRepo(db);
+    const user = await seedUser(db, { leadMinutes: 15 });
+    // 20 minutes out: start-minus-30 is already ten minutes behind us, and
+    // listDue takes callAt <= now, so a rewrite here dials on the next tick
+    const startsAt = Date.now() + 20 * 60_000;
+    const soon = await seedEvent(db, user.id, { startsAt, callAt: startsAt - 15 * 60_000 });
+
+    expect((await patchSettings(user.id, { leadMinutes: 30 })).status).toBe(200);
+
+    const after = await events.findById(soon.id);
+    expect(after?.callAt).toBe(startsAt - 15 * 60_000);
+    expect(after?.callAt).toBeGreaterThan(Date.now());
+  });
+
+  it('lowering the lead time on a meeting inside the old window still applies', async () => {
+    const db = testDb();
+    const events = new EventRepo(db);
+    const user = await seedUser(db, { leadMinutes: 30 });
+    const startsAt = Date.now() + 20 * 60_000;
+    const soon = await seedEvent(db, user.id, { startsAt, callAt: startsAt - 30 * 60_000 });
+
+    expect((await patchSettings(user.id, { leadMinutes: 10 })).status).toBe(200);
+
+    // 20 minutes out is beyond the new 10-minute lead, so it moves and lands ahead
+    const after = await events.findById(soon.id);
+    expect(after?.callAt).toBe(startsAt - 10 * 60_000);
+    expect(after?.callAt).toBeGreaterThan(Date.now());
+  });
+
   it('never rewrites a meeting that already happened', async () => {
     const db = testDb();
     const events = new EventRepo(db);

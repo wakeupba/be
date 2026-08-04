@@ -25,6 +25,7 @@ export class EmailNotifier {
     await this.guard('missedCall', () =>
       this.email.missedCall({
         to: user.email,
+        eventId: event.id,
         eventTitle: event.title,
         startsAt: event.startsAt,
         timezone: user.timezone,
@@ -36,31 +37,33 @@ export class EmailNotifier {
   /** once per billing period: the period start pins the claim key */
   async lastCallSpent(user: UserRow, upcoming: UpcomingMeeting[]): Promise<void> {
     await this.guard('lastCallSpent', async () => {
-      if (!(await this.dedup.claim(`email:lastcall:${user.id}:${user.periodStartedAt}`, 'email-dedup'))) {
-        return;
-      }
-      await this.email.outOfCalls(user.email, upcoming, user.timezone);
+      // the dedup claim doubles as the transport idempotency key
+      const key = `email:lastcall:${user.id}:${user.periodStartedAt}`;
+      if (!(await this.dedup.claim(key, 'email-dedup'))) return;
+      await this.email.outOfCalls(user.email, upcoming, user.timezone, key);
     });
   }
 
   /** once a week while the state persists */
   async numberUnverified(user: UserRow): Promise<void> {
     await this.guard('numberUnverified', async () => {
-      if (!(await this.claimWeekly(`email:unverified:${user.id}`))) return;
-      await this.email.numberUnverified(user.email);
+      const key = this.weeklyKey(`email:unverified:${user.id}`);
+      if (!(await this.dedup.claim(key, 'email-dedup'))) return;
+      await this.email.numberUnverified(user.email, key);
     });
   }
 
   /** once a week while the state persists */
   async calendarBroken(user: UserRow): Promise<void> {
     await this.guard('calendarBroken', async () => {
-      if (!(await this.claimWeekly(`email:calbroken:${user.id}`))) return;
-      await this.email.calendarBroken(user.email);
+      const key = this.weeklyKey(`email:calbroken:${user.id}`);
+      if (!(await this.dedup.claim(key, 'email-dedup'))) return;
+      await this.email.calendarBroken(user.email, key);
     });
   }
 
-  private claimWeekly(key: string): Promise<boolean> {
-    return this.dedup.claim(`${key}:${Math.floor(Date.now() / WEEK_MS)}`, 'email-dedup');
+  private weeklyKey(prefix: string): string {
+    return `${prefix}:${Math.floor(Date.now() / WEEK_MS)}`;
   }
 
   private async guard(kind: string, send: () => Promise<void>): Promise<void> {

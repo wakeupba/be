@@ -18,6 +18,8 @@ export type MissedReason = 'no_answer' | 'failed' | 'out_of_calls';
 
 export interface MissedCallEmail {
   to: string;
+  /** pins the idempotency key: retries can never double-send one event's email */
+  eventId: string;
   eventTitle: string;
   startsAt: number;
   timezone: string;
@@ -25,15 +27,21 @@ export interface MissedCallEmail {
 }
 
 export interface UpcomingMeeting {
+  id: string;
   title: string;
   startsAt: number;
 }
 
 export interface EmailService {
   missedCall(input: MissedCallEmail): Promise<void>;
-  calendarBroken(to: string): Promise<void>;
-  outOfCalls(to: string, upcoming: UpcomingMeeting[], timezone: string): Promise<void>;
-  numberUnverified(to: string): Promise<void>;
+  calendarBroken(to: string, idempotencyKey: string): Promise<void>;
+  outOfCalls(
+    to: string,
+    upcoming: UpcomingMeeting[],
+    timezone: string,
+    idempotencyKey: string,
+  ): Promise<void>;
+  numberUnverified(to: string, idempotencyKey: string): Promise<void>;
 }
 
 const FROM = 'Wake Up Babe <info@wakeupba.be>';
@@ -80,9 +88,9 @@ export class ResendEmailService implements EmailService {
   }
 
   /** a failed email must never take a call flow down with it */
-  private async send(to: string, subject: string, text: string): Promise<void> {
+  private async send(to: string, subject: string, text: string, idempotencyKey: string): Promise<void> {
     try {
-      const { error } = await this.resend.emails.send({ from: FROM, to, subject, text });
+      const { error } = await this.resend.emails.send({ from: FROM, to, subject, text }, { idempotencyKey });
       if (error) throw new Error(error.message);
       logEvent('info', 'email.sent', { to, subject });
     } catch (error) {
@@ -104,10 +112,16 @@ export class ResendEmailService implements EmailService {
         '',
         'wake up babe · this email only exists because the phone call failed',
       ].join('\n'),
+      `missed-call/${input.eventId}/${input.reason}`,
     );
   }
 
-  async outOfCalls(to: string, upcoming: UpcomingMeeting[], timezone: string): Promise<void> {
+  async outOfCalls(
+    to: string,
+    upcoming: UpcomingMeeting[],
+    timezone: string,
+    idempotencyKey: string,
+  ): Promise<void> {
     const lines = upcoming.slice(0, 5).map((m) => `  ${dayAndTime(m.startsAt, timezone)}  ${m.title}`);
     await this.send(
       to,
@@ -122,10 +136,11 @@ export class ResendEmailService implements EmailService {
         '',
         'wake up babe · this email only exists because the phone call failed',
       ].join('\n'),
+      idempotencyKey,
     );
   }
 
-  async numberUnverified(to: string): Promise<void> {
+  async numberUnverified(to: string, idempotencyKey: string): Promise<void> {
     await this.send(
       to,
       'calls are paused, your number is not verified',
@@ -137,10 +152,11 @@ export class ResendEmailService implements EmailService {
         '',
         'wake up babe · this email only exists because the phone call failed',
       ].join('\n'),
+      idempotencyKey,
     );
   }
 
-  async calendarBroken(to: string): Promise<void> {
+  async calendarBroken(to: string, idempotencyKey: string): Promise<void> {
     await this.send(
       to,
       'we lost sight of your calendar',
@@ -154,6 +170,7 @@ export class ResendEmailService implements EmailService {
         '',
         'wake up babe · this email only exists because the phone call failed',
       ].join('\n'),
+      idempotencyKey,
     );
   }
 }

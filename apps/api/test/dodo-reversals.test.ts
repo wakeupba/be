@@ -200,17 +200,61 @@ describe('refunds and disputes take the entitlement back', () => {
     const db = testDb();
     const users = new UserRepo(db);
     const user = await seedUser(db, { plan: 'ride_or_die', dodoCustomerId: 'cus_x' });
+    const paymentId = `pay_${crypto.randomUUID()}`;
 
-    // no grant behind this payment, so it was the subscription charge
+    // the subscription charge: payment.succeeded with nothing from the top-up
+    // product in the cart, which records a grant of kind 'subscription'
     await deliver({
-      type: 'dispute.lost',
-      data: { metadata: { userId: user.id }, payment_id: `pay_${crypto.randomUUID()}` },
+      type: 'payment.succeeded',
+      data: { metadata: { userId: user.id }, payment_id: paymentId, product_cart: [] },
     });
+    expect((await new CreditGrantRepo(db).find(paymentId))?.kind).toBe('subscription');
+    expect((await users.findById(user.id))?.extraCallCredits).toBe(0); // granted nothing
+
+    await deliver({ type: 'dispute.lost', data: { metadata: { userId: user.id }, payment_id: paymentId } });
 
     const after = await users.findById(user.id);
     expect(after?.plan).toBe('situationship');
     // the customer id survives, so a resubscribe still finds its profile
     expect(after?.dodoCustomerId).toBe('cus_x');
+  });
+
+  it('never downgrades on an unrecorded payment, since that could be a failed write', async () => {
+    const db = testDb();
+    const users = new UserRepo(db);
+    const user = await seedUser(db, { plan: 'ride_or_die' });
+
+    // no ledger row at all. This used to be read as "must have been the
+    // subscription", which punished the user twice whenever it was wrong
+    await deliver({
+      type: 'refund.succeeded',
+      data: { metadata: { userId: user.id }, payment_id: `pay_${crypto.randomUUID()}`, is_partial: false },
+    });
+
+    expect((await users.findById(user.id))?.plan).toBe('ride_or_die');
+  });
+
+  it('leaves an expired dispute for a human rather than guessing', async () => {
+    const db = testDb();
+    const users = new UserRepo(db);
+    const user = await seedUser(db, { plan: 'ride_or_die' });
+    const paymentId = `pay_${crypto.randomUUID()}`;
+    await deliver(topup(user.id, paymentId));
+
+    /* Dodo says an expired dispute "typically resolves against you", and
+     * typically is not always, so neither reversing nor ignoring is safe to
+     * automate. Nothing changes and the delivery is acknowledged. */
+    const response = await deliver({
+      type: 'dispute.expired',
+      data: { metadata: { userId: user.id }, payment_id: paymentId, dispute_status: 'dispute_expired' },
+    });
+
+    expect(response.status).toBe(200);
+    const after = await users.findById(user.id);
+    expect(after?.extraCallCredits).toBe(TOPUP_PACK.calls);
+    expect(after?.plan).toBe('ride_or_die');
+    // still claimable, so whoever reads the dispute can act on it
+    expect((await new CreditGrantRepo(db).find(paymentId))?.revokedAt ?? null).toBeNull();
   });
 
   it('acknowledges a reversal it cannot act on rather than failing the delivery', async () => {

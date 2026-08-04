@@ -13,10 +13,16 @@ export class CreditGrantRepo {
 
   /** ignores a repeat for the same payment: webhook redelivery must not make
    * the ledger disagree with what was actually granted */
-  async record(paymentId: string, userId: string, packs: number, calls: number): Promise<void> {
+  async record(input: {
+    paymentId: string;
+    userId: string;
+    kind: 'topup' | 'subscription';
+    packs: number;
+    calls: number;
+  }): Promise<void> {
     await this.db
       .insert(creditGrants)
-      .values({ paymentId, userId, packs, calls, grantedAt: Date.now() })
+      .values({ ...input, grantedAt: Date.now() })
       .onConflictDoNothing();
   }
 

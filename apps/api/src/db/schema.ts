@@ -106,12 +106,17 @@ export const waitlist = sqliteTable('waitlist', {
 });
 
 /*
- * What each top-up payment granted, keyed by the payment it came from.
+ * What each payment bought, keyed by the payment it came from.
  *
- * Refund and dispute events carry only a payment_id, never the cart, so
- * without this there is nothing to reverse against: we would be guessing at
- * how many credits to take back. revokedAt makes the reversal idempotent, for
- * the case where a dispute is lost and then also refunded.
+ * Refund and dispute events carry only a payment_id, never the cart, so without
+ * this there is nothing to reverse against: we would be guessing at what to
+ * take back. revokedAt makes the reversal idempotent, for the case where a
+ * dispute is lost and then also refunded.
+ *
+ * Subscription charges are recorded too, with nothing granted. They earn no
+ * credits, but their presence is the point: a reversal that finds no row would
+ * otherwise have to guess whether it was a subscription charge, and guessing
+ * wrong ends someone's plan.
  */
 export const creditGrants = sqliteTable(
   'credit_grants',
@@ -120,6 +125,9 @@ export const creditGrants = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    /** 'topup' grants credits; 'subscription' grants nothing and exists so that
+     * a missing row never has to be interpreted */
+    kind: text('kind').$type<'topup' | 'subscription'>().notNull().default('topup'),
     packs: integer('packs').notNull(),
     calls: integer('calls').notNull(),
     grantedAt: integer('granted_at').notNull(),

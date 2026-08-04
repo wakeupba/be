@@ -109,19 +109,25 @@ export class UserRepo {
    * Returns how many credits were actually reclaimed, so the caller can say
    * plainly when a reversal could not be made whole.
    */
-  async revokeCallCredits(id: string, credits: number, packs: number): Promise<number> {
-    const before = await this.findById(id);
-    if (!before) return 0;
-    const reclaimed = Math.min(before.extraCallCredits, credits);
-    await this.db
+  /**
+   * The balance left afterwards, read from the same statement that changed it.
+   *
+   * Deliberately not "how many credits were reclaimed": RETURNING yields the new
+   * value, so recovering the old one would mean a separate read, and a spend
+   * landing between the two would make the answer a quiet fiction. A floor at
+   * zero is the signal the caller actually needs, and this reports it exactly.
+   */
+  async revokeCallCredits(id: string, credits: number, packs: number): Promise<number | null> {
+    const [row] = await this.db
       .update(users)
       .set({
         extraCallCredits: sql`MAX(0, ${users.extraCallCredits} - ${credits})`,
         topupPacksThisPeriod: sql`MAX(0, ${users.topupPacksThisPeriod} - ${packs})`,
         updatedAt: Date.now(),
       })
-      .where(eq(users.id, id));
-    return reclaimed;
+      .where(eq(users.id, id))
+      .returning({ remaining: users.extraCallCredits });
+    return row?.remaining ?? null;
   }
 
   /**

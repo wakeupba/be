@@ -166,6 +166,21 @@ const REVOKED_STATUSES = new Set(['cancelled', 'expired', 'failed', 'on_hold', '
  */
 const REVERSAL_EVENTS = new Set(['refund.succeeded', 'dispute.lost', 'dispute.accepted']);
 
+/*
+ * Outcomes we cannot act on without guessing, so a human is told instead.
+ *
+ * dispute.expired is the response window closing with nobody having answered.
+ * Dodo says it "typically resolves against you", and typically is not always:
+ * their status enum keeps dispute_expired as a terminal state distinct from
+ * dispute_lost, so whether a dispute.lost follows is genuinely unclear.
+ * Reversing on it could take credits from someone who kept their money, and
+ * ignoring it leaves credits with someone who did not.
+ *
+ * It is also the passive one, firing exactly when nobody was watching the
+ * dispute, which makes it likelier in practice than an accepted one.
+ */
+const AMBIGUOUS_EVENTS = new Set(['dispute.expired']);
+
 /**
  * Applies one billing event to our state. The single source of truth for
  * plan flips and credit grants: the production webhook and the dev fake
@@ -253,6 +268,22 @@ export async function applyDodoEvent(
     return;
   }
 
+  if (AMBIGUOUS_EVENTS.has(payload.type)) {
+    // same treatment as a partial refund: say so loudly, change nothing, let
+    // someone who can read the dispute decide
+    logEvent('warn', 'billing.ambiguous_outcome', {
+      userId: user.id,
+      type: payload.type,
+      paymentId: payload.data.payment_id ?? null,
+      plan: user.plan,
+    });
+    Sentry.captureMessage(
+      `${payload.type} for user ${user.id} needs a manual entitlement decision`,
+      'warning',
+    );
+    return;
+  }
+
   switch (payload.type) {
     case 'payment.succeeded': {
       // payment.succeeded also fires for subscription charges; only the
@@ -263,15 +294,33 @@ export async function applyDodoEvent(
       const packs = (payload.data.product_cart ?? [])
         .filter((item) => Boolean(topupProductId) && item.product_id === topupProductId)
         .reduce((sum, item) => sum + item.quantity, 0);
+      const paymentId = payload.data.payment_id ?? null;
       if (packs > 0) {
         const calls = packs * TOPUP_PACK.calls;
         await users.addCallCredits(user.id, calls, packs);
         // written down so a later refund has something to reverse against;
         // after the grant, so a failed ledger write cannot cost a paying user
         // their credits
-        if (payload.data.payment_id) {
-          await container.creditGrants.record(payload.data.payment_id, user.id, packs, calls);
+        if (paymentId) {
+          await container.creditGrants.record({
+            paymentId,
+            userId: user.id,
+            kind: 'topup',
+            packs,
+            calls,
+          });
         }
+      } else if (paymentId) {
+        /* the subscription charge. Nothing is granted, and the row exists purely
+         * so a later reversal reads a recorded fact instead of inferring one
+         * from an absence: getting that inference wrong ends someone's plan. */
+        await container.creditGrants.record({
+          paymentId,
+          userId: user.id,
+          kind: 'subscription',
+          packs: 0,
+          calls: 0,
+        });
       }
       break;
     }
@@ -283,10 +332,16 @@ export async function applyDodoEvent(
 /**
  * Money went back to the cardholder, so the entitlement goes back to us.
  *
- * Two shapes of purchase, and only one of them is reversible precisely. A
- * top-up is reversed against its recorded grant. A subscription payment has no
- * grant, so a lost dispute ends paid access outright: continuing to ring
- * someone whose money the network took back is not a thing to do quietly.
+ * Which entitlement depends on what the payment bought, read from the ledger
+ * rather than inferred: a top-up loses its credits, and a subscription charge
+ * ends paid access, because continuing to ring someone whose money the network
+ * took back is not a thing to do quietly.
+ *
+ * One accepted imprecision: the per-period pack counter is decremented without
+ * regard to which period bought the pack, so refunding an old pack can free a
+ * purchase slot in the current one. That cap is a card-testing guard rather than
+ * economics (see me.ts), and tracking periods per grant to protect it would cost
+ * more than the slot is worth.
  */
 async function reverseGrant(container: Container, payload: DodoWebhookPayload, user: UserRow): Promise<void> {
   const { users, creditGrants } = container;
@@ -307,40 +362,59 @@ async function reverseGrant(container: Container, payload: DodoWebhookPayload, u
 
   const grant = await creditGrants.claimForRevocation(paymentId, payload.type);
   if (grant) {
-    const reclaimed = await users.revokeCallCredits(grant.userId, grant.calls, grant.packs);
+    /* a subscription charge granted nothing, so there is nothing to take back
+     * except the access it paid for. Keyed off the recorded kind, never off the
+     * absence of a row: an absence could equally mean the ledger write failed,
+     * and reading that as a subscription charge would end a paying user's plan
+     * over a database blip. */
+    if (grant.kind === 'subscription') {
+      logEvent('warn', 'billing.subscription_payment_reversed', {
+        userId: grant.userId,
+        paymentId,
+        type: payload.type,
+      });
+      await users.setPlan(grant.userId, 'situationship', null, null);
+      return;
+    }
+
+    const remaining = await users.revokeCallCredits(grant.userId, grant.calls, grant.packs);
     logEvent('info', 'billing.credits_revoked', {
       userId: grant.userId,
       paymentId,
       type: payload.type,
       calls: grant.calls,
-      reclaimed,
+      remaining,
     });
-    // spent already, so there is nothing left to take: worth knowing about
-    // as an abuse signal, not worth failing the webhook over
-    if (reclaimed < grant.calls) {
-      logEvent('warn', 'billing.credits_already_spent', {
+    /* a balance sitting at zero after the reversal means the grant may have
+     * been spent before it came back, so we could not take all of it. Worth
+     * knowing as an abuse signal, not worth failing the delivery over. Says
+     * "may": a balance that happened to equal the grant exactly lands here too. */
+    if (remaining === 0 && grant.calls > 0) {
+      logEvent('warn', 'billing.credits_possibly_spent', {
         userId: grant.userId,
         paymentId,
-        short: grant.calls - reclaimed,
+        calls: grant.calls,
       });
     }
     return;
   }
 
-  // no grant: either already reversed, or this was the subscription charge
   if (await creditGrants.find(paymentId)) {
     logEvent('info', 'billing.reversal_already_applied', { userId: user.id, paymentId });
     return;
   }
 
-  if (user.plan === 'ride_or_die') {
-    logEvent('warn', 'billing.subscription_payment_reversed', {
-      userId: user.id,
-      paymentId,
-      type: payload.type,
-    });
-    await users.setPlan(user.id, 'situationship', null, null);
-  }
+  /* No row at all, which should not happen now that both kinds are recorded, so
+   * it means something upstream went wrong: a payment we never saw, or a ledger
+   * write that failed. Either way there is no fact here to act on, and acting on
+   * a guess is what this branch used to do. */
+  logEvent('error', 'billing.reversal_without_grant', {
+    userId: user.id,
+    paymentId,
+    type: payload.type,
+    plan: user.plan,
+  });
+  Sentry.captureMessage(`${payload.type} for payment ${paymentId} has no ledger row`, 'error');
 }
 
 /** signed but structurally unusable payloads are acknowledged, not retried:

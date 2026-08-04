@@ -1,6 +1,7 @@
 CREATE TABLE `credit_grants` (
 	`payment_id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
+	`kind` text DEFAULT 'topup' NOT NULL,
 	`packs` integer NOT NULL,
 	`calls` integer NOT NULL,
 	`granted_at` integer NOT NULL,

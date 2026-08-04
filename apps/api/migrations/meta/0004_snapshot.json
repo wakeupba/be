@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a5f8821f-81d3-4506-966e-2b6ace2ed348",
+  "id": "c5904667-e887-4242-b705-8105de0b5572",
   "prevId": "ad8bad98-7891-47ca-97f0-2c04578d5e25",
   "tables": {
     "calls": {
@@ -154,6 +154,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'topup'"
         },
         "packs": {
           "name": "packs",

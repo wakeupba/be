@@ -15,6 +15,7 @@
  *   pnpm sim:dodo refund-partial       # partial refund, left for ops to decide
  *   pnpm sim:dodo dispute-lost         # chargeback settled against us
  *   pnpm sim:dodo dispute-won          # chargeback we kept, changes nothing
+ *   pnpm sim:dodo dispute-expired      # nobody answered it, left for a human
  *
  * The reversal events reuse the payment id of the most recent grant for this
  * user, so `topup` then `refund` is a round trip. Pass --payment to aim at a
@@ -137,6 +138,7 @@ const payloads = {
   'refund-partial': reversal('refund.succeeded', { is_partial: true, status: 'succeeded' }),
   'dispute-lost': reversal('dispute.lost', { dispute_status: 'dispute_lost', dispute_stage: 'dispute' }),
   'dispute-won': reversal('dispute.won', { dispute_status: 'dispute_won', dispute_stage: 'dispute' }),
+  'dispute-expired': reversal('dispute.expired', { dispute_status: 'dispute_expired' }),
 };
 
 const payload = payloads[event];

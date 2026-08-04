@@ -371,7 +371,9 @@ function NavDrawer({
             transition={{ duration: reduceMotion ? 0.15 : 0.28, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-y-3 left-3 z-50 flex w-[17rem] flex-col overflow-y-auto rounded-2xl border border-border bg-background px-4 shadow-card focus-visible:outline-none"
           >
-            <div className="flex h-14 shrink-0 items-center justify-between">
+            {/* taller than the topbar it replaces: the wordmark needs air
+                before the first nav pill, closer to the desktop rail's h-18 */}
+            <div className="flex h-16 shrink-0 items-center justify-between">
               <Link
                 href="/"
                 onClick={onClose}

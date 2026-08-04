@@ -36,6 +36,10 @@ export const oauthTokens = sqliteTable('oauth_tokens', {
   accessTokenEnc: text('access_token_enc'),
   accessTokenExpiresAt: integer('access_token_expires_at'),
   calendarSyncToken: text('calendar_sync_token'),
+  // when we last *asked* Google, successful or not: the cooldown behind the
+  // dashboard's refresh button. A failed attempt has to count, or a revoked
+  // grant turns refresh-spam into a stream of failing calls
+  lastSyncAttemptAt: integer('last_sync_attempt_at'),
   updatedAt: integer('updated_at').notNull(),
 });
 

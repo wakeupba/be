@@ -4,26 +4,30 @@ import { EventRepo } from '../src/repos/events';
 import { TokenRepo } from '../src/repos/tokens';
 import { UserRepo } from '../src/repos/users';
 import type { EventsDelta, GoogleClient, GoogleEventItem } from '../src/services/calendar/google-client';
-import { CalendarSyncService } from '../src/services/calendar/sync';
+import { CalendarSyncService, ON_DEMAND_COOLDOWN_MS } from '../src/services/calendar/sync';
 import { seedEvent, seedUser, testDb } from './helpers';
 
 const ENC_KEY = 'dGVzdC1rZXktbXVzdC1iZS0zMi1ieXRlcy1sb25nISE'; // base64url("test-key-must-be-32-bytes-long!!")
 
-function fakeGoogle(items: GoogleEventItem[]): GoogleClient {
+/** onList runs on every events.list; throw from it to fake Google failing */
+function fakeGoogle(items: GoogleEventItem[], onList?: () => void): GoogleClient {
   return {
     refreshAccessToken: async () => ({ accessToken: 'fresh', expiresInSeconds: 3600 }),
-    listEventsDelta: async (): Promise<EventsDelta> => ({ items, nextSyncToken: 'sync_2' }),
+    listEventsDelta: async (): Promise<EventsDelta> => {
+      onList?.();
+      return { items, nextSyncToken: 'sync_2' };
+    },
   } as unknown as GoogleClient;
 }
 
-async function build(items: GoogleEventItem[]) {
+async function build(items: GoogleEventItem[], onList?: () => void) {
   const db = testDb();
   const users = new UserRepo(db);
   const tokens = new TokenRepo(db);
   const events = new EventRepo(db);
   const user = await seedUser(db, { leadMinutes: 15, triggerColorId: '11' });
   await tokens.upsertRefreshToken(user.id, await encryptSecret('refresh-token', ENC_KEY));
-  const sync = new CalendarSyncService(fakeGoogle(items), users, tokens, events, ENC_KEY);
+  const sync = new CalendarSyncService(fakeGoogle(items, onList), users, tokens, events, ENC_KEY);
   return { db, user, users, tokens, events, sync };
 }
 
@@ -145,5 +149,97 @@ describe('calendar sync', () => {
     const { user, tokens, sync } = await build([]);
     await sync.syncUser(user);
     expect((await tokens.find(user.id))?.calendarSyncToken).toBe('sync_2');
+  });
+
+  it('leaves the stored token alone when nothing changed', async () => {
+    const { user, tokens, sync } = await build([]);
+    await sync.syncUser(user);
+    const firstWrite = (await tokens.find(user.id))?.updatedAt;
+
+    await sync.syncUser(user); // same token back from google
+    expect((await tokens.find(user.id))?.updatedAt).toBe(firstWrite);
+  });
+
+  it('syncs every user when the pass is larger than the concurrency pool', async () => {
+    const db = testDb();
+    const users = new UserRepo(db);
+    const tokens = new TokenRepo(db);
+    const events = new EventRepo(db);
+    let googleCalls = 0;
+    const sync = new CalendarSyncService(
+      fakeGoogle([], () => {
+        googleCalls++;
+      }),
+      users,
+      tokens,
+      events,
+      ENC_KEY,
+    );
+    // more users than workers: the shared queue has to drain, not truncate
+    for (let i = 0; i < 25; i++) {
+      const seeded = await seedUser(db);
+      await tokens.upsertRefreshToken(seeded.id, await encryptSecret('refresh-token', ENC_KEY));
+    }
+    // the file shares one d1, so earlier tests' users are in the pass too
+    const connected = (await users.listWithConnectedCalendar()).length;
+    expect(connected).toBeGreaterThanOrEqual(25);
+
+    await sync.syncAllUsers();
+    expect(googleCalls).toBe(connected);
+  });
+});
+
+describe('on-demand calendar sync', () => {
+  it('brings a just-flagged meeting in without waiting for the cron', async () => {
+    const { user, events, sync } = await build([timedEvent()]);
+
+    expect((await sync.syncOnDemand(user)).status).toBe('synced');
+    expect(await events.listUpcomingForUser(user.id, Date.now())).toHaveLength(1);
+  });
+
+  it('a second refresh inside the cooldown never reaches google', async () => {
+    let googleCalls = 0;
+    const { user, sync } = await build([timedEvent()], () => {
+      googleCalls++;
+    });
+
+    expect((await sync.syncOnDemand(user)).status).toBe('synced');
+    expect((await sync.syncOnDemand(user)).status).toBe('cooling_down');
+    expect(googleCalls).toBe(1);
+  });
+
+  it('a failed refresh still burns the cooldown: a dead grant must not become a google flood', async () => {
+    let googleCalls = 0;
+    const { user, sync } = await build([], () => {
+      googleCalls++;
+      throw new Error('google said no');
+    });
+
+    expect((await sync.syncOnDemand(user)).status).toBe('failed');
+    expect((await sync.syncOnDemand(user)).status).toBe('cooling_down');
+    expect(googleCalls).toBe(1);
+  });
+
+  it('reports when the next refresh is allowed so the ui can say "checked just now"', async () => {
+    const { user, sync } = await build([]);
+
+    const first = await sync.syncOnDemand(user);
+    const second = await sync.syncOnDemand(user);
+    // the cooling-down answer carries the original attempt, not this moment
+    expect(second.lastAttemptAt).toBe(first.lastAttemptAt);
+  });
+
+  it('the cron is never turned away by a live cooldown', async () => {
+    const { user, tokens, events, sync } = await build([timedEvent()]);
+
+    await sync.syncOnDemand(user); // takes the slot
+    const claimedAt = (await tokens.find(user.id))?.lastSyncAttemptAt ?? 0;
+    await events.cancelAllActiveForUser(user.id); // pretend our copy went stale
+
+    await sync.syncAllUsers();
+
+    // the cooldown was still live, and the cron synced straight through it
+    expect(Date.now() - claimedAt).toBeLessThan(ON_DEMAND_COOLDOWN_MS);
+    expect(await events.listUpcomingForUser(user.id, Date.now())).toHaveLength(1);
   });
 });

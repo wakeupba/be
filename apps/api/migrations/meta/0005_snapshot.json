@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f2e5d800-2739-4412-b2e7-92eba3ae571d",
-  "prevId": "ad8bad98-7891-47ca-97f0-2c04578d5e25",
+  "id": "a8a9fbf5-d191-4cfc-ba93-d0136745bda2",
+  "prevId": "f2e5d800-2739-4412-b2e7-92eba3ae571d",
   "tables": {
     "calls": {
       "name": "calls",
@@ -123,6 +123,95 @@
         "calls_user_id_users_id_fk": {
           "name": "calls_user_id_users_id_fk",
           "tableFrom": "calls",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "credit_grants": {
+      "name": "credit_grants",
+      "columns": {
+        "payment_id": {
+          "name": "payment_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'topup'"
+        },
+        "packs": {
+          "name": "packs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "calls": {
+          "name": "calls",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "granted_at": {
+          "name": "granted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revoked_reason": {
+          "name": "revoked_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_credit_grants_user": {
+          "name": "idx_credit_grants_user",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "credit_grants_user_id_users_id_fk": {
+          "name": "credit_grants_user_id_users_id_fk",
+          "tableFrom": "credit_grants",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"

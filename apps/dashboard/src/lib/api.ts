@@ -1,4 +1,5 @@
 import type {
+  CalendarSyncDto,
   CallHistoryDto,
   CallOutcome,
   FeatureCardDto,
@@ -30,6 +31,8 @@ export const api = {
   updateSettings: (patch: Record<string, unknown>) =>
     request<{ ok: true }>('/me/settings', { method: 'PATCH', body: JSON.stringify(patch) }),
   events: () => request<UpcomingEventDto[]>('/me/events'),
+  /** asks Google now instead of waiting for the cron, and returns the list with it */
+  syncEvents: () => request<CalendarSyncDto>('/me/sync', { method: 'POST' }),
   calls: () => request<CallHistoryDto[]>('/me/calls'),
   callOutcome: (id: string) => request<{ outcome: CallOutcome }>(`/me/calls/${id}`),
   verifyCall: () => request<{ ok: true; callId: string }>('/me/verify-call', { method: 'POST' }),

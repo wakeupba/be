@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shell } from '@/components/ui/panel';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
 import { GCAL_COLORS } from '@/lib/gcal-colors';
 import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { useMe } from '@/lib/use-me';
@@ -293,6 +293,9 @@ function PhoneRow({
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // same distinction the onboarding step makes: a country we do not reach yet
+  // is a status, not something the user typed wrong
+  const [waitlisted, setWaitlisted] = useState<string | null>(null);
   const [verifyPhase, setVerifyPhase] = useState<'idle' | 'calling'>('idle');
   const verifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parsedDraft = parsePhone(draft);
@@ -308,13 +311,20 @@ function PhoneRow({
   async function savePhone() {
     setSaving(true);
     setError(null);
+    setWaitlisted(null);
     try {
       await api.updateSettings({ phone: parsedDraft.e164 });
       await refresh();
       setEditing(false);
       setDraft('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'could not save');
+      if (err instanceof ApiError && err.code === 'region_unsupported') {
+        // the field stays open: the old number still works, and this one never
+        // replaced it
+        setWaitlisted(parsedDraft.country ?? 'that country');
+      } else {
+        setError(err instanceof Error ? err.message : 'could not save');
+      }
     } finally {
       setSaving(false);
     }
@@ -427,6 +437,12 @@ function PhoneRow({
         )}
       </AnimatePresence>
       {error && <p className="w-full font-mono text-[11px] text-destructive sm:text-right">{error}</p>}
+      {waitlisted && !error && (
+        <p className="w-full max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-right">
+          We cannot place calls to {waitlisted} yet, so your number is unchanged. Your spot is saved, and we
+          will email you the day we can.
+        </p>
+      )}
     </Row>
   );
 }

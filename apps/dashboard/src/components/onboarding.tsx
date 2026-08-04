@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Panel, Shell } from '@/components/ui/panel';
-import { api } from '@/lib/api';
+import { ApiError, api } from '@/lib/api';
 import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +70,10 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // a number we cannot ring yet is not a mistake the user made, so it reads as
+  // a status rather than an error, and the field stays open in case they meant
+  // a different number
+  const [waitlisted, setWaitlisted] = useState<string | null>(null);
   const parsed = parsePhone(phone);
 
   return (
@@ -83,11 +87,16 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
           event.preventDefault();
           setSaving(true);
           setError(null);
+          setWaitlisted(null);
           try {
             await api.updateSettings({ phone: parsed.e164 });
             onSaved();
           } catch (err) {
-            setError(err instanceof Error ? err.message : 'could not save');
+            if (err instanceof ApiError && err.code === 'region_unsupported') {
+              setWaitlisted(parsed.country ?? 'your country');
+            } else {
+              setError(err instanceof Error ? err.message : 'could not save');
+            }
           } finally {
             setSaving(false);
           }
@@ -108,6 +117,11 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
       </form>
       {error ? (
         <p className="mt-2 font-mono text-[11px] text-destructive">{error}</p>
+      ) : waitlisted ? (
+        <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-muted-foreground">
+          We cannot place calls to {waitlisted} yet. Your spot is saved, and we will email you the day we can.
+          If you have a number somewhere else, try that one.
+        </p>
       ) : parsed.country ? (
         <p className="mt-2 font-mono text-[11px] text-muted-foreground/70">
           {parsed.valid ? parsed.country : `${parsed.country} · keep typing`}

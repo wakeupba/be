@@ -10,6 +10,18 @@ const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
 
 export class UnauthorizedError extends Error {}
 
+/** carries the API's machine-readable `code` alongside the human message, for
+ * the refusals a caller has to render differently rather than as an error */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API}${path}`, {
     ...init,
@@ -18,8 +30,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (response.status === 401) throw new UnauthorizedError();
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(body?.error ?? `request failed: ${response.status}`);
+    const body = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+    throw new ApiError(body?.error ?? `request failed: ${response.status}`, response.status, body?.code);
   }
   return response.json() as Promise<T>;
 }

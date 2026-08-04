@@ -1,5 +1,5 @@
 import type { CallOutcome, EventState, LeadMinutes, Plan } from '@wakeupbabe/shared';
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // All timestamps are unix epoch milliseconds (UTC). Event-local timezones are
 // stored separately because call scheduling must survive DST transitions.
@@ -104,6 +104,26 @@ export const waitlist = sqliteTable('waitlist', {
   region: text('region').notNull(),
   createdAt: integer('created_at').notNull(),
 });
+
+// Numbers we turned away because ringing them costs more than the plan earns.
+// One row per user, so a repeated attempt is demand signal rather than a
+// duplicate: attempts tells us how much someone wants their country covered,
+// and rateUsd tells us what saying yes would cost.
+export const regionInterest = sqliteTable(
+  'region_interest',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    phoneE164: text('phone_e164').notNull(),
+    // null when no prefix matched at all, which is its own useful signal
+    rateUsd: real('rate_usd'),
+    attempts: integer('attempts').notNull().default(1),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [index('idx_region_interest_rate').on(table.rateUsd)],
+);
 
 // processed billing webhook ids: providers redeliver with the same id on
 // retry, and credit grants must not double-apply

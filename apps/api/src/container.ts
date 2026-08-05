@@ -1,8 +1,11 @@
 import { createDb } from './db/client';
 import type { Env } from './env';
 import { CallRepo } from './repos/calls';
+import { CounterRepo } from './repos/counters';
 import { CreditGrantRepo } from './repos/credit-grants';
+import { DemoCallRepo } from './repos/demo-calls';
 import { EventRepo } from './repos/events';
+import { RegionInterestRepo } from './repos/region-interest';
 import { TokenRepo } from './repos/tokens';
 import { UserRepo } from './repos/users';
 import { VoteRepo } from './repos/votes';
@@ -35,6 +38,9 @@ export function buildContainer(env: Env) {
   const votes = new VoteRepo(db);
   const webhookEvents = new WebhookEventRepo(db);
   const creditGrants = new CreditGrantRepo(db);
+  const regionInterest = new RegionInterestRepo(db);
+  const demoCalls = new DemoCallRepo(db);
+  const counters = new CounterRepo(db);
 
   const google = new GoogleClient(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
   // callback URLs handed to Twilio (and verified on the way back) must be
@@ -45,7 +51,11 @@ export function buildContainer(env: Env) {
   // transactional email stays dark until the key exists; every caller
   // treats the notifier as optional
   const notifier = env.RESEND_API_KEY
-    ? new EmailNotifier(new ResendEmailService(env.RESEND_API_KEY, env.APP_ORIGIN), webhookEvents)
+    ? new EmailNotifier(
+        new ResendEmailService(env.RESEND_API_KEY, env.APP_ORIGIN),
+        webhookEvents,
+        env.OWNER_EMAIL ?? 'info@wakeupba.be',
+      )
     : null;
 
   const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY, notifier);
@@ -77,6 +87,9 @@ export function buildContainer(env: Env) {
     votes,
     webhookEvents,
     creditGrants,
+    regionInterest,
+    demoCalls,
+    counters,
     google,
     telephony,
     sync,
@@ -84,6 +97,9 @@ export function buildContainer(env: Env) {
     lifecycle,
     scripts,
     billing,
+    // the services above hold their own reference; this one is for callers
+    // that send mail directly, like the demo budget warning
+    notifier,
   };
 }
 

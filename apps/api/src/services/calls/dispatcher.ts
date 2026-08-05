@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/cloudflare';
 import { creditsUsable, PLAN_LIMITS } from '@wakeupbabe/shared';
+import { callRateUsd, isCallableNumber } from '../../lib/call-rates';
 import { hmacSign } from '../../lib/crypto';
 import { errorFields, logEvent } from '../../lib/log';
 import type { CallRepo } from '../../repos/calls';
@@ -78,6 +79,25 @@ export class CallDispatchService {
     const user = await this.users.findById(userId);
     if (!user?.phoneE164 || !user.dndVerifiedAt) return;
 
+    /* onboarding refuses numbers that cost more to ring than the plan earns,
+     * but a number already on file can cross the line when Twilio moves its
+     * prices. Settle it here rather than looping: marked missed, and the
+     * user's quota is not spent on a call we are not placing. */
+    if (!isCallableNumber(user.phoneE164)) {
+      await this.events.setState(eventId, 'missed');
+      logEvent('warn', 'call.rate_above_cap', {
+        userId: user.id,
+        eventId,
+        rateUsd: callRateUsd(user.phoneE164) ?? null,
+      });
+      /* Persistent unreachability, so it gets the weekly notice rather than one
+       * mail per meeting: the dashboard still shows a verified phone and a
+       * connected calendar, so without this every flagged meeting would go
+       * missed forever with nothing said. */
+      await this.notifier?.numberUnreachable(user);
+      return;
+    }
+
     // claim before spending quota or dialing so a second cron tick is a no-op
     if (!(await this.events.tryClaimForCalling(eventId))) return;
 
@@ -123,7 +143,13 @@ export class CallDispatchService {
     return call.id;
   }
 
+  /** the one place a number becomes a real dial, so the cost cap is enforced
+   * here too: every caller above has its own check, and this is what makes a
+   * future caller that forgets one safe by default */
   private async placeCall(callId: string, to: string): Promise<void> {
+    if (!isCallableNumber(to)) {
+      throw new Error(`refusing to dial ${to}: rate above cap`);
+    }
     const placed = await this.provider.placeCall({
       to,
       from: this.config.fromNumber,

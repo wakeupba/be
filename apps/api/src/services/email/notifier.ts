@@ -18,7 +18,36 @@ export class EmailNotifier {
   constructor(
     private readonly email: EmailService,
     private readonly dedup: WebhookEventRepo,
+    /** where operational mail goes; absent means we only log */
+    private readonly ownerEmail: string | null = null,
   ) {}
+
+  /**
+   * The demo call budget for this week is gone, so the landing CTA has stopped
+   * rendering. Worth an email because the failure is silent by design: visitors
+   * see no demo rather than a broken one, and nobody would otherwise notice
+   * whether that was demand or abuse.
+   *
+   * The caller already claimed a per-week key, so there is no dedup here.
+   */
+  async demoBudgetSpent(budgetUsd: number): Promise<void> {
+    if (!this.ownerEmail) return;
+    await this.guard('demoBudgetSpent', () =>
+      this.email.opsAlert(
+        this.ownerEmail as string,
+        'Demo calls are out for this week',
+        [
+          `The landing page demo has spent its $${budgetUsd.toFixed(2)} weekly budget.`,
+          'The CTA is now hidden, and no further demo calls will be placed until the window rolls over.',
+          '',
+          'If this happened faster than expected, check the demo_calls table: per-IP and',
+          'per-number caps should have bounded any single visitor, so a fast burn is either',
+          'real demand or a lot of distinct addresses.',
+        ].join('\n'),
+        `demo-budget:${Math.floor(Date.now() / WEEK_MS)}`,
+      ),
+    );
+  }
 
   /** per event, no dedup: each missed meeting is a distinct failure */
   async missedCall(user: UserRow, event: UpcomingMeeting, reason: MissedReason): Promise<void> {
@@ -50,6 +79,20 @@ export class EmailNotifier {
       const key = this.weeklyKey(`email:unverified:${user.id}`);
       if (!(await this.dedup.claim(key, 'email-dedup'))) return;
       await this.email.numberUnverified(user.email, key);
+    });
+  }
+
+  /**
+   * Once a week while the state persists. Separate from numberUnverified
+   * because the states are different and only one of them has an action the
+   * user can take: an unverified number wants a test call, and this one cannot
+   * pass a test call at all.
+   */
+  async numberUnreachable(user: UserRow): Promise<void> {
+    await this.guard('numberUnreachable', async () => {
+      const key = this.weeklyKey(`email:unreachable:${user.id}`);
+      if (!(await this.dedup.claim(key, 'email-dedup'))) return;
+      await this.email.numberUnreachable(user.email, key);
     });
   }
 

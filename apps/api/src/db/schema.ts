@@ -1,5 +1,5 @@
 import type { CallOutcome, EventState, LeadMinutes, Plan } from '@wakeupbabe/shared';
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 // All timestamps are unix epoch milliseconds (UTC). Event-local timezones are
 // stored separately because call scheduling must survive DST transitions.
@@ -140,6 +140,86 @@ export const creditGrants = sqliteTable(
     revokedReason: text('revoked_reason'),
   },
   (table) => [index('idx_credit_grants_user').on(table.userId)],
+);
+
+/*
+ * Destinations we turned away because ringing them costs more than the plan
+ * earns. One row per user, so a repeated attempt is demand signal rather than a
+ * duplicate: attempts says how much someone wants their country covered, and
+ * rateUsd says what agreeing would cost.
+ *
+ * The number itself is deliberately absent. Deciding which region to open next
+ * needs the destination, not the subscriber: country and rate answer that
+ * question completely, and the digits would only be a thing to disclose and a
+ * thing to leak.
+ */
+export const regionInterest = sqliteTable(
+  'region_interest',
+  {
+    userId: text('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** ISO country, or null when the number parsed but belongs to no country
+     * libphonenumber recognises */
+    country: text('country'),
+    /** the table prefix that priced it, so a country with mixed ranges can be
+     * told apart from one that is dear throughout */
+    prefix: text('prefix'),
+    // null when no prefix matched at all, which is its own useful signal
+    rateUsd: real('rate_usd'),
+    attempts: integer('attempts').notNull().default(1),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [index('idx_region_interest_rate').on(table.rateUsd)],
+);
+
+/*
+ * Integer counters with a ceiling, incremented atomically.
+ *
+ * Exists because the slot-claiming limiter costs one write per slot it probes,
+ * which is fine for a cap of five and unusable for a cap of thousands: the
+ * busiest moment would spend the most writes refusing people. A single guarded
+ * UPDATE is one round trip whatever the ceiling, and cannot overshoot it.
+ */
+export const counters = sqliteTable('counters', {
+  key: text('key').primaryKey(),
+  value: integer('value').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+/*
+ * Every demo call the landing page placed. One table serves four jobs, which is
+ * why it holds cost rather than just a count: the weekly budget sums costUsd,
+ * the per-visitor and per-number caps count rows, and the whole thing is the
+ * audit trail for an endpoint that spends money without a session behind it.
+ *
+ * The number and the IP are stored as HMACs, never in the clear. A demo caller
+ * is not a user and we have no reason to keep their number: the only thing we
+ * need is to recognise the same one coming back.
+ */
+export const demoCalls = sqliteTable(
+  'demo_calls',
+  {
+    id: text('id').primaryKey(),
+    phoneHash: text('phone_hash').notNull(),
+    ipHash: text('ip_hash').notNull(),
+    /* what Twilio will bill: reserved before dialling, and zeroed if the call
+     * was never answered, since unanswered calls are free */
+    costUsd: real('cost_usd').notNull(),
+    providerCallId: text('provider_call_id'),
+    answeredAt: integer('answered_at'),
+    /* the caller stated the number was their own. Stored per call rather than
+     * held in a browser, because a claim nobody recorded is not a record: if the
+     * question is ever asked about a specific call, this is the answer */
+    ownerAttested: integer('owner_attested', { mode: 'boolean' }).notNull().default(false),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_demo_calls_window').on(table.createdAt),
+    index('idx_demo_calls_phone').on(table.phoneHash, table.createdAt),
+    index('idx_demo_calls_ip').on(table.ipHash, table.createdAt),
+  ],
 );
 
 // processed billing webhook ids: providers redeliver with the same id on

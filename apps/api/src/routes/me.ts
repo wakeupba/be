@@ -13,7 +13,9 @@ import { Hono } from 'hono';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
+import { isCallableNumber, priceCall } from '../lib/call-rates';
 import { decryptSecret } from '../lib/crypto';
+import { logEvent } from '../lib/log';
 import { claimRateSlot } from '../lib/rate-limit';
 import type { TrackedEventRow } from '../repos/events';
 import { billingConfigured, fakeBillingActive } from '../services/billing/dodo';
@@ -215,6 +217,31 @@ export const meRoutes = new Hono<MeContext>()
       if (!parsed?.isValid()) {
         return c.json({ error: 'not a real phone number, use international format like +14155550123' }, 400);
       }
+      /* a valid number we cannot afford to ring is a different answer from an
+       * invalid one, and gets its own code so the client can say "not here
+       * yet" instead of "wrong number". The number is kept as demand signal
+       * and deliberately not saved to the account: nothing downstream should
+       * believe this user has a reachable phone. */
+      if (!isCallableNumber(parsed.number)) {
+        const { regionInterest } = c.get('container');
+        // the destination, never the number: this is what decides which region
+        // to open next, and the subscriber digits add nothing to that
+        const priced = priceCall(parsed.number);
+        await regionInterest.record(c.get('userId'), {
+          country: parsed.country ?? null,
+          prefix: priced?.prefix ?? null,
+          rateUsd: priced?.usd ?? null,
+        });
+        logEvent('info', 'phone.region_unsupported', {
+          userId: c.get('userId'),
+          country: parsed.country ?? 'unknown',
+          rateUsd: priced?.usd ?? null,
+        });
+        return c.json(
+          { error: 'we cannot ring numbers in your country yet', code: 'region_unsupported' },
+          422,
+        );
+      }
       patch.phoneE164 = parsed.number;
       // a changed number loses its DND verification: we only ever call
       // numbers that have proven they ring through, so the test call re-runs
@@ -342,6 +369,11 @@ export const meRoutes = new Hono<MeContext>()
     const user = await users.findById(c.get('userId'));
     if (!user) return c.json({ error: 'not found' }, 404);
     if (!user.phoneE164) return c.json({ error: 'add a phone number first' }, 400);
+    /* checked again at ring time, not just at save time: numbers saved before
+     * this gate existed are still on file, and Twilio's prices move */
+    if (!isCallableNumber(user.phoneE164)) {
+      return c.json({ error: 'we cannot ring numbers in your country yet', code: 'region_unsupported' }, 422);
+    }
 
     const recent = await calls.countTestCallsSince(user.id, Date.now() - HOUR_MS);
     if (recent >= VERIFY_CALLS_PER_HOUR) {

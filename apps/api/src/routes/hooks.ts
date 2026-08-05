@@ -7,8 +7,9 @@ import { hmacVerify } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import type { CallRow } from '../repos/calls';
 import type { UserRow } from '../repos/users';
-import { VERIFICATION_SCRIPT } from '../services/calls/script';
+import { DEMO_SCRIPT, VERIFICATION_SCRIPT } from '../services/calls/script';
 import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
+import { budgetKeyFor, costMills } from './demo';
 
 type HookContext = { Bindings: Env; Variables: { container: Container } };
 
@@ -77,6 +78,56 @@ export const callRoutes = new Hono<HookContext>()
     const call = await authenticateCall(c, c.env.SESSION_SECRET);
     if (!call) return c.text('forbidden', 403);
     await c.get('container').lifecycle.onHangup(call);
+    return c.text('ok');
+  });
+
+/*
+ * The landing demo's own callbacks. Separate from the routes above because a
+ * demo call has no account, no calendar event and no row in `calls`, so there
+ * is nothing for authenticateCall to look up. The checks are the same two
+ * though: the carrier signature plus our per-call HMAC.
+ */
+async function authenticateDemo(
+  c: { req: { raw: Request; query: (k: string) => string | undefined }; get: (k: 'container') => Container },
+  secret: string,
+) {
+  const container = c.get('container');
+  if (!(await container.telephony.verifyWebhook(c.req.raw))) return null;
+  const demoId = c.req.query('demo');
+  const token = c.req.query('tok');
+  if (!demoId || !token) return null;
+  if (!(await hmacVerify(`demo-callback:${demoId}`, token, secret))) return null;
+  return container.demoCalls.findById(demoId);
+}
+
+export const demoCallRoutes = new Hono<HookContext>()
+  .post('/answer', async (c) => {
+    const demo = await authenticateDemo(c, c.env.SESSION_SECRET);
+    if (!demo) return c.text('forbidden', 403);
+    // answered means Twilio will bill it, so the reservation stands
+    await c.get('container').demoCalls.markAnswered(demo.id);
+    return c.text(buildSpeakXml(DEMO_SCRIPT), 200, { 'Content-Type': 'application/xml' });
+  })
+
+  .post('/hangup', async (c) => {
+    const demo = await authenticateDemo(c, c.env.SESSION_SECRET);
+    if (!demo) return c.text('forbidden', 403);
+    /* Never answered, so Twilio bills nothing and the week gets its money back.
+     * The row stays, and still counts against the per-number cap: ringing
+     * someone is the harm whether or not they picked up, and releasing it would
+     * make unanswered calls unlimited.
+     *
+     * Refunded against the week the call was charged to, not the current one,
+     * which matters for a call that straddled the boundary.
+     *
+     * costUsd > 0 is what makes a redelivered hangup harmless: release() zeroes
+     * the cost but leaves answeredAt alone, so the answeredAt check alone would
+     * pass again and refund a call that was already refunded. */
+    if (demo.answeredAt === null && demo.costUsd > 0) {
+      const { demoCalls, counters } = c.get('container');
+      await counters.refund(budgetKeyFor(demo.createdAt), costMills(demo.costUsd));
+      await demoCalls.release(demo.id);
+    }
     return c.text('ok');
   });
 

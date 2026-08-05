@@ -103,12 +103,6 @@ export const featureVotes = sqliteTable(
   (table) => [primaryKey({ columns: [table.featureKey, table.userId] })],
 );
 
-export const waitlist = sqliteTable('waitlist', {
-  email: text('email').primaryKey(),
-  region: text('region').notNull(),
-  createdAt: integer('created_at').notNull(),
-});
-
 /*
  * What each payment bought, keyed by the payment it came from.
  *

@@ -12,7 +12,6 @@ import { demoRoutes } from './routes/demo';
 import { devRoutes } from './routes/dev';
 import { callRoutes, demoCallRoutes, dodoRoutes } from './routes/hooks';
 import { meRoutes } from './routes/me';
-import { waitlistRoutes } from './routes/waitlist';
 
 type AppContext = { Bindings: Env; Variables: { container: Container; userId: string } };
 
@@ -37,8 +36,12 @@ export function createApp() {
     cors({ origin: c.env.APP_ORIGIN, credentials: true, allowMethods: ['POST'] })(c, next),
   );
 
-  // waitlist is called from the public landing page, no session involved
-  app.use('/waitlist', (c, next) => cors({ origin: c.env.LANDING_ORIGIN })(c, next));
+  // the demo call, also from the landing page and also sessionless. CORS is not
+  // a security boundary here (a script can send whatever Origin it likes); the
+  // Turnstile token is. This just keeps other sites' pages from using it
+  app.use('/demo/*', (c, next) =>
+    cors({ origin: c.env.LANDING_ORIGIN, allowMethods: ['GET', 'POST'] })(c, next),
+  );
 
   // the demo call, also from the landing page and also sessionless. CORS is not
   // a security boundary here (a script can send whatever Origin it likes); the
@@ -69,7 +72,6 @@ export function createApp() {
 
   app.route('/auth', authRoutes);
   app.route('/', meRoutes);
-  app.route('/waitlist', waitlistRoutes);
   app.route('/', demoRoutes);
   app.route('/hooks/call', callRoutes);
   app.route('/hooks/demo', demoCallRoutes);

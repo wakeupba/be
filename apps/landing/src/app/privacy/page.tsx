@@ -81,8 +81,10 @@ export default function PrivacyPage() {
             <DataRow label="Feature votes">
               If you vote for a feature on the dashboard, the feature, your account and any note you leave.
             </DataRow>
-            <DataRow label="Waitlist">
-              If your region is not live yet: the email address and region you submitted, and nothing else.
+            <DataRow label="Unsupported destinations">
+              If we cannot yet call the country your number belongs to: that country, the dialling prefix that
+              priced it, what a call there would cost us, and how many times you tried. Not the number itself.
+              It tells us which country to open next, and nothing about you.
             </DataRow>
             <DataRow label="Unsupported destinations">
               If we cannot yet call the country your number belongs to: that country, the dialling prefix that
@@ -142,8 +144,8 @@ export default function PrivacyPage() {
               only their identifiers and the resulting subscription status.
             </DataRow>
             <DataRow label="Resend">
-              Sends the four transactional emails described below. Receives your email address and the
-              contents of that email.
+              Sends the transactional emails described below. Receives your email address and the contents of
+              that email.
             </DataRow>
             <DataRow label="Sentry">
               Optional error reporting, when enabled. Receives error diagnostics, which can incidentally
@@ -157,15 +159,16 @@ export default function PrivacyPage() {
 
           <Section n="05" title="Email we send you">
             <Prose>
-              We send transactional email only, and there are exactly four kinds: a meeting was missed, you
-              have spent your last call for the period, your phone number is still unverified, and your
-              calendar connection has broken. The last two repeat at most once a week while the problem
-              persists. There is no newsletter, and no marketing email.
+              We send transactional email only, and there are exactly five kinds: a meeting was missed, you
+              have spent your last call for the period, your phone number is still unverified, we can no
+              longer place calls to your number, and your calendar connection has broken. The last three
+              repeat at most once a week while the problem persists. There is no newsletter, and no marketing
+              email.
             </Prose>
             <Prose>
-              Those four are the only senders that exist today. If you joined the region waitlist, the intent
-              is to email you when your region goes live, and that is the only thing we would use the address
-              for, but it is not built yet and we would rather say so than imply a queue is running.
+              Those are the only messages that exist today. Nothing emails you about a country becoming
+              available, and we do not keep an address for that purpose: when we cannot call your number we
+              record the country, not you.
             </Prose>
           </Section>
 
@@ -185,11 +188,6 @@ export default function PrivacyPage() {
             <Prose>
               Marked events and their call records stay while your account exists, because the call history is
               the receipt that the product works. Suppressed-duplicate email markers are pruned after 30 days.
-            </Prose>
-            <Prose>
-              A waitlist entry is an email address and a region, and it is kept until that region launches.
-              There is no automatic sweep for them yet, so if you want yours gone sooner, ask and we will
-              delete it by hand.
             </Prose>
             <Prose>
               Disconnecting your calendar from the dashboard revokes our access at Google and deletes your
@@ -217,10 +215,10 @@ export default function PrivacyPage() {
 
           <Section n="09" title="International transfers">
             <Prose>
-              We are US-first, and calls currently launch in the United States. Our subprocessors operate
-              globally, which means your data may be processed outside your country, including in the United
-              States. Where required, transfers rely on the relevant provider&rsquo;s standard contractual
-              clauses.
+              We operate from the United States: the number we call you from is a US number, and our
+              infrastructure and subprocessors are US-based or global. Calls themselves reach most countries.
+              Either way your data may be processed outside your own country, including in the United States.
+              Where required, transfers rely on the relevant provider&rsquo;s standard contractual clauses.
             </Prose>
           </Section>
 

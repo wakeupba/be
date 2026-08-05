@@ -295,7 +295,7 @@ function PhoneRow({
   const [error, setError] = useState<string | null>(null);
   // same distinction the onboarding step makes: a country we do not reach yet
   // is a status, not something the user typed wrong
-  const [waitlisted, setWaitlisted] = useState<string | null>(null);
+  const [unreachableCountry, setUnreachableCountry] = useState<string | null>(null);
   const [verifyPhase, setVerifyPhase] = useState<'idle' | 'calling'>('idle');
   const verifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parsedDraft = parsePhone(draft);
@@ -311,7 +311,7 @@ function PhoneRow({
   async function savePhone() {
     setSaving(true);
     setError(null);
-    setWaitlisted(null);
+    setUnreachableCountry(null);
     try {
       await api.updateSettings({ phone: parsedDraft.e164 });
       await refresh();
@@ -321,7 +321,7 @@ function PhoneRow({
       if (err instanceof ApiError && err.code === 'region_unsupported') {
         // the field stays open: the old number still works, and this one never
         // replaced it
-        setWaitlisted(parsedDraft.country ?? 'that country');
+        setUnreachableCountry(parsedDraft.country ?? 'that country');
       } else {
         setError(err instanceof Error ? err.message : 'could not save');
       }
@@ -437,10 +437,10 @@ function PhoneRow({
         )}
       </AnimatePresence>
       {error && <p className="w-full font-mono text-[11px] text-destructive sm:text-right">{error}</p>}
-      {waitlisted && !error && (
+      {unreachableCountry && !error && (
         <p className="w-full max-w-sm text-[13px] leading-relaxed text-muted-foreground sm:text-right">
-          We cannot place calls to {waitlisted} yet, so your number is unchanged. We have noted the country,
-          and it counts towards which one we open next.
+          We cannot place calls to {unreachableCountry} yet, so your number is unchanged. We have noted the
+          country, and it counts towards which one we open next.
         </p>
       )}
     </Row>

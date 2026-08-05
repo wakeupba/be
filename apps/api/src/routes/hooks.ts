@@ -6,6 +6,7 @@ import type { Env } from '../env';
 import { hmacVerify } from '../lib/crypto';
 import { logEvent } from '../lib/log';
 import type { CallRow } from '../repos/calls';
+import type { UserRow } from '../repos/users';
 import { DEMO_SCRIPT, VERIFICATION_SCRIPT } from '../services/calls/script';
 import { buildGatherXml, buildSpeakXml } from '../services/telephony/xml';
 import { budgetKeyFor, costMills } from './demo';
@@ -171,6 +172,11 @@ export interface DodoWebhookPayload {
     customer?: { customer_id?: string };
     metadata?: { userId?: string };
     product_cart?: Array<{ product_id: string; quantity: number }>;
+    /** the payment a grant hangs off, and the only link a refund or dispute
+     * gives us back to what was bought */
+    payment_id?: string;
+    /** a partial refund is not a licence to take the whole grant back */
+    is_partial?: boolean;
     subscription_id?: string;
     /** subscription events carry the full subscription snapshot; its status
      * is the source of truth for entitlement */
@@ -195,6 +201,36 @@ const SUBSCRIPTION_EVENTS = new Set([
 
 /** statuses that end paid access; 'pending' and unknown values change nothing */
 const REVOKED_STATUSES = new Set(['cancelled', 'expired', 'failed', 'on_hold', 'paused']);
+
+/*
+ * Events where the money has actually gone back to the cardholder, so whatever
+ * it bought has to come back to us.
+ *
+ * Not our policy to set: as merchant of record Dodo runs the dispute with the
+ * card networks, and Visa's Rapid Dispute Resolution refunds automatically to
+ * avoid a formal chargeback. That arrives as dispute.lost with
+ * is_resolved_by_rdr, which is why this list is driven by outcome and not by
+ * whether we agreed to a refund.
+ *
+ * dispute.opened only holds funds, so it changes nothing here; dispute.won and
+ * dispute.cancelled leave the money with us.
+ */
+const REVERSAL_EVENTS = new Set(['refund.succeeded', 'dispute.lost', 'dispute.accepted']);
+
+/*
+ * Outcomes we cannot act on without guessing, so a human is told instead.
+ *
+ * dispute.expired is the response window closing with nobody having answered.
+ * Dodo says it "typically resolves against you", and typically is not always:
+ * their status enum keeps dispute_expired as a terminal state distinct from
+ * dispute_lost, so whether a dispute.lost follows is genuinely unclear.
+ * Reversing on it could take credits from someone who kept their money, and
+ * ignoring it leaves credits with someone who did not.
+ *
+ * It is also the passive one, firing exactly when nobody was watching the
+ * dispute, which makes it likelier in practice than an accepted one.
+ */
+const AMBIGUOUS_EVENTS = new Set(['dispute.expired']);
 
 /**
  * Applies one billing event to our state. The single source of truth for
@@ -278,6 +314,27 @@ export async function applyDodoEvent(
     return;
   }
 
+  if (REVERSAL_EVENTS.has(payload.type)) {
+    await reverseGrant(container, payload, user);
+    return;
+  }
+
+  if (AMBIGUOUS_EVENTS.has(payload.type)) {
+    // same treatment as a partial refund: say so loudly, change nothing, let
+    // someone who can read the dispute decide
+    logEvent('warn', 'billing.ambiguous_outcome', {
+      userId: user.id,
+      type: payload.type,
+      paymentId: payload.data.payment_id ?? null,
+      plan: user.plan,
+    });
+    Sentry.captureMessage(
+      `${payload.type} for user ${user.id} needs a manual entitlement decision`,
+      'warning',
+    );
+    return;
+  }
+
   switch (payload.type) {
     case 'payment.succeeded': {
       // payment.succeeded also fires for subscription charges; only the
@@ -288,12 +345,127 @@ export async function applyDodoEvent(
       const packs = (payload.data.product_cart ?? [])
         .filter((item) => Boolean(topupProductId) && item.product_id === topupProductId)
         .reduce((sum, item) => sum + item.quantity, 0);
-      if (packs > 0) await users.addCallCredits(user.id, packs * TOPUP_PACK.calls, packs);
+      const paymentId = payload.data.payment_id ?? null;
+      if (packs > 0) {
+        const calls = packs * TOPUP_PACK.calls;
+        await users.addCallCredits(user.id, calls, packs);
+        // written down so a later refund has something to reverse against;
+        // after the grant, so a failed ledger write cannot cost a paying user
+        // their credits
+        if (paymentId) {
+          await container.creditGrants.record({
+            paymentId,
+            userId: user.id,
+            kind: 'topup',
+            packs,
+            calls,
+          });
+        }
+      } else if (paymentId) {
+        /* the subscription charge. Nothing is granted, and the row exists purely
+         * so a later reversal reads a recorded fact instead of inferring one
+         * from an absence: getting that inference wrong ends someone's plan. */
+        await container.creditGrants.record({
+          paymentId,
+          userId: user.id,
+          kind: 'subscription',
+          packs: 0,
+          calls: 0,
+        });
+      }
       break;
     }
     default:
       break;
   }
+}
+
+/**
+ * Money went back to the cardholder, so the entitlement goes back to us.
+ *
+ * Which entitlement depends on what the payment bought, read from the ledger
+ * rather than inferred: a top-up loses its credits, and a subscription charge
+ * ends paid access, because continuing to ring someone whose money the network
+ * took back is not a thing to do quietly.
+ *
+ * One accepted imprecision: the per-period pack counter is decremented without
+ * regard to which period bought the pack, so refunding an old pack can free a
+ * purchase slot in the current one. That cap is a card-testing guard rather than
+ * economics (see me.ts), and tracking periods per grant to protect it would cost
+ * more than the slot is worth.
+ */
+async function reverseGrant(container: Container, payload: DodoWebhookPayload, user: UserRow): Promise<void> {
+  const { users, creditGrants } = container;
+  const paymentId = payload.data.payment_id ?? null;
+  if (!paymentId) {
+    logEvent('error', 'billing.reversal_without_payment_id', { userId: user.id, type: payload.type });
+    Sentry.captureMessage(`${payload.type} for user ${user.id} carried no payment_id`, 'error');
+    return;
+  }
+
+  /* a partial refund cannot be mapped onto whole call credits, and guessing
+   * either robs the user or leaves us short. Ops decides, loudly. */
+  if (payload.data.is_partial) {
+    logEvent('warn', 'billing.partial_refund_unhandled', { userId: user.id, paymentId });
+    Sentry.captureMessage(`partial refund ${paymentId} needs a manual entitlement decision`, 'warning');
+    return;
+  }
+
+  const grant = await creditGrants.claimForRevocation(paymentId, payload.type);
+  if (grant) {
+    /* a subscription charge granted nothing, so there is nothing to take back
+     * except the access it paid for. Keyed off the recorded kind, never off the
+     * absence of a row: an absence could equally mean the ledger write failed,
+     * and reading that as a subscription charge would end a paying user's plan
+     * over a database blip. */
+    if (grant.kind === 'subscription') {
+      logEvent('warn', 'billing.subscription_payment_reversed', {
+        userId: grant.userId,
+        paymentId,
+        type: payload.type,
+      });
+      await users.setPlan(grant.userId, 'situationship', null, null);
+      return;
+    }
+
+    const remaining = await users.revokeCallCredits(grant.userId, grant.calls, grant.packs);
+    logEvent('info', 'billing.credits_revoked', {
+      userId: grant.userId,
+      paymentId,
+      type: payload.type,
+      calls: grant.calls,
+      remaining,
+    });
+    /* a balance sitting at zero after the reversal means the grant may have
+     * been spent before it came back, so we could not take all of it. Worth
+     * knowing as an abuse signal, not worth failing the delivery over. Says
+     * "may": a balance that happened to equal the grant exactly lands here too. */
+    if (remaining === 0 && grant.calls > 0) {
+      logEvent('warn', 'billing.credits_possibly_spent', {
+        userId: grant.userId,
+        paymentId,
+        calls: grant.calls,
+      });
+    }
+    return;
+  }
+
+  if (await creditGrants.find(paymentId)) {
+    logEvent('info', 'billing.reversal_already_applied', { userId: user.id, paymentId });
+    return;
+  }
+
+  /* No row at all, which should not happen now that both kinds are recorded, so
+   * it means something upstream went wrong: a payment we never saw, or a ledger
+   * write that failed. Either way there is no fact here to act on, and acting on
+   * a guess is what this branch used to do. */
+  logEvent('error', 'billing.reversal_without_grant', {
+    userId: user.id,
+    paymentId,
+    type: payload.type,
+    plan: user.plan,
+  });
+  Sentry.captureMessage(`${payload.type} for payment ${paymentId} has no ledger row`, 'error');
 }
 
 /** signed but structurally unusable payloads are acknowledged, not retried:

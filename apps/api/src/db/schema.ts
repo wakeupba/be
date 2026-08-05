@@ -103,16 +103,38 @@ export const featureVotes = sqliteTable(
   (table) => [primaryKey({ columns: [table.featureKey, table.userId] })],
 );
 
-/* Retired. Nothing writes here any more: the landing page no longer asks people
- * to wait for a region, because most of the regions it asked about are live, and
- * the ones that are not are recorded in region_interest at the point a real
- * number is refused. Kept only so the table is dropped in a deliberate
- * migration rather than as a side effect of deleting a route. */
-export const waitlist = sqliteTable('waitlist', {
-  email: text('email').primaryKey(),
-  region: text('region').notNull(),
-  createdAt: integer('created_at').notNull(),
-});
+/*
+ * What each payment bought, keyed by the payment it came from.
+ *
+ * Refund and dispute events carry only a payment_id, never the cart, so without
+ * this there is nothing to reverse against: we would be guessing at what to
+ * take back. revokedAt makes the reversal idempotent, for the case where a
+ * dispute is lost and then also refunded.
+ *
+ * Subscription charges are recorded too, with nothing granted. They earn no
+ * credits, but their presence is the point: a reversal that finds no row would
+ * otherwise have to guess whether it was a subscription charge, and guessing
+ * wrong ends someone's plan.
+ */
+export const creditGrants = sqliteTable(
+  'credit_grants',
+  {
+    paymentId: text('payment_id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /** 'topup' grants credits; 'subscription' grants nothing and exists so that
+     * a missing row never has to be interpreted */
+    kind: text('kind').$type<'topup' | 'subscription'>().notNull().default('topup'),
+    packs: integer('packs').notNull(),
+    calls: integer('calls').notNull(),
+    grantedAt: integer('granted_at').notNull(),
+    revokedAt: integer('revoked_at'),
+    /** which event took it back, for reconciling against Dodo's ledger */
+    revokedReason: text('revoked_reason'),
+  },
+  (table) => [index('idx_credit_grants_user').on(table.userId)],
+);
 
 /*
  * Destinations we turned away because ringing them costs more than the plan

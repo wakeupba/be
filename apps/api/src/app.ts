@@ -43,6 +43,13 @@ export function createApp() {
     cors({ origin: c.env.LANDING_ORIGIN, allowMethods: ['GET', 'POST'] })(c, next),
   );
 
+  // the demo call, also from the landing page and also sessionless. CORS is not
+  // a security boundary here (a script can send whatever Origin it likes); the
+  // Turnstile token is. This just keeps other sites' pages from using it
+  app.use('/demo/*', (c, next) =>
+    cors({ origin: c.env.LANDING_ORIGIN, allowMethods: ['GET', 'POST'] })(c, next),
+  );
+
   // minimal auth probe for the landing header; credentials allowed so the
   // shared-domain session cookie rides along
   app.use('/session', (c, next) => cors({ origin: c.env.LANDING_ORIGIN, credentials: true })(c, next));

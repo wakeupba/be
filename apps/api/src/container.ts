@@ -2,6 +2,7 @@ import { createDb } from './db/client';
 import type { Env } from './env';
 import { CallRepo } from './repos/calls';
 import { CounterRepo } from './repos/counters';
+import { CreditGrantRepo } from './repos/credit-grants';
 import { DemoCallRepo } from './repos/demo-calls';
 import { EventRepo } from './repos/events';
 import { RegionInterestRepo } from './repos/region-interest';
@@ -36,6 +37,7 @@ export function buildContainer(env: Env) {
   const calls = new CallRepo(db);
   const votes = new VoteRepo(db);
   const webhookEvents = new WebhookEventRepo(db);
+  const creditGrants = new CreditGrantRepo(db);
   const regionInterest = new RegionInterestRepo(db);
   const demoCalls = new DemoCallRepo(db);
   const counters = new CounterRepo(db);
@@ -84,6 +86,7 @@ export function buildContainer(env: Env) {
     calls,
     votes,
     webhookEvents,
+    creditGrants,
     regionInterest,
     demoCalls,
     counters,

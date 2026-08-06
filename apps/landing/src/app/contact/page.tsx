@@ -3,7 +3,7 @@ import { ArticleShell, DataRow, Prose, Section } from '@/components/site/article
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
 import { OG_CARDS, pageMetadata } from '@/lib/seo';
-import { GITHUB_URL, SECURITY_ADVISORY_URL, SUPPORT_EMAIL, TWITTER_HANDLE, X_URL } from '@/lib/site';
+import { GITHUB_URL, SECURITY_ADVISORY_URL, SUPPORT_EMAIL, TWITTER_HANDLE, X_DM_URL } from '@/lib/site';
 
 const PATH = '/contact/';
 const TITLE = 'Contact';
@@ -37,7 +37,7 @@ export default function ContactPage() {
             <DataRow
               label={
                 <a
-                  href={X_URL}
+                  href={X_DM_URL}
                   rel="noreferrer"
                   target="_blank"
                   className="underline decoration-line underline-offset-[3px] transition-colors duration-150 hover:decoration-accent"
@@ -46,9 +46,9 @@ export default function ContactPage() {
                 </a>
               }
             >
-              The quickest, because a message here reaches a phone instead of an inbox. Best for the short
-              things: it did not ring, is it meant to do that, here is an idea. One person reads it, and it is
-              the person who wrote the thing.
+              The quickest. This opens a message rather than a profile, and it lands on a phone instead of in
+              an inbox. Best for the short things: it did not ring, is it meant to do that, here is an idea.
+              One person reads it, and it is the person who wrote the thing.
             </DataRow>
             <DataRow
               label={

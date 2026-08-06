@@ -28,9 +28,17 @@ export const SECURITY_ADVISORY_URL = 'https://github.com/wakeupba/be/security/ad
  * has its own, which is the honest attribution either way. */
 export const TWITTER_HANDLE = '@AdityaSinghi5';
 
-/* The same handle as a profile URL, for the contact page and the Organization
- * sameAs. Derived rather than retyped so the two can never disagree. */
+/* The same handle as a profile URL, for the Organization sameAs, which wants a
+ * profile rather than an action. Derived rather than retyped so the two can
+ * never disagree. */
 export const X_URL = `https://x.com/${TWITTER_HANDLE.replace('@', '')}`;
+
+/* Opens the message composer directly, which is a click shorter than the
+ * profile. It keys on the numeric account id because there is no handle-based
+ * form of this URL, and that is also why it is worth having: an id survives a
+ * rename, and TWITTER_HANDLE is explicitly a placeholder. */
+export const X_USER_ID = '1500236362208800768';
+export const X_DM_URL = `https://x.com/messages/compose?recipient_id=${X_USER_ID}`;
 
 /* One sentence, used as the default description and the JSON-LD one. Kept here
  * so the meta tag and the structured data can never drift apart. */

@@ -3,13 +3,13 @@ import { ArticleShell, DataRow, Prose, Section } from '@/components/site/article
 import { Footer } from '@/components/site/footer';
 import { Header } from '@/components/site/header';
 import { OG_CARDS, pageMetadata } from '@/lib/seo';
-import { GITHUB_URL, SECURITY_ADVISORY_URL, SUPPORT_EMAIL } from '@/lib/site';
+import { GITHUB_URL, SECURITY_ADVISORY_URL, SUPPORT_EMAIL, TWITTER_HANDLE, X_DM_URL } from '@/lib/site';
 
 const PATH = '/contact/';
 const TITLE = 'Contact';
 const DESCRIPTION =
-  'One address for support, billing and data requests, GitHub for bugs, and private advisories for security. No ticket system, no contact form that goes nowhere.';
-const UPDATED = '2026-08-05';
+  'A direct message for anything quick, one address for billing and data requests, GitHub for bugs, and private advisories for security. No ticket system, no contact form that goes nowhere.';
+const UPDATED = '2026-08-06';
 
 export const metadata = pageMetadata({
   title: TITLE,
@@ -37,6 +37,22 @@ export default function ContactPage() {
             <DataRow
               label={
                 <a
+                  href={X_DM_URL}
+                  rel="noreferrer"
+                  target="_blank"
+                  className="underline decoration-line underline-offset-[3px] transition-colors duration-150 hover:decoration-accent"
+                >
+                  {TWITTER_HANDLE}
+                </a>
+              }
+            >
+              The quickest. This opens a message rather than a profile, and it lands on a phone instead of in
+              an inbox. Best for the short things: it did not ring, is it meant to do that, here is an idea.
+              One person reads it, and it is the person who wrote the thing.
+            </DataRow>
+            <DataRow
+              label={
+                <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="underline decoration-line underline-offset-[3px] transition-colors duration-150 hover:decoration-accent"
                 >
@@ -44,9 +60,9 @@ export default function ContactPage() {
                 </a>
               }
             >
-              Anything at all: something did not ring, a billing question, a refund, a data request, or a
-              sentence about the product you want to say out loud. This is the address, and it is the same one
-              for all of it.
+              Anything attached to your account: a billing question, a refund, a data request, a deletion.
+              Slower than a message, and the better choice when there should be a record of it, or when you
+              would rather not raise it on a social network.
             </DataRow>
             <DataRow label="GitHub issues">
               Bugs and feature requests, if you are comfortable in public. They are easier to track there and
@@ -71,10 +87,11 @@ export default function ContactPage() {
 
           <Section n="02" title="How fast">
             <Prose>
-              Honestly: this is a small operation, so mail is answered by a person when that person is awake,
-              and paid accounts go first because priority support is the thing Ride or Die pays for. No
+              Honestly: this is a small operation, so everything is answered by a person when that person is
+              awake, and paid accounts go first because priority support is the thing Ride or Die pays for. A
+              direct message is seen soonest, since it arrives as a notification and the inbox does not. No
               automated first reply and no ticket number, which cuts both ways. If something is broken and
-              costing you meetings, say so in the subject line and it gets read that way.
+              costing you meetings, say so in the first line and it gets read that way.
             </Prose>
             <Prose>
               The one commitment with a number on it is the security one, because it is written down in{' '}

@@ -91,6 +91,17 @@
   --radius-card: var(--radius);
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  /* Aliases so components pasted from the shadcn registry work unmodified.
+   * They are mapped onto the palette above rather than introducing a second
+   * one: `shadcn init` wanted to redefine --accent, --muted and --border with
+   * its own neutral ramp, which would have turned the brand red into grey.
+   * Only names this site does not already use are added here. */
+  --color-input: var(--border);
+  --color-ring: var(--foreground);
+  --color-primary: var(--foreground);
+  --color-primary-foreground: var(--background);
+  --color-destructive: var(--accent);
 }
 
 @keyframes accordion-down {

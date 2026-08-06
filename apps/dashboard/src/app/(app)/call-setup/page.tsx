@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, CaretDown, CaretUpDown, Check, SealCheck } from '@phosphor-icons/react';
 import { LEAD_MINUTE_OPTIONS, type LeadMinutes } from '@wakeupbabe/shared';
+import { formatPhoneDraft, parsePhone } from '@wakeupbabe/shared/phone';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Button, ButtonLink } from '@/components/ui/button';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Shell } from '@/components/ui/panel';
 import { ApiError, api } from '@/lib/api';
 import { GCAL_COLORS } from '@/lib/gcal-colors';
-import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { useMe } from '@/lib/use-me';
 import { cn } from '@/lib/utils';
 

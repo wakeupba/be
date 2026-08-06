@@ -2,6 +2,7 @@
 
 import { AddressBook, Check } from '@phosphor-icons/react';
 import type { MeDto } from '@wakeupbabe/shared';
+import { formatPhoneDraft, parsePhone } from '@wakeupbabe/shared/phone';
 import { motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
@@ -9,7 +10,6 @@ import { Button, ButtonLink } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Panel, Shell } from '@/components/ui/panel';
 import { ApiError, api } from '@/lib/api';
-import { formatPhoneDraft, parsePhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';

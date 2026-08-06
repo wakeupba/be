@@ -1,8 +1,10 @@
 'use client';
 
+import { formatPhoneDraft, parsePhone } from '@wakeupbabe/shared/phone';
 import Script from 'next/script';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? '';
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
@@ -41,6 +43,7 @@ declare global {
 export function DemoCall() {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [phone, setPhone] = useState('');
+  const parsed = parsePhone(phone);
   const [owns, setOwns] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -85,11 +88,11 @@ export function DemoCall() {
         sitekey: SITE_KEY,
         action: 'demo-call',
         theme: 'auto',
-        /* compact is ~150px, so it fits the narrowest card we render without
-         * clipping or scaling. The scale-90 this replaced would have shrunk the
-         * checkbox with it, and a Turnstile checkbox is already close to the
-         * 24px floor WCAG 2.5.8 asks for. */
-        size: 'compact',
+        /* flexible fills the container, so the widget reads as part of the form
+         * rather than a slab dropped beside it. Its floor is 300px, which only
+         * a phone under ~345px cannot give it, and the wrapper below handles
+         * that case rather than every other width paying for it. */
+        size: 'flexible',
         callback: (solved) => {
           token.current = solved;
         },
@@ -123,7 +126,7 @@ export function DemoCall() {
         headers: { 'Content-Type': 'application/json' },
         // owns goes to the server, which requires it: the attestation is a
         // property of the call, not of this browser session
-        body: JSON.stringify({ phone, token: token.current, owns }),
+        body: JSON.stringify({ phone: parsed.e164, token: token.current, owns }),
       });
       if (response.ok) {
         setStatus('ringing');
@@ -185,12 +188,13 @@ export function DemoCall() {
                 type="tel"
                 required
                 value={phone}
-                onChange={(event) => setPhone(event.target.value)}
+                onChange={(event) => setPhone(formatPhoneDraft(event.target.value))}
                 placeholder="+14155550123"
                 aria-label="Your phone number"
+                aria-invalid={phone.length > 3 && !parsed.valid}
                 className="h-9 grow rounded-lg border border-line bg-background px-3 font-mono text-sm tabular-nums placeholder:text-muted-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground/40"
               />
-              <Button type="submit" disabled={status === 'calling' || !owns || phone.length < 8}>
+              <Button type="submit" disabled={status === 'calling' || !owns || !parsed.valid}>
                 {status === 'calling' ? 'Calling' : 'Call me now'}
               </Button>
             </form>
@@ -200,15 +204,12 @@ export function DemoCall() {
              * is ever questioned. It is sent with the request and stored on the
              * call, and the API refuses without it, so it is a fact about the
              * call rather than a button this page disabled. */}
-            <label className="mt-3 flex cursor-pointer items-start gap-2 text-[13px] text-muted">
-              <input
-                type="checkbox"
-                checked={owns}
-                onChange={(event) => setOwns(event.target.checked)}
-                className="mt-0.5 size-3.5 shrink-0 accent-foreground"
-              />
-              This is my own phone number.
-            </label>
+            <div className="mt-3 flex items-center gap-2">
+              <Checkbox id="demo-owns" checked={owns} onCheckedChange={(next) => setOwns(next === true)} />
+              <label htmlFor="demo-owns" className="cursor-pointer text-[13px] text-muted">
+                This is my own phone number.
+              </label>
+            </div>
             {/* the compact widget is ~150px so it fits any card we render, but
              * the clip stays: Turnstile controls its own dimensions and a future
              * size change should not be able to scroll the page sideways */}
@@ -217,7 +218,10 @@ export function DemoCall() {
             </div>
             {/* height reserved so the card does not resize when a refusal
              * appears; the announcing is done by the region above */}
-            <p className="mt-2.5 min-h-[1lh] font-mono text-[12px] text-muted-2">{message}</p>
+            <p className="mt-2.5 min-h-[1lh] font-mono text-[12px] text-muted-2">
+              {message ??
+                (parsed.country ? (parsed.valid ? parsed.country : `${parsed.country} · keep typing`) : '')}
+            </p>
           </div>
         )}
       </div>

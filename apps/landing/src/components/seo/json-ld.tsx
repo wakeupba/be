@@ -1,5 +1,5 @@
 import { FAQS, PLANS } from '@/lib/content';
-import { absoluteUrl, GITHUB_URL, SITE_NAME, SITE_TAGLINE, SITE_URL, SUPPORT_EMAIL } from '@/lib/site';
+import { absoluteUrl, GITHUB_URL, SITE_NAME, SITE_TAGLINE, SITE_URL, SUPPORT_EMAIL, X_URL } from '@/lib/site';
 
 /* Stable @ids so the graph nodes can reference each other instead of repeating
  * themselves. Google follows these; humans never see them. */
@@ -35,7 +35,7 @@ export function SiteJsonLd() {
             url: SITE_URL,
             logo: `${SITE_URL}/icon-512.png`,
             description: SITE_TAGLINE,
-            sameAs: [GITHUB_URL],
+            sameAs: [GITHUB_URL, X_URL],
           },
           {
             '@type': 'WebSite',

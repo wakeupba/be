@@ -28,6 +28,10 @@ export const SECURITY_ADVISORY_URL = 'https://github.com/wakeupba/be/security/ad
  * has its own, which is the honest attribution either way. */
 export const TWITTER_HANDLE = '@AdityaSinghi5';
 
+/* The same handle as a profile URL, for the contact page and the Organization
+ * sameAs. Derived rather than retyped so the two can never disagree. */
+export const X_URL = `https://x.com/${TWITTER_HANDLE.replace('@', '')}`;
+
 /* One sentence, used as the default description and the JSON-LD one. Kept here
  * so the meta tag and the structured data can never drift apart. */
 export const SITE_TAGLINE =

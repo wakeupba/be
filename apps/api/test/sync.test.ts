@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { encryptSecret } from '../src/lib/crypto';
+import { decryptSecret, encryptSecret } from '../src/lib/crypto';
 import { EventRepo } from '../src/repos/events';
 import { TokenRepo } from '../src/repos/tokens';
 import { UserRepo } from '../src/repos/users';
-import type { EventsDelta, GoogleClient, GoogleEventItem } from '../src/services/calendar/google-client';
+import {
+  type EventsDelta,
+  type GoogleClient,
+  type GoogleEventItem,
+  GoogleUnauthorizedError,
+} from '../src/services/calendar/google-client';
 import { CalendarSyncService, ON_DEMAND_COOLDOWN_MS } from '../src/services/calendar/sync';
 import { seedEvent, seedUser, testDb } from './helpers';
 
@@ -241,5 +246,80 @@ describe('on-demand calendar sync', () => {
     // the cooldown was still live, and the cron synced straight through it
     expect(Date.now() - claimedAt).toBeLessThan(ON_DEMAND_COOLDOWN_MS);
     expect(await events.listUpcomingForUser(user.id, Date.now())).toHaveLength(1);
+  });
+});
+
+/*
+ * The failure that shipped: Google invalidates an access token before the
+ * expiry it quoted, the cache only checks the clock, and every sync 401s until
+ * that clock catches up. Silent, because a 401 is not GoogleInvalidGrantError
+ * and so never reached the calendar-broken email.
+ */
+describe('a rejected access token heals itself', () => {
+  /** 401s on the first list, succeeds afterwards, and counts both calls */
+  function unauthorizedOnce(items: GoogleEventItem[]) {
+    const calls = { refresh: 0, list: 0 };
+    const google = {
+      refreshAccessToken: async () => {
+        calls.refresh++;
+        return { accessToken: 'minted', expiresInSeconds: 3600 };
+      },
+      listEventsDelta: async (accessToken: string): Promise<EventsDelta> => {
+        calls.list++;
+        if (accessToken !== 'minted') throw new GoogleUnauthorizedError('rejected');
+        return { items, nextSyncToken: 'sync_2', resynced: false };
+      },
+    } as unknown as GoogleClient;
+    return { google, calls };
+  }
+
+  async function buildWithCachedToken(items: GoogleEventItem[]) {
+    const db = testDb();
+    const users = new UserRepo(db);
+    const tokens = new TokenRepo(db);
+    const events = new EventRepo(db);
+    const user = await seedUser(db, { leadMinutes: 15, triggerColorId: '11' });
+    await tokens.upsertRefreshToken(user.id, await encryptSecret('refresh-token', ENC_KEY));
+    // a token the clock still believes in, which Google has already binned
+    await tokens.cacheAccessToken(
+      user.id,
+      await encryptSecret('stale', ENC_KEY),
+      Date.now() + 30 * 60_000,
+    );
+    const { google, calls } = unauthorizedOnce(items);
+    const sync = new CalendarSyncService(google, users, tokens, events, ENC_KEY);
+    return { user, tokens, events, sync, calls };
+  }
+
+  it('mints a new token and retries, instead of failing for the hour the cache had left', async () => {
+    const { user, events, sync, calls } = await buildWithCachedToken([timedEvent()]);
+
+    await sync.syncUser(user);
+
+    expect(calls.refresh).toBe(1); // exactly one, not a spin
+    expect(calls.list).toBe(2); // the refusal, then the retry
+    expect(await events.listUpcomingForUser(user.id, Date.now())).toHaveLength(1);
+  });
+
+  it('re-consent drops the credentials derived from the grant it replaces', async () => {
+    const db = testDb();
+    const tokens = new TokenRepo(db);
+    const user = await seedUser(db);
+    await tokens.upsertRefreshToken(user.id, await encryptSecret('old-refresh', ENC_KEY));
+    await tokens.cacheAccessToken(
+      user.id,
+      await encryptSecret('old-access', ENC_KEY),
+      Date.now() + 30 * 60_000,
+    );
+    await tokens.saveSyncToken(user.id, 'sync_from_old_grant');
+
+    // the user revoked us, then reconnected: this is that second step
+    await tokens.upsertRefreshToken(user.id, await encryptSecret('new-refresh', ENC_KEY));
+
+    const row = await tokens.find(user.id);
+    expect(row?.accessTokenEnc).toBeNull();
+    expect(row?.accessTokenExpiresAt).toBeNull();
+    expect(row?.calendarSyncToken).toBeNull();
+    expect(await decryptSecret(row?.refreshTokenEnc ?? '', ENC_KEY)).toBe('new-refresh');
   });
 });

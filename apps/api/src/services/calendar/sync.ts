@@ -5,7 +5,13 @@ import type { EventRepo } from '../../repos/events';
 import type { TokenRepo } from '../../repos/tokens';
 import type { UserRepo, UserRow } from '../../repos/users';
 import type { EmailNotifier } from '../email/notifier';
-import { type GoogleClient, type GoogleEventItem, GoogleInvalidGrantError } from './google-client';
+import {
+  type EventsDelta,
+  type GoogleClient,
+  type GoogleEventItem,
+  GoogleInvalidGrantError,
+  GoogleUnauthorizedError,
+} from './google-client';
 
 const PRIMARY_CALENDAR = 'primary';
 const ACCESS_TOKEN_SLACK_MS = 60_000;
@@ -92,7 +98,7 @@ export class CalendarSyncService {
     if (!tokenRow) return;
 
     const accessToken = await this.freshAccessToken(user.id, tokenRow.refreshTokenEnc, tokenRow);
-    const delta = await this.google.listEventsDelta(accessToken, tokenRow.calendarSyncToken);
+    const delta = await this.listEvents(user.id, tokenRow, accessToken);
 
     for (const item of delta.items) {
       await this.applyEvent(user, item);
@@ -102,6 +108,41 @@ export class CalendarSyncService {
     // writing a missing token back as null threw away a still-valid one
     if (delta.nextSyncToken && delta.nextSyncToken !== tokenRow.calendarSyncToken) {
       await this.tokens.saveSyncToken(user.id, delta.nextSyncToken);
+    }
+  }
+
+  /**
+   * Lists events, and treats a 401 as what it is: Google telling us the token
+   * we cached is wrong.
+   *
+   * The cache decides freshness from a clock, but Google invalidates access
+   * tokens long before the expiry it quoted us, on a revoke, a password
+   * change, a re-consent, a scope change. Without this the stale token was
+   * re-sent every tick until the clock caught up, so a user could be silently
+   * unsynced for the better part of an hour, and not even be emailed about it:
+   * a 401 is not GoogleInvalidGrantError, so the calendar-broken path never
+   * ran.
+   *
+   * Retried exactly once. If the freshly minted token is refused as well, the
+   * problem is not staleness and pretending otherwise would only spin.
+   */
+  private async listEvents(
+    userId: string,
+    tokenRow: { refreshTokenEnc: string; calendarSyncToken: string | null },
+    accessToken: string,
+  ): Promise<EventsDelta> {
+    try {
+      return await this.google.listEventsDelta(accessToken, tokenRow.calendarSyncToken);
+    } catch (error) {
+      if (!(error instanceof GoogleUnauthorizedError)) throw error;
+      logEvent('info', 'calendar.access_token_rejected', { userId });
+      // empty cache, so this has to go to Google rather than read back the
+      // token that was just refused
+      const minted = await this.freshAccessToken(userId, tokenRow.refreshTokenEnc, {
+        accessTokenEnc: null,
+        accessTokenExpiresAt: null,
+      });
+      return await this.google.listEventsDelta(minted, tokenRow.calendarSyncToken);
     }
   }
 

@@ -3,14 +3,21 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo';
 const CALENDAR_EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
-export const OAUTH_SCOPES = [
-  'openid',
-  'email',
-  'profile',
-  'https://www.googleapis.com/auth/calendar.readonly',
-].join(' ');
+/*
+ * The narrowest scope that can read an event's colour.
+ *
+ * We call exactly one endpoint, events.list on the primary calendar, and read
+ * four fields off each event: colorId, start, summary, and the user's own
+ * responseStatus. calendar.events.readonly covers all of it.
+ *
+ * calendar.readonly would also hand us the calendar list, settings, colour
+ * definitions and sharing, none of which this code touches. Asking for it
+ * anyway is the thing Google's review makes you justify, and there is no
+ * honest justification for access we never use.
+ */
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events.readonly';
 
-export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
+export const OAUTH_SCOPES = ['openid', 'email', 'profile', CALENDAR_SCOPE].join(' ');
 
 export interface GoogleTokens {
   accessToken: string;

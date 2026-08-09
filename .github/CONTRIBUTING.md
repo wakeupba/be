@@ -39,7 +39,7 @@ Lefthook runs lint on commit. Don't fight the formatter, `pnpm lint:fix` resolve
 - Keep PRs focused; one change per PR.
 - Follow the existing commit style, conventional commits scoped to the app, e.g. `feat(api): …`, `fix(dashboard): …`, `chore: …`.
 - Add or update tests for behavior changes in `apps/api`.
-- New third-party services, scopes, or permissions (especially anything beyond `calendar.readonly`) will not be merged without prior discussion.
+- New third-party services, scopes, or permissions (especially anything beyond `calendar.events.readonly`) will not be merged without prior discussion.
 
 ## Licensing
 

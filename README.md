@@ -52,7 +52,7 @@ Google Calendar ──(read-only, 5 min poll
 - **Telephony**: Twilio behind a provider interface (swappable)
 - **Payments**: Dodo Payments hosted checkout + webhooks (merchant of record; we never touch card data)
 - **Observability**: Workers Logs with structured events, optional Sentry (set `SENTRY_DSN`)
-- **Scopes**: `calendar.readonly` only. We cannot write to your calendar, ever.
+- **Scopes**: `calendar.events.readonly` only. Events, and not even the calendar list. We cannot write to your calendar, ever.
 
 ## Monorepo layout
 

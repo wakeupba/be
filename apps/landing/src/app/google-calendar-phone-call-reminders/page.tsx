@@ -121,9 +121,10 @@ export default function Page() {
 
           <Section n="05" title="What it deliberately cannot do">
             <Prose>
-              The Google permission we request is <code>calendar.readonly</code>, and that is the entire
-              access. We cannot create events, edit them, delete them, or RSVP on your behalf. Pressing 1 is
-              recorded in your dashboard and written nowhere else. This is not a policy we could quietly
+              The Google permission we request is <code>calendar.events.readonly</code>, and that is the
+              entire access. It reads events. It cannot reach your calendar list, your settings, or who you
+              share with. We cannot create events, edit them, delete them, or RSVP on your behalf. Pressing 1
+              is recorded in your dashboard and written nowhere else. This is not a policy we could quietly
               change, it is the scope Google enforces.
             </Prose>
             <Prose>

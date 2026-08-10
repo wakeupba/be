@@ -13,6 +13,7 @@
     "@wakeupbabe/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "countries-and-timezones": "^3.10.0",
     "libphonenumber-js": "^1.13.10",
     "motion": "^12.42.2",
     "next": "^15.3.0",

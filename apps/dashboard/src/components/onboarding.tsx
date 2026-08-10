@@ -2,12 +2,12 @@
 
 import { AddressBook, Check } from '@phosphor-icons/react';
 import type { MeDto } from '@wakeupbabe/shared';
-import { formatPhoneDraft, parsePhone } from '@wakeupbabe/shared/phone';
+import { type ParsedPhone, parsePhone } from '@wakeupbabe/shared/phone';
 import { motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
+import { PhoneInput } from '@/components/phone-input';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Panel, Shell } from '@/components/ui/panel';
 import { ApiError, api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -67,19 +67,18 @@ function CalendarStep() {
 }
 
 function PhoneStep({ onSaved }: { onSaved: () => void }) {
-  const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // a country we cannot ring yet is not a mistake the user made, so it reads as
   // a status rather than an error, and the field stays open in case they meant
   // a different number
   const [unreachableCountry, setUnreachableCountry] = useState<string | null>(null);
-  const parsed = parsePhone(phone);
+  const [parsed, setParsed] = useState<ParsedPhone>(() => parsePhone(''));
 
   return (
     <div className="max-w-sm">
       <p className="text-[13px] leading-relaxed text-muted-foreground">
-        The number we will call. Use international format, like +14155550123.
+        The number we will call. Local format is fine; the code on the left completes it.
       </p>
       <form
         className="mt-3 flex gap-2"
@@ -102,15 +101,9 @@ function PhoneStep({ onSaved }: { onSaved: () => void }) {
           }
         }}
       >
-        <Input
-          type="tel"
-          value={phone}
-          onChange={(event) => setPhone(formatPhoneDraft(event.target.value))}
-          placeholder="+14155550123"
-          aria-label="Your phone number"
-          aria-invalid={phone.length > 3 && !parsed.valid}
-          className="font-mono tabular-nums"
-        />
+        {/* this step only exists while no number is on file, so the select
+         * always starts from the timezone guess */}
+        <PhoneInput aria-label="Your phone number" onChange={setParsed} />
         <Button type="submit" disabled={!parsed.valid || saving}>
           {saving ? 'Saving' : 'Save'}
         </Button>

@@ -91,18 +91,29 @@ describe('call rate lookup', () => {
 
   /* The cap is a product decision, so it gets to move. These are the countries
    * Twilio will actually connect for this account, and what the cap does to
-   * them: a change that quietly drops one should be a change someone chose. */
-  it('records which of the reachable countries the cap admits', () => {
-    expect(isCallableNumber('+12015550123')).toBe(true); // US, $0.014
-    expect(isCallableNumber('+15062345678')).toBe(true); // Canada, $0.014
-    expect(isCallableNumber('+447400123456')).toBe(true); // UK, $0.0305
-    expect(isCallableNumber('+918123456789')).toBe(true); // India, $0.0496
-    expect(isCallableNumber('+5511961234567')).toBe(true); // Brazil, $0.0663
-    expect(isCallableNumber('+61412345678')).toBe(true); // Australia, $0.075
-    expect(isCallableNumber('+33612345678')).toBe(false); // France, $0.1603
-    expect(isCallableNumber('+819012345678')).toBe(false); // Japan, $0.185
-    expect(isCallableNumber('+972502345678')).toBe(false); // Israel, $0.1868
-    expect(isCallableNumber('+4915123456789')).toBe(false); // Germany, $0.3763
+   * them: a change that quietly drops one should be a change someone chose.
+   *
+   * The price is asserted next to the verdict rather than written in a comment.
+   * A comment would go quietly out of date the first time Twilio repriced a
+   * destination across the cap, and the verdict alone would flip without ever
+   * saying why. */
+  it('records which of the reachable countries the cap admits, and at what price', () => {
+    const roster: [string, string, number, boolean][] = [
+      ['US', '+12015550123', 0.014, true],
+      ['Canada', '+15062345678', 0.014, true],
+      ['UK', '+447400123456', 0.0305, true],
+      ['India', '+918123456789', 0.0496, true],
+      ['Brazil', '+5511961234567', 0.0663, true],
+      ['Australia', '+61412345678', 0.075, true],
+      ['France', '+33612345678', 0.1603, false],
+      ['Japan', '+819012345678', 0.185, false],
+      ['Israel', '+972502345678', 0.1868, false],
+      ['Germany', '+4915123456789', 0.3763, false],
+    ];
+    for (const [name, number, usd, admitted] of roster) {
+      expect(callRateUsd(number), `${name} price`).toBeCloseTo(usd, 4);
+      expect(isCallableNumber(number), `${name} admitted`).toBe(admitted);
+    }
   });
 });
 

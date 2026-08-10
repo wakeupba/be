@@ -23,11 +23,14 @@
     "API_ORIGIN": "https://api.wakeupba.be",
     "COOKIE_DOMAIN": "wakeupba.be",
     "LANDING_ORIGIN": "https://wakeupba.be",
-    // Dodo test mode until launch; product ids are public (they appear in
-    // checkout URLs), the API key and webhook secret are wrangler secrets
-    "DODO_ENVIRONMENT": "test_mode",
-    "DODO_PRODUCT_RIDE_OR_DIE": "pdt_0Nkafp0vKvIKcBRjayIc1",
-    "DODO_PRODUCT_TOPUP": "pdt_0Nkafp38o73rDNOm13MFd"
+    // Dodo live: real money. Product ids are public (they appear in checkout
+    // URLs); the API key and webhook secret are wrangler secrets. Checkout
+    // works only once Dodo's account verification approves; until then their
+    // hosted page exists but declines real cards, which fails safely on their
+    // side rather than ours.
+    "DODO_ENVIRONMENT": "live_mode",
+    "DODO_PRODUCT_RIDE_OR_DIE": "pdt_0Nl7VKmE0enYXmUfA91xR",
+    "DODO_PRODUCT_TOPUP": "pdt_0Nl7VKnJFmRQ9uKEfdYqw"
   }
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,

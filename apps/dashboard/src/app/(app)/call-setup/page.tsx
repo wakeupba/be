@@ -2,11 +2,11 @@
 
 import { ArrowUpRight, CaretDown, CaretUpDown, Check, SealCheck } from '@phosphor-icons/react';
 import { LEAD_MINUTE_OPTIONS, type LeadMinutes } from '@wakeupbabe/shared';
-import { formatPhoneDraft, parsePhone } from '@wakeupbabe/shared/phone';
+import { type ParsedPhone, parsePhone } from '@wakeupbabe/shared/phone';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { PhoneInput } from '@/components/phone-input';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Shell } from '@/components/ui/panel';
 import { ApiError, api } from '@/lib/api';
 import { GCAL_COLORS } from '@/lib/gcal-colors';
@@ -290,7 +290,6 @@ function PhoneRow({
   refresh: () => Promise<unknown>;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // same distinction the onboarding step makes: a country we do not reach yet
@@ -298,7 +297,11 @@ function PhoneRow({
   const [unreachableCountry, setUnreachableCountry] = useState<string | null>(null);
   const [verifyPhase, setVerifyPhase] = useState<'idle' | 'calling'>('idle');
   const verifyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const parsedDraft = parsePhone(draft);
+  /* the field owns the draft and reports its parse up; this copy exists so the
+   * submit handler and the hint line can read it. Reset whenever editing
+   * opens, or a cancelled draft's parse would still be here arming the save
+   * button the next time round */
+  const [parsedDraft, setParsedDraft] = useState<ParsedPhone>(() => parsePhone(''));
   const draftValid = parsedDraft.valid;
 
   useEffect(
@@ -316,7 +319,6 @@ function PhoneRow({
       await api.updateSettings({ phone: parsedDraft.e164 });
       await refresh();
       setEditing(false);
-      setDraft('');
     } catch (err) {
       if (err instanceof ApiError && err.code === 'region_unsupported') {
         // the field stays open: the old number still works, and this one never
@@ -355,15 +357,13 @@ function PhoneRow({
                 void savePhone();
               }}
             >
-              <Input
+              {/* the number on file seeds the select: someone changing their
+               * number is overwhelmingly still in the same country */}
+              <PhoneInput
                 autoFocus
-                type="tel"
-                value={draft}
-                onChange={(event) => setDraft(formatPhoneDraft(event.target.value))}
-                placeholder="+14155550123"
+                numberOnFile={phone}
                 aria-label="New phone number"
-                aria-invalid={draft.length > 3 && !draftValid}
-                className="font-mono tabular-nums"
+                onChange={setParsedDraft}
               />
               <Button type="submit" disabled={!draftValid || saving}>
                 {saving ? 'Saving' : 'Save'}
@@ -373,8 +373,11 @@ function PhoneRow({
                 variant="ghost"
                 onClick={() => {
                   setEditing(false);
-                  setDraft('');
                   setError(null);
+                  /* the unreachable note describes a draft that was just
+                   * abandoned; without this it outlived the form and sat under
+                   * the row indefinitely */
+                  setUnreachableCountry(null);
                 }}
               >
                 Cancel
@@ -421,7 +424,16 @@ function PhoneRow({
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setParsedDraft(parsePhone(''));
+                  // a fresh draft starts without the last attempt's refusal
+                  setUnreachableCountry(null);
+                  setEditing(true);
+                }}
+              >
                 Change number
               </Button>
               <Button

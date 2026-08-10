@@ -15,7 +15,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./theme": "./src/theme.ts",
-    "./phone": "./src/phone.ts"
+    "./phone": "./src/phone.ts",
+    "./scrub": "./src/scrub.ts"
   },
   "dependencies": {
     "libphonenumber-js": "^1.13.10"

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/cloudflare';
+import { scrubEvent } from '@wakeupbabe/shared/scrub';
 import { createApp } from './app';
 import { buildContainer } from './container';
 import type { Env } from './env';
@@ -40,6 +41,15 @@ export default Sentry.withSentry(
           environment: env.API_ORIGIN.includes('localhost') ? 'development' : 'production',
           tracesSampleRate: 0,
           sendDefaultPii: false,
+          /* sendDefaultPii only governs what Sentry attaches; exception
+           * messages are ours. A Twilio refusal echoes the dialled number in
+           * its error body, so phone-shaped digit runs are masked before any
+           * event leaves. The privacy page promises exactly this.
+           *
+           * The parameter is annotated because workers-types also declares an
+           * ErrorEvent (the DOM one), and an unannotated callback resolves to
+           * it, which quietly breaks withSentry's generic inference. */
+          beforeSend: (event: Sentry.ErrorEvent) => scrubEvent(event),
         }
       : undefined,
   handler,

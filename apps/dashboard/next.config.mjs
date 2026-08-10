@@ -19,6 +19,12 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_API_ORIGIN ?? (isDev ? 'http://localhost:8787' : 'https://api.wakeupba.be'),
     NEXT_PUBLIC_LANDING_ORIGIN:
       process.env.NEXT_PUBLIC_LANDING_ORIGIN ?? (isDev ? 'http://localhost:3003' : 'https://wakeupba.be'),
+    /* A DSN can only submit events and ships in the client bundle by
+     * construction, so committing it is like committing the Turnstile sitekey:
+     * it keeps error reporting from silently vanishing whenever a build
+     * forgets an env var, which is this file's whole lesson. Empty until the
+     * Sentry project exists; reporting stays dark and costs nothing. */
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? '',
   },
 };
 

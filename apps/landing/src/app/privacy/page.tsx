@@ -86,11 +86,6 @@ export default function PrivacyPage() {
               priced it, what a call there would cost us, and how many times you tried. Not the number itself.
               It tells us which country to open next, and nothing about you.
             </DataRow>
-            <DataRow label="Unsupported destinations">
-              If we cannot yet call the country your number belongs to: that country, the dialling prefix that
-              priced it, what a call there would cost us, and how many times you tried. Not the number itself.
-              It tells us which country to open next, and nothing about you.
-            </DataRow>
           </Section>
 
           <Section n="03" title="How we use your Google Calendar data">
@@ -142,6 +137,12 @@ export default function PrivacyPage() {
             <DataRow label="Dodo Payments">
               Merchant of record for subscriptions. They handle the checkout and the card data. We receive
               only their identifiers and the resulting subscription status.
+            </DataRow>
+            <DataRow label="Sentry">
+              Error reporting, in the API and the dashboard. When something in the service breaks, the
+              technical details of the failure go there so we find out before you have to tell us. Stack
+              traces and request paths; no calendar contents, and we do not attach your IP address or identity
+              to reports. Nothing is sent while things work.
             </DataRow>
             <DataRow label="Resend">
               Sends the transactional emails described below. Receives your email address and the contents of

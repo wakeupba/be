@@ -2,6 +2,7 @@ import { THEME_BOOT_SCRIPT } from '@wakeupbabe/shared/theme';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { ErrorReporting } from '@/components/error-reporting';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
@@ -35,7 +36,13 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
          * run before paint */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
-      <body className="h-full">{children}</body>
+      <body className="h-full">
+        {/* first in the body: sibling effects run in tree order, so its
+         * listeners are up before the rest of the app's effects and before
+         * anyone can interact with anything */}
+        <ErrorReporting />
+        {children}
+      </body>
     </html>
   );
 }

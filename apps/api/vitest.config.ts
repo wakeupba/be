@@ -15,7 +15,23 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
         miniflare: {
-          bindings: { TEST_MIGRATIONS: migrations },
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            /*
+             * No test may send email. The runtime reads .dev.vars, which on a
+             * developer machine holds the live Resend key, and the container
+             * builds a real notifier whenever that key is present. So any test
+             * driving a path that notifies sent actual mail from a real domain:
+             * three messages reached the ops inbox before this was fixed, from
+             * the demo budget test alone.
+             *
+             * Empty rather than absent, and set here rather than per file, so a
+             * new test cannot opt into a live sender by forgetting. Nothing
+             * needs a key: emails.test.ts injects its own EmailService, which is
+             * how sending is meant to be asserted.
+             */
+            RESEND_API_KEY: '',
+          },
         },
       }),
     ],

@@ -1,4 +1,6 @@
+import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
+import { buildContainer } from '../src/container';
 import { encryptSecret } from '../src/lib/crypto';
 import { CallRepo } from '../src/repos/calls';
 import { EventRepo, LATE_GRACE_MS } from '../src/repos/events';
@@ -15,6 +17,27 @@ import type { PlaceCallInput, TelephonyProvider } from '../src/services/telephon
 import { seedCall, seedEvent, seedUser, testDb } from './helpers';
 
 const ENC_KEY = 'dGVzdC1rZXktbXVzdC1iZS0zMi1ieXRlcy1sb25nISE';
+
+/*
+ * The guard for the binding in vitest.config.ts, because that binding is the
+ * only thing standing between a test run and real mail leaving a real domain.
+ * Three messages reached the ops inbox before it existed, and every one of them
+ * came from a test nobody thought of as an email test.
+ *
+ * Asserted on the container rather than only on the key, since it is the
+ * container's choice of sender that actually decides whether anything leaves.
+ */
+describe('the test environment cannot send mail', () => {
+  it('carries no mail credential', () => {
+    expect(env.RESEND_API_KEY ?? '').toBe('');
+  });
+
+  it('builds a container with no sender in it', () => {
+    /* the assertion that matters: every route test reaches its notifier through
+     * this, so if one can exist here it can exist in any of them */
+    expect(buildContainer(env).notifier).toBeNull();
+  });
+});
 
 class FakeEmail implements EmailService {
   missed: MissedCallEmail[] = [];

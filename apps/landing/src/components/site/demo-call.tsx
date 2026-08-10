@@ -115,6 +115,9 @@ export function DemoCall() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (!token.current) {
+      // an error state, not a hint: the submit did not happen and the line
+      // below has to read differently from "keep typing"
+      setStatus('error');
       setMessage('finish the check just below, then try again');
       return;
     }
@@ -216,9 +219,19 @@ export function DemoCall() {
             <div className="mt-3 overflow-hidden">
               <div ref={widgetRef} />
             </div>
-            {/* height reserved so the card does not resize when a refusal
-             * appears; the announcing is done by the region above */}
-            <p className="mt-2.5 min-h-[1lh] font-mono text-[12px] text-muted-2">
+            {/* One line carries two different things: a refusal, and a hint
+             * about what has been typed so far. They read identically in the
+             * muted tone, so a demo that failed looked like a demo that was
+             * waiting. The accent is the one place it is spent on this page, and
+             * it is measured: 4.83:1 on white, 6.16:1 on the dark surface.
+             *
+             * Height stays reserved either way so the card does not resize when
+             * a refusal appears, and the announcing is done by the region above. */}
+            <p
+              className={`mt-2.5 min-h-[1lh] font-mono text-[12px] ${
+                status === 'error' ? 'text-accent' : 'text-muted-2'
+              }`}
+            >
               {message ??
                 (parsed.country ? (parsed.valid ? parsed.country : `${parsed.country} · keep typing`) : '')}
             </p>

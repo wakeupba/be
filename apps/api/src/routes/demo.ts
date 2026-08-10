@@ -1,10 +1,11 @@
+import * as Sentry from '@sentry/cloudflare';
 import { Hono } from 'hono';
 import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import type { Container } from '../container';
 import type { Env } from '../env';
 import { callRateUsd, isCallableNumber, isSupportedCountry } from '../lib/call-rates';
 import { hmacSign } from '../lib/crypto';
-import { logEvent } from '../lib/log';
+import { errorFields, logEvent } from '../lib/log';
 import { clientIp } from '../lib/rate-limit';
 
 /*
@@ -194,7 +195,24 @@ export const demoRoutes = new Hono<DemoContext>()
       // rather than charging the week for a call that never rang
       await container.counters.refund(budgetKey, mills);
       await container.demoCalls.release(demoId);
-      throw error;
+      /*
+       * Answered here rather than rethrown. Rethrowing reached the app-wide
+       * handler, which says `internal error`, and that is what a visitor was
+       * shown when Twilio declined the number: a phrase that is neither true
+       * nor actionable, on the one interaction this page exists for.
+       *
+       * Still reported, so the refusal is ours to see and not theirs to guess
+       * at. Deliberately says nothing about which number or which reason: this
+       * endpoint is unauthenticated, and the refusal is not the visitor's
+       * business to enumerate.
+       */
+      logEvent('error', 'demo.call_refused', {
+        demoId,
+        country: parsed.country ?? 'unknown',
+        ...errorFields(error),
+      });
+      Sentry.captureException(error);
+      return c.json({ error: 'we could not place that call, try again in a minute' }, 502);
     }
     await container.demoCalls.markPlaced(demoId, placed.providerCallId);
 

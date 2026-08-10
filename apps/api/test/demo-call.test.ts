@@ -238,6 +238,29 @@ describe('demo call refusals', () => {
     );
     expect(await availability.json()).toEqual({ available: false });
   });
+
+  /*
+   * The Twilio credentials in this file are bogus, so every call that gets past
+   * the gates is refused by the carrier. That used to surface to the visitor as
+   * `internal error` from the app-wide handler, on the one interaction this page
+   * exists for, and it is what a real visitor saw when their number was
+   * declined.
+   */
+  it('answers a carrier refusal in words, and keeps the money', async () => {
+    const db = testDb();
+    const key = budgetKeyFor(Date.now());
+    const before = await new CounterRepo(db).read(key);
+
+    const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN, owns: true });
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).not.toContain('internal');
+    expect(body.error).toMatch(/could not place/);
+
+    // the call never rang, so the week must not have been charged for it
+    expect(await new CounterRepo(db).read(key)).toBe(before);
+  });
 });
 
 describe('the budget counter', () => {

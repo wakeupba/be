@@ -60,6 +60,16 @@ export class SyncTokenExpiredError extends Error {}
  */
 export class GoogleInvalidGrantError extends Error {}
 
+/**
+ * 401 from a resource endpoint: the access token we presented is not usable.
+ *
+ * Deliberately distinct from an invalid grant. The refresh token behind it is
+ * very likely fine, so the fix is to mint a new access token, not to send the
+ * user back through consent. Google invalidates access tokens well before the
+ * expiry it told us about, and this is how it says so.
+ */
+export class GoogleUnauthorizedError extends Error {}
+
 export class GoogleClient {
   constructor(
     private readonly clientId: string,
@@ -157,6 +167,7 @@ export class GoogleClient {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (response.status === 410) throw new SyncTokenExpiredError();
+      if (response.status === 401) throw new GoogleUnauthorizedError('events list rejected the token');
       if (!response.ok) throw new Error(`events list failed: ${response.status}`);
 
       const data = (await response.json()) as {

@@ -12,12 +12,34 @@ export class TokenRepo {
     return row ?? null;
   }
 
+  /**
+   * Stores a newly granted refresh token, and drops everything derived from
+   * the grant it replaces.
+   *
+   * The access token cache is keyed on a clock rather than on validity, so one
+   * left behind here reads as good until its old expiry while Google has
+   * already rejected it. That is a 401 on every sync for up to an hour, and
+   * re-consenting is the single action a user takes to fix a broken calendar,
+   * so leaving it made the recovery path prolong the failure.
+   *
+   * The sync token goes with it: it describes a position in a stream the old
+   * grant was reading, and it is not ours to carry into a new one.
+   */
   async upsertRefreshToken(userId: string, refreshTokenEnc: string): Promise<void> {
     const now = Date.now();
     await this.db
       .insert(oauthTokens)
       .values({ userId, refreshTokenEnc, updatedAt: now })
-      .onConflictDoUpdate({ target: oauthTokens.userId, set: { refreshTokenEnc, updatedAt: now } });
+      .onConflictDoUpdate({
+        target: oauthTokens.userId,
+        set: {
+          refreshTokenEnc,
+          updatedAt: now,
+          accessTokenEnc: null,
+          accessTokenExpiresAt: null,
+          calendarSyncToken: null,
+        },
+      });
   }
 
   async cacheAccessToken(userId: string, accessTokenEnc: string, expiresAt: number): Promise<void> {

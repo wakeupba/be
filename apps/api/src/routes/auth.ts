@@ -114,6 +114,15 @@ export const authRoutes = new Hono<AuthContext>()
         user.id,
         await encryptSecret(granted.refreshToken, c.env.TOKEN_ENC_KEY),
       );
+      /* The exchange already handed us a usable access token, and the upsert
+       * just cleared the one belonging to the grant this replaces. Keeping it
+       * saves the next sync a refresh; more to the point, the alternative was
+       * throwing it away and leaving the cache empty. */
+      await tokens.cacheAccessToken(
+        user.id,
+        await encryptSecret(granted.accessToken, c.env.TOKEN_ENC_KEY),
+        Date.now() + granted.expiresInSeconds * 1000,
+      );
     } else if (grantsCalendar && !(await tokens.find(user.id))) {
       // calendar granted but no refresh token issued and none stored: only
       // a re-consent can produce one

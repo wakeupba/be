@@ -191,7 +191,14 @@ export function DemoCall() {
                 type="tel"
                 required
                 value={phone}
-                onChange={(event) => setPhone(formatPhoneDraft(event.target.value))}
+                onChange={(event) => {
+                  setPhone(formatPhoneDraft(event.target.value));
+                  /* editing the number retires the last refusal: otherwise the
+                   * accent line sat there while a new number was typed, and the
+                   * country hint could not come back until the next submit */
+                  if (status === 'error') setStatus('idle');
+                  if (message !== null) setMessage(null);
+                }}
                 placeholder="+14155550123"
                 aria-label="Your phone number"
                 aria-invalid={phone.length > 3 && !parsed.valid}

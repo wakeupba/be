@@ -238,29 +238,6 @@ describe('demo call refusals', () => {
     );
     expect(await availability.json()).toEqual({ available: false });
   });
-
-  /*
-   * The Twilio credentials in this file are bogus, so every call that gets past
-   * the gates is refused by the carrier. That used to surface to the visitor as
-   * `internal error` from the app-wide handler, on the one interaction this page
-   * exists for, and it is what a real visitor saw when their number was
-   * declined.
-   */
-  it('answers a carrier refusal in words, and keeps the money', async () => {
-    const db = testDb();
-    const key = budgetKeyFor(Date.now());
-    const before = await new CounterRepo(db).read(key);
-
-    const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN, owns: true });
-
-    expect(response.status).toBe(502);
-    const body = (await response.json()) as { error: string };
-    expect(body.error).not.toContain('internal');
-    expect(body.error).toMatch(/could not place/);
-
-    // the call never rang, so the week must not have been charged for it
-    expect(await new CounterRepo(db).read(key)).toBe(before);
-  });
 });
 
 describe('the budget counter', () => {
@@ -316,25 +293,36 @@ describe('the budget counter', () => {
 });
 
 describe('demo call reservations', () => {
-  it('hands the reservation back when the carrier refuses, so a failed call costs nothing', async () => {
+  it('hands the reservation back when the call fails, and answers in words', async () => {
     const db = testDb();
     const before = await db.$count(demoCalls);
 
     /* storage is shared across this file and an earlier test parked a week's
      * worth of spend, so this one needs headroom of its own to get as far as
-     * the carrier */
-    const response = await callDemo(
-      { phone: uniquePhone(), token: GOOD_TOKEN, owns: true },
-      { DEMO_WEEKLY_BUDGET_USD: '1000' },
-    );
-    // bogus twilio credentials, so placeCall throws
-    expect(response.status).toBe(500);
+     * the carrier. Without the override the request is turned away at the
+     * budget gate with a 429 and never reaches the code under test. */
+    const budget = { DEMO_WEEKLY_BUDGET_USD: '1000' };
+    const key = budgetKeyFor(Date.now());
+    const spentBefore = await new CounterRepo(db).read(key);
+
+    const response = await callDemo({ phone: uniquePhone(), token: GOOD_TOKEN, owns: true }, budget);
+
+    /* bogus twilio credentials, so placeCall throws. What the visitor is told
+     * matters as much as the status: rethrowing reached the app-wide handler,
+     * which answers `internal error`, and that is what someone saw when their
+     * number would not connect. */
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).not.toContain('internal');
+    expect(body.error).toMatch(/could not place/);
 
     // the row exists (it still counts against the per-number cap) but costs
     // nothing, because Twilio will never bill for a call it refused
     const rows = await db.select().from(demoCalls);
     expect(rows.length).toBe(before + 1);
     expect(rows.at(-1)?.costUsd).toBe(0);
+    // and the week is handed back what the reservation took
+    expect(await new CounterRepo(db).read(key)).toBe(spentBefore);
   });
 });
 

@@ -198,21 +198,27 @@ export const demoRoutes = new Hono<DemoContext>()
       /*
        * Answered here rather than rethrown. Rethrowing reached the app-wide
        * handler, which says `internal error`, and that is what a visitor was
-       * shown when Twilio declined the number: a phrase that is neither true
-       * nor actionable, on the one interaction this page exists for.
+       * shown when their number would not connect: a phrase that is neither
+       * true nor actionable, on the one interaction this page exists for.
        *
-       * Still reported, so the refusal is ours to see and not theirs to guess
-       * at. Deliberately says nothing about which number or which reason: this
-       * endpoint is unauthenticated, and the refusal is not the visitor's
-       * business to enumerate.
+       * `failed` rather than `refused`, because this catch cannot tell the
+       * difference. A carrier decline, bad credentials, a bad from-number and a
+       * dropped connection all arrive here identically, and only the first is a
+       * refusal. For the same reason the copy promises nothing about trying
+       * again: when the cause is our own misconfiguration, retrying is a lie.
+       *
+       * Still reported, so the failure is ours to see rather than theirs to
+       * guess at, and deliberately silent about which number or which reason:
+       * this endpoint is unauthenticated and neither is a visitor's to
+       * enumerate.
        */
-      logEvent('error', 'demo.call_refused', {
+      logEvent('error', 'demo.call_failed', {
         demoId,
         country: parsed.country ?? 'unknown',
         ...errorFields(error),
       });
       Sentry.captureException(error);
-      return c.json({ error: 'we could not place that call, try again in a minute' }, 502);
+      return c.json({ error: 'we could not place that call' }, 502);
     }
     await container.demoCalls.markPlaced(demoId, placed.providerCallId);
 

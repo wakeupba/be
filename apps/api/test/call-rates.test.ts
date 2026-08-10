@@ -79,14 +79,41 @@ describe('call rate lookup', () => {
   });
 
   it('splits the two real destinations either side of the cap', () => {
-    /* nothing is priced at exactly $0.20, so the boundary is pinned with the
-     * closest mobile destinations on each side: Taiwan at $0.1985 is in, Egypt
-     * at $0.2056 is out. Seven hundredths of a cent apart, so moving the cap
-     * in either direction breaks this. */
-    expect(callRateUsd('+886912345678')).toBeCloseTo(0.1985, 4);
-    expect(callRateUsd('+201001234567')).toBeCloseTo(0.2056, 4);
-    expect(isCallableNumber('+886912345678')).toBe(true);
-    expect(isCallableNumber('+201001234567')).toBe(false);
+    /* Thailand is priced at exactly the cap, which is the case worth pinning:
+     * the comparison is inclusive, so being level with the cap is in, and a
+     * change to `<` would strand a real destination. Indonesia at $0.1066 is
+     * the nearest one out, two thirds of a cent above. */
+    expect(callRateUsd('+66812345678')).toBeCloseTo(0.1, 4);
+    expect(callRateUsd('+62812345678')).toBeCloseTo(0.1066, 4);
+    expect(isCallableNumber('+66812345678')).toBe(true);
+    expect(isCallableNumber('+62812345678')).toBe(false);
+  });
+
+  /* The cap is a product decision, so it gets to move. These are the countries
+   * Twilio will actually connect for this account, and what the cap does to
+   * them: a change that quietly drops one should be a change someone chose.
+   *
+   * The price is asserted next to the verdict rather than written in a comment.
+   * A comment would go quietly out of date the first time Twilio repriced a
+   * destination across the cap, and the verdict alone would flip without ever
+   * saying why. */
+  it('records which of the reachable countries the cap admits, and at what price', () => {
+    const roster: [string, string, number, boolean][] = [
+      ['US', '+12015550123', 0.014, true],
+      ['Canada', '+15062345678', 0.014, true],
+      ['UK', '+447400123456', 0.0305, true],
+      ['India', '+918123456789', 0.0496, true],
+      ['Brazil', '+5511961234567', 0.0663, true],
+      ['Australia', '+61412345678', 0.075, true],
+      ['France', '+33612345678', 0.1603, false],
+      ['Japan', '+819012345678', 0.185, false],
+      ['Israel', '+972502345678', 0.1868, false],
+      ['Germany', '+4915123456789', 0.3763, false],
+    ];
+    for (const [name, number, usd, admitted] of roster) {
+      expect(callRateUsd(number), `${name} price`).toBeCloseTo(usd, 4);
+      expect(isCallableNumber(number), `${name} admitted`).toBe(admitted);
+    }
   });
 });
 

@@ -111,7 +111,7 @@ describe('demo availability', () => {
       undefined,
       demoEnv(),
     );
-    expect(await response.json()).toEqual({ available: true });
+    expect(await response.json()).toEqual({ available: true, country: null });
   });
 
   it('is off for a visitor in a country we cannot ring', async () => {
@@ -132,7 +132,7 @@ describe('demo availability', () => {
       undefined,
       demoEnv(),
     );
-    expect(await response.json()).toEqual({ available: true });
+    expect(await response.json()).toEqual({ available: true, country: 'IN' });
   });
 
   it('shows the demo when the country is unknown, since nothing spends on it', async () => {
@@ -143,7 +143,7 @@ describe('demo availability', () => {
         undefined,
         demoEnv(),
       );
-      expect(await response.json()).toEqual({ available: true });
+      expect(await response.json()).toEqual({ available: true, country: null });
     }
   });
 });
@@ -236,7 +236,7 @@ describe('demo call refusals', () => {
       undefined,
       demoEnv(),
     );
-    expect(await availability.json()).toEqual({ available: false });
+    expect(await availability.json()).toEqual({ available: false, country: null });
   });
 });
 

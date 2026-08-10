@@ -126,6 +126,31 @@ describe('demo availability', () => {
     expect(await response.json()).toEqual({ available: false });
   });
 
+  it('is off for a visitor in a country the carrier will not connect', async () => {
+    /* Germany above is refused on price; Spain is refused on geography. Its
+     * mobiles happen to be over the cap too, but the permission gate answers
+     * first and would refuse it at any price: the account holds no dialing
+     * permission for it, so a demo call would die at the carrier with error
+     * 21215 after the page had offered it. */
+    const response = await createApp().request(
+      new Request('https://api.test/demo/availability', { headers: { 'CF-IPCountry': 'ES' } }),
+      undefined,
+      demoEnv(),
+    );
+    expect(await response.json()).toEqual({ available: false });
+  });
+
+  it('is off even where the price alone would have said yes', async () => {
+    // Wallis and Futuna mobiles are $0.02, well under the cap, so this is the
+    // one gate doing the refusing: geography, not price
+    const response = await createApp().request(
+      new Request('https://api.test/demo/availability', { headers: { 'CF-IPCountry': 'WF' } }),
+      undefined,
+      demoEnv(),
+    );
+    expect(await response.json()).toEqual({ available: false });
+  });
+
   it('is on for a visitor in a country we can ring', async () => {
     const response = await createApp().request(
       new Request('https://api.test/demo/availability', { headers: { 'CF-IPCountry': 'IN' } }),
@@ -162,6 +187,13 @@ describe('country support', () => {
     // this only decides what to offer, and being coy with someone we could
     // serve is the worse mistake
     expect(isSupportedCountry('ZZ')).toBe(true);
+  });
+
+  it('says no to a country the account may not dial, whatever it costs', () => {
+    // Wallis and Futuna is $0.02 a call; the refusal is the missing dialing
+    // permission, and a known country gets no benefit of the doubt
+    expect(isSupportedCountry('WF')).toBe(false);
+    expect(isSupportedCountry('ES')).toBe(false);
   });
 });
 

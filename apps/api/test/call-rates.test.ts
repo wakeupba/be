@@ -5,6 +5,7 @@ import { createApp } from '../src/app';
 import { regionInterest, users } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
 import { CALL_RATES_USD } from '../src/data/call-rates';
+import { GEO_PERMITTED_COUNTRIES } from '../src/data/callable-countries';
 import { callRateUsd, isCallableNumber, MAX_CALL_RATE_USD, MAX_PREFIX_DIGITS } from '../src/lib/call-rates';
 import { hmacSign } from '../src/lib/crypto';
 import { seedUser, testDb } from './helpers';
@@ -43,6 +44,29 @@ describe('the rate table itself', () => {
     expect(CALL_RATES_USD['44']).toBe(0.0158);
     expect(CALL_RATES_USD['4470']).toBeCloseTo(0.5577, 4);
     expect(CALL_RATES_USD['449']).toBeCloseTo(1.0479, 4);
+  });
+});
+
+describe('the permission set itself', () => {
+  /* Same arrangement as the rate table: the generator is internal tooling
+   * outside this repo, so the invariants it must uphold are asserted here. */
+
+  it('contains only two-letter uppercase ISO codes', () => {
+    for (const iso of GEO_PERMITTED_COUNTRIES) {
+      // anything else can never match a parsed number's country, so it would
+      // be a silently dead entry rather than a working permission
+      expect(iso).toMatch(/^[A-Z]{2}$/);
+    }
+  });
+
+  it('keeps the grouping expansions a regeneration must not lose', () => {
+    /* Twilio's entries are groupings: "United States/Canada" carries the iso
+     * US, and Canada has no entry of its own to be enabled through. A
+     * regeneration that copies the raw iso_code list drops these four and
+     * blocks countries Twilio happily dials, Canada first among them. */
+    for (const covered of ['CA', 'CC', 'CX', 'SJ']) {
+      expect(GEO_PERMITTED_COUNTRIES.has(covered), `${covered} covered by a grouping`).toBe(true);
+    }
   });
 });
 
@@ -89,31 +113,59 @@ describe('call rate lookup', () => {
     expect(isCallableNumber('+62812345678')).toBe(false);
   });
 
-  /* The cap is a product decision, so it gets to move. These are the countries
-   * Twilio will actually connect for this account, and what the cap does to
-   * them: a change that quietly drops one should be a change someone chose.
+  /* The cap is a product decision and the permission set is account state, so
+   * both get to move. This is what the two gates together do to real
+   * destinations: a change that quietly drops one should be a change someone
+   * chose.
    *
    * The price is asserted next to the verdict rather than written in a comment.
    * A comment would go quietly out of date the first time Twilio repriced a
    * destination across the cap, and the verdict alone would flip without ever
    * saying why. */
-  it('records which of the reachable countries the cap admits, and at what price', () => {
+  it('records which destinations the two gates admit, and at what price', () => {
     const roster: [string, string, number, boolean][] = [
       ['US', '+12015550123', 0.014, true],
+      /* Canada is the grouping trap's regression test: Twilio enables it
+       * through the "United States/Canada" entry and Canada has no entry of
+       * its own, so a permission set built from raw iso codes drops one of
+       * our best markets while Twilio dials it happily. */
       ['Canada', '+15062345678', 0.014, true],
       ['UK', '+447400123456', 0.0305, true],
       ['India', '+918123456789', 0.0496, true],
       ['Brazil', '+5511961234567', 0.0663, true],
       ['Australia', '+61412345678', 0.075, true],
+      // refused on price alone: all four are geo-permitted, their mobiles are
+      // just dearer than the cap
       ['France', '+33612345678', 0.1603, false],
       ['Japan', '+819012345678', 0.185, false],
       ['Israel', '+972502345678', 0.1868, false],
       ['Germany', '+4915123456789', 0.3763, false],
+      /* refused on geography, not price: these landlines are among the
+       * cheapest destinations in the table, and before the permission gate
+       * they passed. Twilio would have declined the call itself with error
+       * 21215 after we had already promised it. */
+      ['Spain landline', '+34912345678', 0.0178, false],
+      ['Italy landline', '+390212345678', 0.0168, false],
     ];
     for (const [name, number, usd, admitted] of roster) {
       expect(callRateUsd(number), `${name} price`).toBeCloseTo(usd, 4);
       expect(isCallableNumber(number), `${name} admitted`).toBe(admitted);
     }
+  });
+
+  it('refuses a priced number it cannot pin to a country', () => {
+    /* +1 999 is priced by the NANP entry at $0.014, but 999 is not a real
+     * area code, so libphonenumber has no country for it. Without a country
+     * there is nothing to check the permissions against, and the gate fails
+     * closed the same way it does for an unpriced prefix. */
+    expect(callRateUsd('+19995550123')).toBe(0.014);
+    expect(isCallableNumber('+19995550123')).toBe(false);
+  });
+
+  it('follows the grouping expansions to the territories they cover', () => {
+    // Svalbard dials as Norway's +47 and has no Twilio entry of its own, so
+    // it is reachable exactly because the set expands Norway's coverage
+    expect(isCallableNumber('+4779123456')).toBe(true);
   });
 });
 

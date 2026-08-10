@@ -1,6 +1,7 @@
 import EXAMPLE_MOBILES from 'libphonenumber-js/examples.mobile.json';
-import { type CountryCode, getExampleNumber } from 'libphonenumber-js/min';
+import { type CountryCode, getExampleNumber, parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import { CALL_RATES_USD } from '../data/call-rates';
+import { GEO_PERMITTED_COUNTRIES } from '../data/callable-countries';
 
 /*
  * What a call to a given number costs us, and whether we are willing to place
@@ -15,6 +16,12 @@ import { CALL_RATES_USD } from '../data/call-rates';
  * nothing like landline termination. A German landline is under 3 cents; a
  * German mobile is 37. Gating on a country's cheapest rate would wave through
  * exactly the calls that lose the most money.
+ *
+ * Price is only one of two gates. The Twilio account holds geographic dialing
+ * permissions for a few dozen countries, and every destination outside them is
+ * refused by the carrier at call time with error 21215 regardless of what it
+ * costs. A number must clear both gates, here, before anything downstream is
+ * allowed to promise a call.
  */
 
 /**
@@ -71,20 +78,32 @@ export function callRateUsd(e164: string): number | undefined {
 }
 
 /**
- * Whether we will ring this number today.
+ * Whether we will ring this number today: priced within the cap, and in a
+ * country the account's geographic permissions allow Twilio to dial.
  *
- * Fails closed on an unknown prefix. Twilio lists a few countries it cannot
- * route from this account at all (sanctions, no carrier), and an unpriced
- * destination is the one case where guessing is unbounded, so absent means no.
+ * Both gates are real refusals we have watched happen. Without the price
+ * gate we lose money per call; without the permission gate the visitor is
+ * offered the demo or walked through onboarding, and then the carrier
+ * declines the call itself with error 21215 and they see nothing but a
+ * blank failure.
+ *
+ * Fails closed twice, for the same reason each time. An unpriced prefix is
+ * the one case where guessing is unbounded, so absent means no. And a number
+ * libphonenumber cannot pin to a country is a destination we cannot check
+ * against the permissions at all, so it gets the same answer: the phrasing
+ * differs but the philosophy is one piece, a destination we cannot vouch for
+ * is a destination we do not ring.
  */
 export function isCallableNumber(e164: string): boolean {
   const rate = callRateUsd(e164);
-  return rate !== undefined && rate <= MAX_CALL_RATE_USD;
+  if (rate === undefined || rate > MAX_CALL_RATE_USD) return false;
+  const country = parsePhoneNumberFromString(e164)?.country;
+  return country !== undefined && GEO_PERMITTED_COUNTRIES.has(country);
 }
 
 /**
- * Whether a country is one we could ring at all, judged by pricing a typical
- * mobile number there.
+ * Whether a country is one we could ring at all: in the account's geographic
+ * permissions, and with a typical mobile number there priced within the cap.
  *
  * A country is not really the unit we gate on, so this is an approximation and
  * only ever used to decide what to *show* someone: a real number is still
@@ -93,12 +112,23 @@ export function isCallableNumber(e164: string): boolean {
  * both directions. +49 prices a German landline at 3 cents while German mobile
  * is 38, and +44 has ranges from 1.5 cents to a dollar.
  *
- * Unknown or unset country means yes: this decides whether to offer something,
- * and being coy with someone we could serve is the worse mistake. Nothing about
- * spending money rests on it.
+ * The permission set is consulted before any pricing because it is the cheap
+ * check and the unconditional one: nothing about a country's rates matters if
+ * the carrier will not connect it.
+ *
+ * Unknown country still means yes, but only in the sense it always did: a code
+ * libphonenumber has no example mobile for is one we know nothing about, this
+ * decides whether to offer something, and being coy with someone we could
+ * serve is the worse mistake. A country we do know that is missing from the
+ * permission set is not unknown, it is refused. Nothing about spending money
+ * rests on any of it.
  */
 export function isSupportedCountry(iso: string): boolean {
-  const example = getExampleNumber(iso.toUpperCase() as CountryCode, EXAMPLE_MOBILES);
+  const country = iso.toUpperCase() as CountryCode;
+  if (!GEO_PERMITTED_COUNTRIES.has(country)) {
+    return getExampleNumber(country, EXAMPLE_MOBILES) === undefined;
+  }
+  const example = getExampleNumber(country, EXAMPLE_MOBILES);
   if (!example) return true;
   return isCallableNumber(example.number);
 }

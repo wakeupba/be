@@ -1,5 +1,6 @@
 import { FaqJsonLd, SoftwareJsonLd } from '@/components/seo/json-ld';
 import { Cta } from '@/components/site/cta';
+import { DashboardRedirect } from '@/components/site/dashboard-redirect';
 import { DemoCall } from '@/components/site/demo-call';
 import { Faq } from '@/components/site/faq';
 import { Features } from '@/components/site/features';
@@ -14,6 +15,8 @@ export default function LandingPage() {
     <>
       <SoftwareJsonLd />
       <FaqJsonLd />
+      {/* homepage only: signed in, the domain IS the dashboard shortcut */}
+      <DashboardRedirect />
       <Header />
       <main>
         <Hero />

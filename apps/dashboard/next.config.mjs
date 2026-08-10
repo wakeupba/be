@@ -24,7 +24,9 @@ const nextConfig = {
      * it keeps error reporting from silently vanishing whenever a build
      * forgets an env var, which is this file's whole lesson. Empty until the
      * Sentry project exists; reporting stays dark and costs nothing. */
-    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN ?? '',
+    NEXT_PUBLIC_SENTRY_DSN:
+      process.env.NEXT_PUBLIC_SENTRY_DSN ??
+      (isDev ? '' : 'https://7e2d613a8bf37ba5c7086d610b149270@o4511889074225152.ingest.us.sentry.io/4511889080778752'),
   },
 };
 

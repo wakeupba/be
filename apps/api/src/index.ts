@@ -41,6 +41,9 @@ export default Sentry.withSentry(
           environment: env.API_ORIGIN.includes('localhost') ? 'development' : 'production',
           tracesSampleRate: 0,
           sendDefaultPii: false,
+          // one Sentry project serves this worker and the dashboard, so every
+          // event says which side of the wire it came from
+          initialScope: { tags: { app: 'api' } },
           /* sendDefaultPii only governs what Sentry attaches; exception
            * messages are ours. A Twilio refusal echoes the dialled number in
            * its error body, so phone-shaped digit runs are masked before any

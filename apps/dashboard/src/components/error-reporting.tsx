@@ -44,6 +44,9 @@ export function ErrorReporting() {
         environment: 'production',
         tracesSampleRate: 0,
         sendDefaultPii: false,
+        // one Sentry project serves the worker and this app, so every event
+        // says which side of the wire it came from
+        initialScope: { tags: { app: 'dashboard' } },
         /* the same mask the worker applies: exception messages can carry the
          * one thing this app knows about you, your phone number, and the
          * privacy page says reports carry no identity */

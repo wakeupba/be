@@ -15,6 +15,13 @@ const buttonVariants = cva(
           'bg-foreground text-background border border-foreground shadow-bevel-primary hover:bg-foreground/90',
         secondary: 'bg-background text-foreground border border-line shadow-bevel-secondary hover:bg-surface',
         ghost: 'text-muted hover:text-foreground hover:bg-surface',
+        /* The accent as a fill, reserved for the page's one loud moment. On
+         * this site the accent is the calendar red that means "this triggers a
+         * call", so a button that places a call is the one place the fill is
+         * semantic rather than decorative. text-background flips with the
+         * theme, which is what keeps contrast: white on #d92d20 is 4.83:1 in
+         * light, #121212 on #f2685a is 6.16:1 in dark. */
+        accent: 'bg-accent text-background border border-accent shadow-bevel-primary hover:bg-accent/90',
       },
       size: {
         default: 'h-9 px-4',

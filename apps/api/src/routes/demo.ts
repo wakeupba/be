@@ -96,7 +96,13 @@ export const demoRoutes = new Hono<DemoContext>()
     }
 
     const spent = await c.get('container').counters.read(budgetKeyFor(Date.now()));
-    return c.json({ available: spent < budgetMills(c.env) });
+    /* The visitor's own country rides along so the form can preselect their
+     * dialing code. It is what Cloudflare already derived from their address,
+     * echoed back to them: nothing here they do not already know. */
+    return c.json({
+      available: spent < budgetMills(c.env),
+      country: country && country !== 'XX' ? country : null,
+    });
   })
 
   .post('/demo/call', async (c) => {

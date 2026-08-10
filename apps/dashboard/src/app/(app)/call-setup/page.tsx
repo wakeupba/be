@@ -374,6 +374,10 @@ function PhoneRow({
                 onClick={() => {
                   setEditing(false);
                   setError(null);
+                  /* the unreachable note describes a draft that was just
+                   * abandoned; without this it outlived the form and sat under
+                   * the row indefinitely */
+                  setUnreachableCountry(null);
                 }}
               >
                 Cancel
@@ -425,6 +429,8 @@ function PhoneRow({
                 size="sm"
                 onClick={() => {
                   setParsedDraft(parsePhone(''));
+                  // a fresh draft starts without the last attempt's refusal
+                  setUnreachableCountry(null);
                   setEditing(true);
                 }}
               >

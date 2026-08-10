@@ -79,14 +79,30 @@ describe('call rate lookup', () => {
   });
 
   it('splits the two real destinations either side of the cap', () => {
-    /* nothing is priced at exactly $0.20, so the boundary is pinned with the
-     * closest mobile destinations on each side: Taiwan at $0.1985 is in, Egypt
-     * at $0.2056 is out. Seven hundredths of a cent apart, so moving the cap
-     * in either direction breaks this. */
-    expect(callRateUsd('+886912345678')).toBeCloseTo(0.1985, 4);
-    expect(callRateUsd('+201001234567')).toBeCloseTo(0.2056, 4);
-    expect(isCallableNumber('+886912345678')).toBe(true);
-    expect(isCallableNumber('+201001234567')).toBe(false);
+    /* Thailand is priced at exactly the cap, which is the case worth pinning:
+     * the comparison is inclusive, so being level with the cap is in, and a
+     * change to `<` would strand a real destination. Indonesia at $0.1066 is
+     * the nearest one out, two thirds of a cent above. */
+    expect(callRateUsd('+66812345678')).toBeCloseTo(0.1, 4);
+    expect(callRateUsd('+62812345678')).toBeCloseTo(0.1066, 4);
+    expect(isCallableNumber('+66812345678')).toBe(true);
+    expect(isCallableNumber('+62812345678')).toBe(false);
+  });
+
+  /* The cap is a product decision, so it gets to move. These are the countries
+   * Twilio will actually connect for this account, and what the cap does to
+   * them: a change that quietly drops one should be a change someone chose. */
+  it('records which of the reachable countries the cap admits', () => {
+    expect(isCallableNumber('+12015550123')).toBe(true); // US, $0.014
+    expect(isCallableNumber('+15062345678')).toBe(true); // Canada, $0.014
+    expect(isCallableNumber('+447400123456')).toBe(true); // UK, $0.0305
+    expect(isCallableNumber('+918123456789')).toBe(true); // India, $0.0496
+    expect(isCallableNumber('+5511961234567')).toBe(true); // Brazil, $0.0663
+    expect(isCallableNumber('+61412345678')).toBe(true); // Australia, $0.075
+    expect(isCallableNumber('+33612345678')).toBe(false); // France, $0.1603
+    expect(isCallableNumber('+819012345678')).toBe(false); // Japan, $0.185
+    expect(isCallableNumber('+972502345678')).toBe(false); // Israel, $0.1868
+    expect(isCallableNumber('+4915123456789')).toBe(false); // Germany, $0.3763
   });
 });
 

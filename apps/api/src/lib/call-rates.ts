@@ -17,10 +17,20 @@ import { CALL_RATES_USD } from '../data/call-rates';
  * exactly the calls that lose the most money.
  */
 
-/** dearest destination we will ring. Above this, onboarding stops and we log
- * the interest instead. Deliberately above break-even (~$0.10/call at
- * $5 for 50): reach in a niche is worth more than margin per call today. */
-export const MAX_CALL_RATE_USD = 0.2;
+/**
+ * Dearest destination we will ring. Above this, onboarding stops and we log the
+ * interest instead.
+ *
+ * Set at break-even, not above it: both paid shapes work out to $0.10 a call
+ * ($5 for 50, and the $2 top-up pack of 20), so the priciest destination we
+ * accept earns exactly what it costs. Payment fees and the free tier come out
+ * of the difference between the cap and the typical call, and that gap is where
+ * the margin actually lives: the US is $0.014, the UK $0.031, India $0.050.
+ *
+ * Held inclusively, so a destination priced at exactly the cap is in. Thailand
+ * is $0.10 on the nose, which is what pins that in the tests.
+ */
+export const MAX_CALL_RATE_USD = 0.1;
 
 /**
  * Longest key in the table, so lookup starts where it can actually hit.

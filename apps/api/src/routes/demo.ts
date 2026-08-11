@@ -203,9 +203,9 @@ export const demoRoutes = new Hono<DemoContext>()
       await container.demoCalls.release(demoId);
       /*
        * Answered here rather than rethrown. Rethrowing reached the app-wide
-       * handler, which says `internal error`, and that is what a visitor was
-       * shown when their number would not connect: a phrase that is neither
-       * true nor actionable, on the one interaction this page exists for.
+       * handler's generic 500, and that is what a visitor was shown when their
+       * number would not connect: a phrase that is neither true nor
+       * actionable, on the one interaction this page exists for.
        *
        * `failed` rather than `refused`, because this catch cannot tell the
        * difference. A carrier decline, bad credentials, a bad from-number and a

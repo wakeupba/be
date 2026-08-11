@@ -15,7 +15,7 @@ import type { Container } from '../container';
 import type { Env } from '../env';
 import { isCallableNumber, priceCall } from '../lib/call-rates';
 import { decryptSecret } from '../lib/crypto';
-import { logEvent } from '../lib/log';
+import { errorFields, logEvent } from '../lib/log';
 import { claimRateSlot } from '../lib/rate-limit';
 import type { TrackedEventRow } from '../repos/events';
 import { billingConfigured, fakeBillingActive } from '../services/billing/dodo';
@@ -160,14 +160,26 @@ export const meRoutes = new Hono<MeContext>()
 
     const productId =
       kind === 'upgrade' ? (c.env.DODO_PRODUCT_RIDE_OR_DIE as string) : (c.env.DODO_PRODUCT_TOPUP as string);
-    const { url } = await billing.createCheckout({
-      productId,
-      userId: user.id,
-      email: user.email,
-      name: user.displayName,
-      customerId: user.dodoCustomerId,
-      returnUrl: `${c.env.APP_ORIGIN}/billing/?checkout=success`,
-    });
+    let url: string;
+    try {
+      ({ url } = await billing.createCheckout({
+        productId,
+        userId: user.id,
+        email: user.email,
+        name: user.displayName,
+        customerId: user.dodoCustomerId,
+        returnUrl: `${c.env.APP_ORIGIN}/billing/?checkout=success`,
+      }));
+    } catch (error) {
+      /* Dodo refusing us (live payments not yet enabled, an outage, a bad
+       * key) is their answer, not our crash. The buy button degrades to
+       * honesty instead of a 500 that reads as the product being broken. */
+      logEvent('error', 'billing.checkout_failed', { kind, ...errorFields(error) });
+      return c.json(
+        { error: 'checkout is having a moment, try again shortly', code: 'billing_unavailable' },
+        503,
+      );
+    }
     return c.json({ url: browserReachable(url, c.req.url, c.env) });
   })
 
@@ -185,7 +197,17 @@ export const meRoutes = new Hono<MeContext>()
     if (!user.dodoCustomerId) {
       return c.json({ error: 'no billing profile yet, make a purchase first' }, 409);
     }
-    const { url } = await billing.createPortalSession(user.dodoCustomerId, `${c.env.APP_ORIGIN}/billing/`);
+    let url: string;
+    try {
+      ({ url } = await billing.createPortalSession(user.dodoCustomerId, `${c.env.APP_ORIGIN}/billing/`));
+    } catch (error) {
+      // same contract as checkout: the provider's refusal is not our crash
+      logEvent('error', 'billing.portal_failed', errorFields(error));
+      return c.json(
+        { error: 'the billing portal is having a moment, try again shortly', code: 'billing_unavailable' },
+        503,
+      );
+    }
     return c.json({ url: browserReachable(url, c.req.url, c.env) });
   })
 

@@ -7,6 +7,12 @@
   // AsyncLocalStorage for Sentry's request isolation
   "compatibility_flags": ["nodejs_als"],
   "observability": { "enabled": true },
+  /* The D1 primary lives in SIN, and without placement the worker runs at
+   * the visitor's colo and pays a Singapore round trip per query: 3-5 serial
+   * queries from a US visitor is a second of waiting per API call. Smart
+   * placement runs the worker next to the database instead, so the visitor
+   * pays one cross-ocean hop per request rather than one per query. */
+  "placement": { "mode": "smart" },
   "triggers": {
     // every minute: dispatch due calls; every 5 minutes: sync calendars
     "crons": ["* * * * *", "*/5 * * * *"]
@@ -25,15 +31,16 @@
     "LANDING_ORIGIN": "https://wakeupba.be",
     // Dodo live: real money. Product ids are public (they appear in checkout
     // URLs); the API key and webhook secret are wrangler secrets. Checkout
-    // works only once Dodo's account verification approves; until then their
-    // hosted page exists but declines real cards, which fails safely on their
-    // side rather than ours.
+    // works only once Dodo approves live payments for the merchant; until
+    // then session creation itself fails with a 403 on OUR side, which the
+    // checkout route maps to an honest 503 rather than a crash.
     "DODO_ENVIRONMENT": "live_mode",
     "DODO_PRODUCT_RIDE_OR_DIE": "pdt_0Nl7VKmE0enYXmUfA91xR",
     "DODO_PRODUCT_TOPUP": "pdt_0Nl7VKnJFmRQ9uKEfdYqw"
   }
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-  // TWILIO_FROM_NUMBER_US, DODO_WEBHOOK_SECRET, SENTRY_DSN (optional:
-  // error tracking stays dark until set)
+  // TWILIO_FROM_NUMBER_US, DODO_API_KEY, DODO_WEBHOOK_SECRET (optional:
+  // SENTRY_DSN, RESEND_API_KEY, TURNSTILE_SECRET — each feature stays dark
+  // until its secret is set)
 }

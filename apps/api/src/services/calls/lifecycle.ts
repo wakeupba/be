@@ -1,6 +1,7 @@
 import type { CallRepo, CallRow } from '../../repos/calls';
 import type { EventRepo } from '../../repos/events';
 import type { UserRepo } from '../../repos/users';
+import type { Analytics } from '../analytics';
 import type { EmailNotifier } from '../email/notifier';
 import { MAX_ATTEMPTS, RETRY_DELAY_MS, SNOOZE_DELAY_MS } from './dispatcher';
 
@@ -19,6 +20,7 @@ export class CallLifecycleService {
     private readonly events: EventRepo,
     private readonly users: UserRepo,
     private readonly notifier: EmailNotifier | null = null,
+    private readonly analytics: Analytics | null = null,
   ) {}
 
   async onAnswered(call: CallRow): Promise<void> {
@@ -30,6 +32,8 @@ export class CallLifecycleService {
       if (digit === '1') {
         await this.calls.finish(call.id, 'answered_ack');
         await this.users.markDndVerified(call.userId);
+        // the make-or-break funnel's final gate: DND pierced, account armed
+        await this.analytics?.capture(call.userId, 'dnd verified');
         return 'ack';
       }
       return 'noop';
@@ -40,11 +44,13 @@ export class CallLifecycleService {
     if (digit === '1') {
       await this.calls.finish(call.id, 'answered_ack');
       await this.events.setState(call.eventId, 'acknowledged');
+      await this.analytics?.capture(call.userId, 'call acknowledged', { attempt: call.attempt });
       return 'ack';
     }
     if (digit === '2') {
       await this.calls.finish(call.id, 'answered_snooze');
       await this.events.setState(call.eventId, 'snoozed', Date.now() + SNOOZE_DELAY_MS);
+      await this.analytics?.capture(call.userId, 'call snoozed', { attempt: call.attempt });
       return 'snooze';
     }
     return 'noop';
@@ -58,6 +64,10 @@ export class CallLifecycleService {
       // they picked up and heard the briefing but pressed nothing: job done
       await this.calls.finish(call.id, 'answered_no_input');
       if (current.eventId) await this.events.setState(current.eventId, 'acknowledged');
+      await this.analytics?.capture(call.userId, 'call acknowledged', {
+        attempt: call.attempt,
+        silent: true,
+      });
       return;
     }
 
@@ -68,6 +78,7 @@ export class CallLifecycleService {
       await this.events.setState(current.eventId, 'scheduled', Date.now() + RETRY_DELAY_MS);
     } else {
       await this.events.setState(current.eventId, 'missed');
+      await this.analytics?.capture(call.userId, 'call missed', { attempts: current.attempt });
       // both attempts rang out: the phone has said all it can, email takes over
       const [user, event] = await Promise.all([
         this.users.findById(current.userId),

@@ -97,6 +97,7 @@ export const authRoutes = new Hono<AuthContext>()
     const info = await google.fetchUserInfo(granted.accessToken);
 
     let user = await users.findByGoogleSub(info.sub);
+    const isNewUser = !user;
     if (!user) {
       user = await users.create({ googleSub: info.sub, email: info.email, displayName: info.name });
     }
@@ -127,6 +128,12 @@ export const authRoutes = new Hono<AuthContext>()
       // calendar granted but no refresh token issued and none stored: only
       // a re-consent can produce one
       return c.redirect(`${c.env.API_ORIGIN}/auth/login`);
+    }
+
+    const { analytics } = c.get('container');
+    if (isNewUser) await analytics.capture(user.id, 'signed up');
+    if (granted.refreshToken && grantsCalendar) {
+      await analytics.capture(user.id, 'calendar connected', { reconnect: !isNewUser });
     }
 
     c.header('Set-Cookie', await createSessionCookie(user.id, c.env.SESSION_SECRET, c.env.COOKIE_DOMAIN));

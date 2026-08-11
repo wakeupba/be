@@ -26,3 +26,8 @@ COOKIE_DOMAIN=localhost
 
 # --- error tracking (stays dark until set) ---
 #SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+
+# --- product analytics, server-side capture (stays dark until set) ---
+#POSTHOG_API_KEY=phc_xxx
+# defaults to https://us.i.posthog.com; set only for EU cloud
+#POSTHOG_HOST=https://eu.i.posthog.com

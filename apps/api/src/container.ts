@@ -10,6 +10,7 @@ import { TokenRepo } from './repos/tokens';
 import { UserRepo } from './repos/users';
 import { VoteRepo } from './repos/votes';
 import { WebhookEventRepo } from './repos/webhook-events';
+import { type Analytics, NoopAnalytics, PostHogAnalytics } from './services/analytics';
 import {
   type BillingProvider,
   DodoBillingProvider,
@@ -58,6 +59,11 @@ export function buildContainer(env: Env) {
       )
     : null;
 
+  // the product funnel, captured server-side; dark until the key exists
+  const analytics: Analytics = env.POSTHOG_API_KEY
+    ? new PostHogAnalytics(env.POSTHOG_API_KEY, env.POSTHOG_HOST ?? 'https://us.i.posthog.com')
+    : new NoopAnalytics();
+
   const sync = new CalendarSyncService(google, users, tokens, events, env.TOKEN_ENC_KEY, notifier);
   const dispatcher = new CallDispatchService(
     users,
@@ -71,7 +77,7 @@ export function buildContainer(env: Env) {
     },
     notifier,
   );
-  const lifecycle = new CallLifecycleService(calls, events, users, notifier);
+  const lifecycle = new CallLifecycleService(calls, events, users, notifier, analytics);
   const scripts = defaultScriptBuilder();
   const billing: BillingProvider | null = env.DODO_API_KEY
     ? new DodoBillingProvider(env.DODO_API_KEY, env.DODO_ENVIRONMENT ?? 'test_mode')
@@ -100,6 +106,7 @@ export function buildContainer(env: Env) {
     // the services above hold their own reference; this one is for callers
     // that send mail directly, like the demo budget warning
     notifier,
+    analytics,
   };
 }
 

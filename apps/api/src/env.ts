@@ -34,6 +34,11 @@ export interface Env {
   /* transactional email stays dark until set */
   RESEND_API_KEY?: string;
 
+  /* product analytics (PostHog), server-side capture only; stays dark until
+   * the key is set. Host defaults to US cloud. */
+  POSTHOG_API_KEY?: string;
+  POSTHOG_HOST?: string;
+
   /* The landing demo call. Both are required for it to exist at all: without a
    * challenge secret the endpoint refuses, and with a budget of zero there is
    * nothing to spend, so the CTA never renders. Fail closed by construction. */

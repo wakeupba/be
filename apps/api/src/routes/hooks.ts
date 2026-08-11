@@ -287,8 +287,20 @@ export async function applyDodoEvent(
     if (status !== null) {
       if (status === 'active') {
         await users.setPlan(user.id, 'ride_or_die', dodoCustomerId, subscriptionId ?? undefined);
+        if (user.plan !== 'ride_or_die') {
+          await container.analytics.capture(user.id, 'plan changed', {
+            to: 'ride_or_die',
+            trigger: payload.type,
+          });
+        }
       } else if (REVOKED_STATUSES.has(status)) {
         await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+        if (user.plan !== 'situationship') {
+          await container.analytics.capture(user.id, 'plan changed', {
+            to: 'situationship',
+            trigger: `${payload.type}:${status}`,
+          });
+        }
       }
       return;
     }
@@ -298,15 +310,33 @@ export async function applyDodoEvent(
       case 'subscription.active':
       case 'subscription.renewed':
         await users.setPlan(user.id, 'ride_or_die', dodoCustomerId, subscriptionId ?? undefined);
+        if (user.plan !== 'ride_or_die') {
+          await container.analytics.capture(user.id, 'plan changed', {
+            to: 'ride_or_die',
+            trigger: payload.type,
+          });
+        }
         break;
       case 'subscription.cancelled':
         if (payload.data.cancel_at_next_billing_date) break;
         await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+        if (user.plan !== 'situationship') {
+          await container.analytics.capture(user.id, 'plan changed', {
+            to: 'situationship',
+            trigger: payload.type,
+          });
+        }
         break;
       case 'subscription.expired':
       case 'subscription.failed':
       case 'subscription.on_hold':
         await users.setPlan(user.id, 'situationship', dodoCustomerId, null);
+        if (user.plan !== 'situationship') {
+          await container.analytics.capture(user.id, 'plan changed', {
+            to: 'situationship',
+            trigger: payload.type,
+          });
+        }
         break;
       default:
         break;
@@ -361,6 +391,7 @@ export async function applyDodoEvent(
             calls,
           });
         }
+        await container.analytics.capture(user.id, 'top-up purchased', { packs, calls });
       } else if (paymentId) {
         /* the subscription charge. Nothing is granted, and the row exists purely
          * so a later reversal reads a recorded fact instead of inferring one

@@ -111,7 +111,9 @@ export function createApp() {
       ...errorFields(error),
     });
     Sentry.captureException(error);
-    return c.json({ error: 'internal error' }, 500);
+    // "internal error" reads as "the product is broken"; most of what lands
+    // here is a one-off infrastructure blip, and a second attempt cures it
+    return c.json({ error: 'something went wrong on our side — safe to try again' }, 500);
   });
 
   return app;

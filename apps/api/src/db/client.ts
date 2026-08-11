@@ -22,15 +22,23 @@ const TRANSIENT_MESSAGES = [
   'object to be reset',
   'code was updated',
   'transient issue',
+  /* the one that actually hit us (Sentry PROD-3, 2026-08-11): "D1 DB is
+   * overloaded. Requests queued for too long." Retrying into an overloaded
+   * database is fine at this scale because the retries are bounded and the
+   * backoff is exactly the queue-draining time the error is asking for. */
+  'overloaded',
 ];
 
 const BACKOFF_MS = [100, 300];
 
 function isTransientD1Error(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  const cause = error.cause instanceof Error ? error.cause.message : '';
-  const message = `${error.message} ${cause}`.toLowerCase();
-  return TRANSIENT_MESSAGES.some((needle) => message.includes(needle));
+  // drizzle wraps the D1 error ("Failed query: …" -> "D1_ERROR: …"), so the
+  // useful string may sit anywhere down the cause chain
+  for (let e = error; e instanceof Error; e = e.cause) {
+    const message = e.message.toLowerCase();
+    if (TRANSIENT_MESSAGES.some((needle) => message.includes(needle))) return true;
+  }
+  return false;
 }
 
 async function withRetries<T>(op: () => Promise<T>): Promise<T> {

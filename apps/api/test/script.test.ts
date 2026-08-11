@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TrackedEventRow } from '../src/repos/events';
-import { TemplateScriptBuilder } from '../src/services/calls/script';
+import { speakableTitle, TemplateScriptBuilder } from '../src/services/calls/script';
 
 function eventIn(minutesFromNow: number, overrides: Partial<TrackedEventRow> = {}): TrackedEventRow {
   const now = Date.now();
@@ -48,5 +48,26 @@ describe('TemplateScriptBuilder', () => {
   it('mentions attendees only when more than one', () => {
     expect(builder.build(eventIn(10, { attendeeCount: 4 }))).toContain('4 people are expected.');
     expect(builder.build(eventIn(10, { attendeeCount: 1 }))).not.toContain('people are expected');
+  });
+});
+
+describe('speakableTitle', () => {
+  it('leaves an ordinary title alone', () => {
+    expect(speakableTitle('Board meeting')).toBe('Board meeting');
+  });
+
+  it('speaks the shorthand people actually type into calendars', () => {
+    expect(speakableTitle('1:1 w/ Priya')).toBe('one on one with Priya');
+    expect(speakableTitle('Design mtg & standup')).toBe('Design meeting and standup');
+    expect(speakableTitle('1on1 w/ CEO')).toBe('one on one with CEO');
+  });
+
+  it('strips emoji instead of letting the voice describe them', () => {
+    expect(speakableTitle('🔥 Launch review 🚀')).toBe('Launch review');
+    expect(speakableTitle('Sprint 👩‍💻 planning')).toBe('Sprint planning');
+  });
+
+  it('an all-emoji title still yields a sentence that parses', () => {
+    expect(speakableTitle('🔥🚀')).toBe('your meeting');
   });
 });

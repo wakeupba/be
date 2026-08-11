@@ -77,6 +77,19 @@ describe('retryingD1', () => {
     expect(first).toHaveBeenCalledTimes(2);
   });
 
+  it('retries the exact drizzle-wrapped overload error observed in prod', async () => {
+    // verbatim shape from Sentry PROD-3: drizzle "Failed query" wrapping D1_ERROR
+    const wrapped = new Error(
+      'Failed query: insert into "webhook_events" ("id", "type", "processed_at") values (?, ?, ?) on conflict do nothing',
+      { cause: new Error('D1_ERROR: D1 DB is overloaded. Requests queued for too long.') },
+    );
+    const run = vi.fn().mockRejectedValueOnce(wrapped).mockResolvedValue({ success: true });
+    const db = retryingD1(stubD1(stubStatement({ run })));
+
+    await expect(db.prepare('insert').run()).resolves.toEqual({ success: true });
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
   it('hands batch() the native statements, not the wrappers', async () => {
     const native = stubStatement();
     const batch = vi.fn().mockResolvedValue([]);

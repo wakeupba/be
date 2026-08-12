@@ -207,7 +207,9 @@ function CalendarRow({
 
   return (
     <Row title="Google Calendar" description="The account we watch for events painted your trigger color.">
-      <div className="flex h-8 w-full items-center sm:justify-end">
+      {/* min-h matches the two-line rest state so the confirm swap does not
+       * change the row's height */}
+      <div className="flex min-h-[52px] w-full items-center sm:justify-end">
         <AnimatePresence mode="wait" initial={false}>
           {mode === 'confirm' ? (
             <motion.div key="confirm" {...swap} className="flex items-center gap-2">
@@ -220,9 +222,11 @@ function CalendarRow({
               </Button>
             </motion.div>
           ) : (
-            <motion.div key="rest" {...swap} className="flex items-center gap-2">
+            <motion.div key="rest" {...swap} className="flex flex-col items-start gap-1 sm:items-end">
               <p className="font-mono text-[13px]">{email}</p>
-              <div ref={rootRef} className="relative">
+              {/* -mr aligns the button's text, not its padding box, with the
+               * email's right edge; the menu anchors to the same box */}
+              <div ref={rootRef} className="relative -ml-2 sm:-mr-2 sm:ml-0">
                 <button
                   type="button"
                   aria-haspopup="menu"

@@ -35,8 +35,9 @@ export default function Page() {
           we would reach you.
         </Prose>
         <Prose>
-          The verification call is free and does not count against the five calls a month on the free plan. If
-          it does not ring, the dashboard walks you through what to fix, and you try again.
+          The verification call is free and does not count against{' '}
+          <a href="/pricing/">the five calls a month on the free plan</a>. If it does not ring, the dashboard
+          walks you through what to fix, and you try again.
         </Prose>
       </Section>
 

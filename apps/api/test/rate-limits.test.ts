@@ -60,6 +60,16 @@ describe('rate limits', () => {
         env,
       );
 
+    /* claimRateSlot buckets on wall-clock ten-minute windows, so this test is
+     * a clock lottery: ten spends and the refused eleventh must land in one
+     * bucket, and a boundary passing mid-test hands the eleventh a fresh
+     * window. It drew that lottery twice on main. If the boundary is near,
+     * wait it out; the guard fires on ~2% of runs and costs at most ten
+     * seconds, which beats a red main at any frequency. */
+    const WINDOW_MS = 10 * 60_000; // mirrors RATE_WINDOW_MS in auth.ts
+    const msLeft = WINDOW_MS - (Date.now() % WINDOW_MS);
+    if (msLeft < 10_000) await new Promise((resolve) => setTimeout(resolve, msLeft + 50));
+
     // garbage fails fast and burns nothing: a shared (cgnat) ip full of junk
     // must not lock out the neighbor actually completing oauth
     for (let n = 0; n < 15; n++) expect((await attempt('junk')).status).toBe(400);

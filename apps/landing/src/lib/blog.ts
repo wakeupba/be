@@ -44,6 +44,18 @@ export function postPath(slug: string): string {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: 'why-a-phone-call',
+    title: 'Why a phone call and not another alarm app',
+    description:
+      'Alarms get habituated, notifications get triaged, reminder apps get abandoned. The long version of why this product is a phone call through Do Not Disturb, and why its only interface is a calendar color.',
+    lede: 'Wake Up Babe could have been an app, an extension or a louder alarm. It is a phone call instead, and every part of that choice is about human psychology rather than technology. This is the long version of the argument.',
+    eyebrow: 'Essay',
+    published: '2026-08-12',
+    readMinutes: 6,
+    card: OG_CARDS.blogWhyCall,
+    imageAlt: 'the alarm never had a chance. habituation. triage. the one channel left.',
+  },
+  {
     slug: 'calendar-color-picker-api',
     title: "We built the whole product on Google Calendar's color picker",
     description:
@@ -78,18 +90,6 @@ export const POSTS: BlogPost[] = [
     readMinutes: 2,
     card: OG_CARDS.blogVerification,
     imageAlt: 'prove it rings. not live until you press 1.',
-  },
-  {
-    slug: 'notification-fatigue',
-    title: 'You trained your phone to be ignorable',
-    description:
-      'Notification fatigue is not a discipline problem. Every app shares one channel, you learned to clear it without reading, and your calendar pays for it.',
-    lede: 'The swipe that clears a notification takes less time than reading it. You have made that trade thousands of times, it is almost always correct, and it is why your calendar reminder never stood a chance.',
-    eyebrow: 'Essay',
-    published: '2026-08-12',
-    readMinutes: 3,
-    card: OG_CARDS.blogFatigue,
-    imageAlt: 'swiped away, again. you trained your phone to be ignorable.',
   },
 ];
 

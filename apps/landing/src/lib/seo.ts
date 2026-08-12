@@ -28,7 +28,7 @@ export const OG_CARDS = {
   blogColorPicker: '/og/blog-color-picker.png',
   blogOneNumber: '/og/blog-one-number.png',
   blogVerification: '/og/blog-verification.png',
-  blogFatigue: '/og/blog-fatigue.png',
+  blogWhyCall: '/og/blog-why-call.png',
 } as const;
 
 type OgCard = (typeof OG_CARDS)[keyof typeof OG_CARDS];

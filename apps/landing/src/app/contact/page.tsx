@@ -16,7 +16,7 @@ export const metadata = pageMetadata({
   description: DESCRIPTION,
   path: PATH,
   card: OG_CARDS.contact,
-  imageAlt: 'No support maze. Support, data requests, bugs, disclosures.',
+  imageAlt: 'Contact us. wakeupba.be',
   type: 'website',
 });
 

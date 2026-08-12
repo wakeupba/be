@@ -67,7 +67,7 @@ export const POSTS: BlogPost[] = [
     published: '2026-08-12',
     readMinutes: 3,
     card: OG_CARDS.blogColorPicker,
-    imageAlt: 'color it red. eleven colors. one of them rings.',
+    imageAlt: 'the whole product is a color. eleven colors. one of them rings.',
   },
   {
     slug: 'one-permanent-number',

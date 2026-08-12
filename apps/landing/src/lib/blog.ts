@@ -50,10 +50,10 @@ export const POSTS: BlogPost[] = [
     title: 'Why a phone call and not another alarm app',
     description:
       'Alarms get habituated, notifications get triaged, reminder apps get abandoned. The long version of why this product is a phone call through Do Not Disturb, and why its only interface is a calendar color.',
-    lede: 'Wake Up Babe could have been an app, an extension or a louder alarm. It is a phone call instead, and every part of that choice is about human psychology rather than technology. This is the long version of the argument.',
+    lede: 'Wake Up Babe could have been an app, an extension or a louder alarm. It is a phone call instead, and I did not arrive at that from first principles. My roommate discovered it for me, from the bed across the room.',
     eyebrow: 'Essay',
     published: '2026-08-12',
-    readMinutes: 6,
+    readMinutes: 7,
     card: OG_CARDS.blogWhyCall,
     imageAlt: 'the alarm never had a chance. habituation. triage. the one channel left.',
   },

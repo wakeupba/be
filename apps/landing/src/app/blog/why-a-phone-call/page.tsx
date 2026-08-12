@@ -10,6 +10,26 @@ export const metadata = postMetadata(post);
 export default function Page() {
   return (
     <PostShell post={post}>
+      <Section title="My roommate called me from across the room">
+        <Prose>
+          Before this was a product it was an incident. I used to sleep at genuinely indefensible hours, which
+          meant mornings were not a time of day I experienced so much as something people described to me
+          later. One morning my roommate needed something urgent. He shook me. He said my name, at several
+          volumes. Nothing worked.
+        </Prose>
+        <Prose>
+          So he sat back down across the room and called my phone. I woke up, answered, said hello, and heard
+          his voice twice: once in the speaker and once from the bed opposite mine. He watched me put it
+          together. When I asked why he did not just wake me like a normal person, he said, I tried.
+        </Prose>
+        <Prose>
+          A hand on my shoulder could not do what a ringtone did. That is either embarrassing or interesting,
+          and I have decided it is interesting. Somewhere in the brain there is a rule written deeper than
+          sleep: a ringing phone means someone needs you, so answer it. The rest of this essay, and honestly
+          the rest of the product, is just plumbing around that rule.
+        </Prose>
+      </Section>
+
       <Section title="Your brain is built to defeat alarms">
         <Prose>
           Habituation is the nervous system's oldest trick: a stimulus that repeats without consequence stops
@@ -142,7 +162,11 @@ export default function Page() {
         <Prose>
           So we ration it. Wake Up Babe rings for the events you explicitly color and for nothing else. Most
           meetings deserve a notification. A few deserve a phone call, and you already know which ones,
-          because your hand hesitates on them in the calendar. Color those red, and{' '}
+          because your hand hesitates on them in the calendar.
+        </Prose>
+        <Prose>
+          It took a roommate with an urgent problem to find the one signal that outranks sleep. All we did was
+          make it schedulable. Color the meeting red, and{' '}
           <a href="/google-calendar-phone-call-reminders/">the setup guide</a> takes it from there.
         </Prose>
       </Section>

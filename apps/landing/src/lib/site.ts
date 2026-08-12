@@ -90,6 +90,8 @@ export const ROUTES: RouteMeta[] = [
     priority: 0.7,
     changeFrequency: 'monthly',
   },
+  /* the index only; posts add themselves to the sitemap from lib/blog.ts */
+  { path: '/blog/', lastModified: '2026-08-12', priority: 0.6, changeFrequency: 'weekly' },
   { path: '/contact/', lastModified: '2026-08-05', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/privacy/', lastModified: '2026-08-05', priority: 0.3, changeFrequency: 'yearly' },
   { path: '/terms/', lastModified: '2026-08-05', priority: 0.3, changeFrequency: 'yearly' },

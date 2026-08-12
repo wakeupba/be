@@ -243,6 +243,12 @@ body {
   }
 }
 
+/* illustrations breathe more than paragraphs; adjacent margins collapse, so
+ * the following paragraph's 1em folds into this rather than stacking on it */
+.prose figure {
+  margin-block: 2.5rem;
+}
+
 .prose code {
   background: var(--surface);
   border: 1px solid var(--border-structural);

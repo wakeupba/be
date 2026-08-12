@@ -15,6 +15,7 @@ export function ArticleShell({
   title,
   lede,
   updated,
+  meta,
   children,
 }: {
   eyebrow: string;
@@ -22,6 +23,9 @@ export function ArticleShell({
   lede: string;
   /* ISO date. Rendered long-form for people, carried in <time> for machines. */
   updated?: string;
+  /* replaces the "Last updated" line when a page needs a different mono
+   * metadata row: blog posts put a byline and a read time here */
+  meta?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -35,7 +39,8 @@ export function ArticleShell({
             {title}
           </h1>
           <p className="rise rise-3 mt-5 max-w-2xl text-[17px] leading-relaxed text-muted">{lede}</p>
-          {updated && (
+          {meta && <p className="rise rise-4 mt-8 font-mono text-[12px] tabular-nums text-muted-2">{meta}</p>}
+          {!meta && updated && (
             <p className="rise rise-4 mt-8 font-mono text-[12px] tabular-nums text-muted-2">
               Last updated{' '}
               <time dateTime={updated}>
@@ -57,18 +62,35 @@ export function ArticleShell({
 
 /* n is the visible section number, so it is mono and tabular. Passing it in
  * rather than counting with a CSS counter keeps the numbers stable when a
- * section moves, which matters when a privacy policy cites its own clauses. */
-export function Section({ n, title, children }: { n: string; title: string; children: ReactNode }) {
+ * section moves, which matters when a privacy policy cites its own clauses.
+ * Blog posts omit it: nothing there cites a clause, so the margin numbers
+ * were furniture. */
+export function Section({ n, title, children }: { n?: string; title: string; children: ReactNode }) {
   return (
     <section className="border-b border-line-soft py-10 last:border-b-0 last:pb-0">
-      <div className="flex gap-4 sm:gap-6">
-        <p className="w-6 shrink-0 pt-1 font-mono text-[12px] tabular-nums text-muted-2">{n}</p>
+      <div className={n ? 'flex gap-4 sm:gap-6' : undefined}>
+        {n && <p className="w-6 shrink-0 pt-1 font-mono text-[12px] tabular-nums text-muted-2">{n}</p>}
         <div className="min-w-0 flex-1">
           <h2 className="text-[19px] font-semibold tracking-tight">{title}</h2>
           <Prose className="mt-4">{children}</Prose>
         </div>
       </div>
     </section>
+  );
+}
+
+/* An illustration slot for the reading pages: a real product artifact as a
+ * static fixture, never stock art, with a mono caption in the microlabel
+ * grammar. The artifact brings its own frame (CalendarMock) or the page
+ * wraps it at the use site, so this adds no border of its own to double. */
+export function Figure({ caption, children }: { caption: string; children: ReactNode }) {
+  return (
+    <figure>
+      {children}
+      <figcaption className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-2">
+        {caption}
+      </figcaption>
+    </figure>
   );
 }
 

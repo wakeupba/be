@@ -15,7 +15,7 @@ export const metadata = pageMetadata({
   description: DESCRIPTION,
   path: '/privacy/',
   card: OG_CARDS.legal,
-  imageAlt: 'Read-only. No recordings. What we store, and who else sees it.',
+  imageAlt: 'Privacy and terms. wakeupba.be',
   type: 'article',
 });
 

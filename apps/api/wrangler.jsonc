@@ -41,6 +41,6 @@
   // secrets (wrangler secret put): GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
   // SESSION_SECRET, TOKEN_ENC_KEY, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
   // TWILIO_FROM_NUMBER_US, DODO_API_KEY, DODO_WEBHOOK_SECRET (optional:
-  // SENTRY_DSN, RESEND_API_KEY, TURNSTILE_SECRET — each feature stays dark
-  // until its secret is set)
+  // SENTRY_DSN, RESEND_API_KEY, TURNSTILE_SECRET, POSTHOG_API_KEY — each
+  // feature stays dark until its secret is set)
 }

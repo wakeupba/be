@@ -119,6 +119,9 @@ export const meRoutes = new Hono<MeContext>()
     if (refreshToken) await google.revokeToken(refreshToken);
     await tokens.delete(user.id);
     const cancelled = await events.cancelAllActiveForUser(user.id);
+    await c.get('container').analytics.capture(user.id, 'calendar disconnected', {
+      cancelledCalls: cancelled,
+    });
     return c.json({ ok: true, cancelledCalls: cancelled });
   })
 
@@ -180,6 +183,7 @@ export const meRoutes = new Hono<MeContext>()
         503,
       );
     }
+    await c.get('container').analytics.capture(user.id, 'checkout opened', { kind });
     return c.json({ url: browserReachable(url, c.req.url, c.env) });
   })
 
@@ -232,6 +236,9 @@ export const meRoutes = new Hono<MeContext>()
 
     const patch: Parameters<typeof users.updateSettings>[1] = {};
 
+    // set only when a phone survives validation; read after the row persists,
+    // because an analytics event about a save that then failed would be a lie
+    let savedPhoneCountry: string | null = null;
     if (body.phone !== undefined) {
       // real number validation, not just an E.164 shape: country prefix,
       // national length, and number-plan rules all checked
@@ -259,6 +266,10 @@ export const meRoutes = new Hono<MeContext>()
           country: parsed.country ?? 'unknown',
           rateUsd: priced?.usd ?? null,
         });
+        await c.get('container').analytics.capture(c.get('userId'), 'phone region unsupported', {
+          country: parsed.country ?? 'unknown',
+          rateUsd: priced?.usd ?? null,
+        });
         return c.json(
           { error: 'we cannot ring numbers in your country yet', code: 'region_unsupported' },
           422,
@@ -267,7 +278,10 @@ export const meRoutes = new Hono<MeContext>()
       patch.phoneE164 = parsed.number;
       // a changed number loses its DND verification: we only ever call
       // numbers that have proven they ring through, so the test call re-runs
-      if (current.phoneE164 !== parsed.number) patch.dndVerifiedAt = null;
+      if (current.phoneE164 !== parsed.number) {
+        patch.dndVerifiedAt = null;
+        savedPhoneCountry = parsed.country ?? 'unknown';
+      }
     }
     if (body.triggerColorId !== undefined) {
       if (typeof body.triggerColorId !== 'string' || !GOOGLE_COLOR_IDS.has(body.triggerColorId)) {
@@ -289,6 +303,11 @@ export const meRoutes = new Hono<MeContext>()
     }
 
     await users.updateSettings(c.get('userId'), patch);
+    if (savedPhoneCountry !== null) {
+      await c.get('container').analytics.capture(c.get('userId'), 'phone saved', {
+        country: savedPhoneCountry,
+      });
+    }
 
     /*
      * Both of these change what we already decided about meetings we already
@@ -387,7 +406,7 @@ export const meRoutes = new Hono<MeContext>()
   })
 
   .post('/me/verify-call', async (c) => {
-    const { users, calls, dispatcher } = c.get('container');
+    const { users, calls, dispatcher, analytics } = c.get('container');
     const user = await users.findById(c.get('userId'));
     if (!user) return c.json({ error: 'not found' }, 404);
     if (!user.phoneE164) return c.json({ error: 'add a phone number first' }, 400);
@@ -415,6 +434,7 @@ export const meRoutes = new Hono<MeContext>()
     }
 
     const callId = await dispatcher.placeVerificationCall(user);
+    await analytics.capture(user.id, 'verification call requested');
     return c.json({ ok: true, callId });
   })
 
@@ -446,5 +466,9 @@ export const meRoutes = new Hono<MeContext>()
     const note = typeof body.note === 'string' ? body.note.slice(0, 500) : null;
     const { votes } = c.get('container');
     await votes.toggle(key, c.get('userId'), note);
+    await c.get('container').analytics.capture(c.get('userId'), 'feature vote toggled', {
+      feature: key,
+      hasNote: note !== null,
+    });
     return c.json({ ok: true });
   });

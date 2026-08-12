@@ -229,6 +229,11 @@ export const demoRoutes = new Hono<DemoContext>()
     await container.demoCalls.markPlaced(demoId, placed.providerCallId);
 
     logEvent('info', 'demo.call_placed', { demoId, costUsd, country: parsed.country ?? 'unknown' });
+    // keyed by the anonymous demo id: there is no account, and the phone
+    // number is nobody's to store in an analytics tool
+    await container.analytics.capture(demoId, 'demo call requested', {
+      country: parsed.country ?? 'unknown',
+    });
     // no callId handed back: there is nothing an anonymous caller can do with
     // it, and it would be an oracle for whether the number rang
     return c.json({ ok: true });

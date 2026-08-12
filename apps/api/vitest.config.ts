@@ -31,6 +31,10 @@ export default defineConfig(async () => {
              * how sending is meant to be asserted.
              */
             RESEND_API_KEY: '',
+            /* same rule for analytics: no test may capture a product event to
+             * a real PostHog project. Empty means the container wires the
+             * noop, by the same reasoning as the mail key above. */
+            POSTHOG_API_KEY: '',
           },
         },
       }),

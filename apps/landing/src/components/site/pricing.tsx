@@ -44,10 +44,27 @@ export function Pricing({ heading }: { heading?: string | null } = {}) {
           }
         >
           {PLANS.map((plan) => (
-            <div key={plan.name} className="flex flex-col rounded-2xl border border-line bg-background p-7">
+            <div
+              key={plan.name}
+              /* the recommended plan is marked the way the product marks
+               * anything that matters: colored red. Same rows, same heights,
+               * so the two cards stay aligned to the pixel. */
+              className={`flex flex-col rounded-2xl border bg-background p-7 ${
+                plan.primary ? 'border-accent/40' : 'border-line'
+              }`}
+            >
               <div className="flex items-baseline justify-between">
-                <PlanName className="text-[15px] font-semibold">{plan.name}</PlanName>
-                <p className="font-mono text-[12px] text-muted-2">{plan.cadence}</p>
+                <PlanName className="flex items-center gap-2 text-[15px] font-semibold">
+                  {plan.primary && (
+                    /* the calendar color swatch, tomato, same as a marked event */
+                    <span className="size-2.5 rounded-[3px] bg-accent" aria-hidden />
+                  )}
+                  {plan.name}
+                </PlanName>
+                <p className="font-mono text-[12px] text-muted-2">
+                  {plan.primary && <span className="text-accent">recommended · </span>}
+                  {plan.cadence}
+                </p>
               </div>
               <p className="mt-5 text-4xl font-semibold tabular-nums tracking-tight">{plan.price}</p>
               <p className="mt-3 min-h-10 text-[14px] leading-relaxed text-muted">{plan.description}</p>

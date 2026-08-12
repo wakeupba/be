@@ -71,6 +71,13 @@ export function Pricing({ heading }: { heading?: string | null } = {}) {
             </div>
           ))}
         </div>
+        {/* Prices are tax-exclusive at the processor, so this line is what keeps
+         * "no invoice you did not expect" true: the tax is named here and
+         * itemised at checkout before a card is entered. Muted mono, one line,
+         * because it is a fact and not a paragraph of legal. */}
+        <p className="mt-6 text-center font-mono text-[12px] text-muted-2">
+          plus tax where your country charges it, shown at checkout
+        </p>
       </div>
     </section>
   );

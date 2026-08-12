@@ -226,12 +226,22 @@ describe('on-demand calendar sync', () => {
   });
 
   it('reports when the next refresh is allowed so the ui can say "checked just now"', async () => {
-    const { user, sync } = await build([]);
+    const { user, tokens, sync } = await build([]);
 
     const first = await sync.syncOnDemand(user);
     const second = await sync.syncOnDemand(user);
-    // the cooling-down answer carries the original attempt, not this moment
-    expect(second.lastAttemptAt).toBe(first.lastAttemptAt);
+    /* The cooling-down answer carries the original attempt, not this moment.
+     * Compared against the stored stamp rather than the first response: the
+     * first call reports a Date.now() read at its own entry while the claim
+     * stamps another one inside the repo, and on a slow runner those are a
+     * millisecond apart, which made equality between the two responses a
+     * clock lottery this failed on main. The stored stamp is what the second
+     * answer actually promises to carry. */
+    const stamped = (await tokens.find(user.id))?.lastSyncAttemptAt;
+    expect(second.status).toBe('cooling_down');
+    expect(second.lastAttemptAt).toBe(stamped);
+    // and the first answer described the same attempt, give or take the read
+    expect(Math.abs(first.lastAttemptAt - (stamped ?? 0))).toBeLessThan(1000);
   });
 
   it('the cron is never turned away by a live cooldown', async () => {

@@ -15,6 +15,7 @@ export function ArticleShell({
   title,
   lede,
   updated,
+  meta,
   children,
 }: {
   eyebrow: string;
@@ -22,6 +23,9 @@ export function ArticleShell({
   lede: string;
   /* ISO date. Rendered long-form for people, carried in <time> for machines. */
   updated?: string;
+  /* replaces the "Last updated" line when a page needs a different mono
+   * metadata row: blog posts put a byline and a read time here */
+  meta?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -35,7 +39,8 @@ export function ArticleShell({
             {title}
           </h1>
           <p className="rise rise-3 mt-5 max-w-2xl text-[17px] leading-relaxed text-muted">{lede}</p>
-          {updated && (
+          {meta && <p className="rise rise-4 mt-8 font-mono text-[12px] tabular-nums text-muted-2">{meta}</p>}
+          {!meta && updated && (
             <p className="rise rise-4 mt-8 font-mono text-[12px] tabular-nums text-muted-2">
               Last updated{' '}
               <time dateTime={updated}>

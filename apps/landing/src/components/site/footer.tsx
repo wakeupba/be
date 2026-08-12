@@ -17,6 +17,7 @@ const LINK_GROUPS = [
   {
     heading: 'Learn',
     links: [
+      { label: 'Blog', href: '/blog/' },
       { label: 'Calendar call reminders', href: '/google-calendar-phone-call-reminders/' },
       { label: 'Reminders through DND', href: '/do-not-disturb-meeting-reminders/' },
       { label: 'Reminder options compared', href: '/calendar-reminder-alternatives/' },

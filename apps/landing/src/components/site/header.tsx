@@ -24,6 +24,12 @@ export function Header() {
             FAQ
           </a>
           <a
+            href="/blog/"
+            className="hidden rounded-md px-3 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-foreground sm:block"
+          >
+            Blog
+          </a>
+          <a
             href={GITHUB_URL}
             className="hidden rounded-md px-3 py-1.5 text-sm text-muted transition-colors duration-150 hover:text-foreground sm:block"
           >

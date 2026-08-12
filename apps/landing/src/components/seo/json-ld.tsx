@@ -1,3 +1,4 @@
+import { AUTHOR, type BlogPost, POSTS, postPath } from '@/lib/blog';
 import { FAQS, PLANS } from '@/lib/content';
 import { absoluteUrl, GITHUB_URL, SITE_NAME, SITE_TAGLINE, SITE_URL, SUPPORT_EMAIL, X_URL } from '@/lib/site';
 
@@ -126,17 +127,33 @@ export function FaqJsonLd() {
 }
 
 /* Subpages only. A breadcrumb whose single item is the page you are already on
- * tells Google nothing, so the homepage does not get one. */
-export function BreadcrumbJsonLd({ name, path }: { name: string; path: string }) {
+ * tells Google nothing, so the homepage does not get one. Blog posts pass the
+ * index as a parent so the trail reads Home > Blog > post. */
+export function BreadcrumbJsonLd({
+  name,
+  path,
+  parents = [],
+}: {
+  name: string;
+  path: string;
+  parents?: { name: string; path: string }[];
+}) {
+  const trail = [
+    { name: 'Home', item: SITE_URL },
+    ...parents.map((parent) => ({ name: parent.name, item: absoluteUrl(parent.path) })),
+    { name, item: absoluteUrl(path) },
+  ];
   return (
     <JsonLd
       data={{
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-          { '@type': 'ListItem', position: 2, name, item: absoluteUrl(path) },
-        ],
+        itemListElement: trail.map((crumb, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: crumb.name,
+          item: crumb.item,
+        })),
       }}
     />
   );
@@ -172,6 +189,61 @@ export function ContactJsonLd({ path }: { path: string }) {
             },
           ],
         },
+      }}
+    />
+  );
+}
+
+const BLOG_ID = `${SITE_URL}/blog/#blog`;
+
+/* The index page: a Blog node that lists its posts by reference, so the graph
+ * says "these belong together" without restating each post's full markup. */
+export function BlogJsonLd({ description }: { description: string }) {
+  return (
+    <JsonLd
+      data={{
+        '@context': 'https://schema.org',
+        '@type': 'Blog',
+        '@id': BLOG_ID,
+        url: absoluteUrl('/blog/'),
+        name: `${SITE_NAME} blog`,
+        description,
+        publisher: { '@id': ORG_ID },
+        isPartOf: { '@id': SITE_ID },
+        inLanguage: 'en',
+        blogPost: POSTS.map((post) => ({
+          '@type': 'BlogPosting',
+          '@id': `${absoluteUrl(postPath(post.slug))}#post`,
+          headline: post.title,
+          url: absoluteUrl(postPath(post.slug)),
+          datePublished: post.published,
+        })),
+      }}
+    />
+  );
+}
+
+/* One post. The author is a named person because an anonymous byline is the
+ * fastest way to read as content-farm output, to Google and to humans. */
+export function BlogPostingJsonLd({ post }: { post: BlogPost }) {
+  const url = absoluteUrl(postPath(post.slug));
+  return (
+    <JsonLd
+      data={{
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        '@id': `${url}#post`,
+        mainEntityOfPage: url,
+        url,
+        headline: post.title,
+        description: post.description,
+        datePublished: post.published,
+        dateModified: post.updated ?? post.published,
+        author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
+        publisher: { '@id': ORG_ID },
+        isPartOf: { '@id': BLOG_ID },
+        image: `${SITE_URL}${post.card}`,
+        inLanguage: 'en',
       }}
     />
   );

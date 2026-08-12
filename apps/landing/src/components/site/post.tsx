@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { BlogPostingJsonLd, BreadcrumbJsonLd } from '@/components/seo/json-ld';
 import { AUTHOR, type BlogPost, postPath } from '@/lib/blog';
@@ -28,20 +29,24 @@ export function PostShell({ post, children }: { post: BlogPost; children: ReactN
           title={post.title}
           lede={post.lede}
           meta={
-            <>
-              {AUTHOR.name}
-              {' · '}
-              <time dateTime={post.published}>
-                {new Date(`${post.published}T00:00:00Z`).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  timeZone: 'UTC',
-                })}
-              </time>
-              {' · '}
-              {post.readMinutes} min read
-            </>
+            <span className="flex items-center gap-2.5">
+              {/* decorative next to the visible name, hence the empty alt */}
+              <Image src={AUTHOR.avatar} alt="" width={20} height={20} className="size-5 rounded-full" />
+              <span>
+                {AUTHOR.name}
+                {' · '}
+                <time dateTime={post.published}>
+                  {new Date(`${post.published}T00:00:00Z`).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    timeZone: 'UTC',
+                  })}
+                </time>
+                {' · '}
+                {post.readMinutes} min read
+              </span>
+            </span>
           }
         >
           {children}

@@ -9,7 +9,7 @@ export const metadata = postMetadata(post);
 export default function Page() {
   return (
     <PostShell post={post}>
-      <Section n="01" title="Nobody answers unknown numbers anymore">
+      <Section title="Nobody answers unknown numbers anymore">
         <Prose>
           A decade of robocalls trained everyone to treat an unrecognized ring as spam, the same way push
           abuse trained everyone to swipe banners without reading them. The platforms have automated the
@@ -23,7 +23,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="02" title="Every Do Not Disturb exception is contact-shaped">
+      <Section title="Every Do Not Disturb exception is contact-shaped">
         <Prose>
           The doors through Do Not Disturb are all attached to contacts. Emergency Bypass on iOS is a setting
           on a contact card. Starred contacts on Android are, literally, contacts. A rotating caller ID can
@@ -37,7 +37,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="03" title="One number is also the off switch">
+      <Section title="One number is also the off switch">
         <Prose>
           A permanent number cuts both ways, deliberately. Block it and the product is fully, verifiably off.
           There is no pool to play whack-a-mole with and no surprise call from a fresh caller ID after you

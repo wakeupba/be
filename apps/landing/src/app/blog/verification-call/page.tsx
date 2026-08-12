@@ -9,7 +9,7 @@ export const metadata = postMetadata(post);
 export default function Page() {
   return (
     <PostShell post={post}>
-      <Section n="01" title="A reminder service sells a failure mode">
+      <Section title="A reminder service sells a failure mode">
         <Prose>
           Nobody signs up for wake-up calls because things are going well. You sign up for the one morning
           where the notification would have been swiped, the alarm would have been slept through, and the
@@ -23,7 +23,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="02" title="So the proof is the last onboarding step">
+      <Section title="So the proof is the last onboarding step">
         <Prose>
           After you connect your calendar and add your number, we place a test call while your Do Not Disturb
           is switched on. It says:{' '}
@@ -40,7 +40,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="03" title="The drop-off we accepted">
+      <Section title="The drop-off we accepted">
         <Prose>
           A signup flow that ends in a phone call has more friction than one that ends at a dashboard, and
           some people will leave at that step. The alternative was activating accounts that look fine and

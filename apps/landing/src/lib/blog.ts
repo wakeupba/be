@@ -12,8 +12,10 @@ import { X_URL } from './site';
  * prose this way.
  */
 
-/* Posts carry a person's name, not "the Wake Up Babe team". */
-export const AUTHOR = { name: 'Aditya Singhi', url: X_URL };
+/* Posts carry a person's name and face, not "the Wake Up Babe team". The
+ * avatar is the GitHub one, vendored into public/ so the page never leans on
+ * a third-party host. */
+export const AUTHOR = { name: 'Aditya Singhi', url: X_URL, avatar: '/authors/aditya.png' };
 
 type OgCard = (typeof OG_CARDS)[keyof typeof OG_CARDS];
 

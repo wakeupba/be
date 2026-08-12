@@ -239,7 +239,12 @@ export function BlogPostingJsonLd({ post }: { post: BlogPost }) {
         description: post.description,
         datePublished: post.published,
         dateModified: post.updated ?? post.published,
-        author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url },
+        author: {
+          '@type': 'Person',
+          name: AUTHOR.name,
+          url: AUTHOR.url,
+          image: `${SITE_URL}${AUTHOR.avatar}`,
+        },
         publisher: { '@id': ORG_ID },
         isPartOf: { '@id': BLOG_ID },
         image: `${SITE_URL}${post.card}`,

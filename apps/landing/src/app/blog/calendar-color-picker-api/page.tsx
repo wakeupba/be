@@ -1,4 +1,5 @@
-import { Prose, Section } from '@/components/site/article';
+import { Figure, Prose, Section } from '@/components/site/article';
+import { CalendarMock } from '@/components/site/calendar-mock';
 import { PostShell } from '@/components/site/post';
 import { getPost, postMetadata } from '@/lib/blog';
 
@@ -9,7 +10,7 @@ export const metadata = postMetadata(post);
 export default function Page() {
   return (
     <PostShell post={post}>
-      <Section n="01" title="Marking events should not create a second system">
+      <Section title="Marking events should not create a second system">
         <Prose>
           A tool that treats some meetings as more important than the rest needs you to mark them somehow, and
           the obvious designs all create a parallel system. A curated list in our dashboard means maintaining
@@ -24,7 +25,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="02" title="The color picker was already the right interface">
+      <Section title="The color picker was already the right interface">
         <Prose>
           Google Calendar lets you recolor any event in two clicks, on every surface it ships: web, iOS,
           Android. The color is private to your view, so nothing changes for the people you invited. There are
@@ -37,9 +38,12 @@ export default function Page() {
           in your color system, point it at any of the other ten. Nothing to install, nothing to curate, and
           Google maintains the interface for us.
         </Prose>
+        <Figure caption="Tomato red, two clicks, invisible to your invitees">
+          <CalendarMock />
+        </Figure>
       </Section>
 
-      <Section n="03" title="What a color cannot do">
+      <Section title="What a color cannot do">
         <Prose>
           A color carries no parameters. There is no way to encode a per-event lead time in it, which is why
           the 10, 15 or 30 minute lead is an account setting instead of something you write into the event.

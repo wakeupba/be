@@ -1,5 +1,6 @@
-import { Prose, Section } from '@/components/site/article';
+import { Figure, Prose, Section } from '@/components/site/article';
 import { PostShell } from '@/components/site/post';
+import { IphoneCallArt, WeekArt } from '@/components/site/step-art';
 import { getPost, postMetadata } from '@/lib/blog';
 
 const post = getPost('why-a-phone-call');
@@ -9,7 +10,7 @@ export const metadata = postMetadata(post);
 export default function Page() {
   return (
     <PostShell post={post}>
-      <Section n="01" title="Your brain is built to defeat alarms">
+      <Section title="Your brain is built to defeat alarms">
         <Prose>
           Habituation is the nervous system's oldest trick: a stimulus that repeats without consequence stops
           being perceived. It is why you do not hear your own refrigerator. The 6:30 alarm is the same tone at
@@ -30,7 +31,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="02" title="Notifications fail in the opposite direction">
+      <Section title="Notifications fail in the opposite direction">
         <Prose>
           Alarms die from repetition. Notifications die from crowding. A message from your boss, a food
           delivery update and a 20% off push from an airline all arrive as the same banner with the same
@@ -50,7 +51,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="03" title="The phone call is the channel your brain still respects">
+      <Section title="The phone call is the channel your brain still respects">
         <Prose>
           A ringing phone is the last channel that demands a decision. It interrupts, it keeps going until you
           deal with it, and there is no muscle memory for batch-dismissing calls, because calls never came in
@@ -59,6 +60,12 @@ export default function Page() {
           rings again from a name you know is a much taller order, and the platforms designed it that way on
           purpose.
         </Prose>
+        <Figure caption="The receiving end of the product">
+          {/* the art's own bottom rule would double against the frame */}
+          <div className="overflow-hidden rounded-2xl border border-line [&>div]:border-b-0">
+            <IphoneCallArt />
+          </div>
+        </Figure>
         <Prose>
           Even after a decade of robocalls, a call from a saved contact gets answered close to automatically.
           The distrust people have built up is aimed at unknown numbers, which is exactly why{' '}
@@ -67,7 +74,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="04" title="Reminder systems die of friction, not of bad ideas">
+      <Section title="Reminder systems die of friction, not of bad ideas">
         <Prose>
           Every reminder tool asks for labor before it gives any back. Install the app on your phone, and also
           on the tablet, and also on the laptop. Grant the permissions. Keep it updated. Maintain the list of
@@ -82,7 +89,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="05" title="So the whole interface is a color you already have">
+      <Section title="So the whole interface is a color you already have">
         <Prose>
           This is why there is no Wake Up Babe app, no browser extension and no second list. There is nothing
           to install anywhere. You mark a meeting by coloring it red in Google Calendar, in the exact moment
@@ -90,6 +97,11 @@ export default function Page() {
           already live in, on every device Google already ships. Why the color picker, of all things, is{' '}
           <a href="/blog/calendar-color-picker-api/">its own story</a>.
         </Prose>
+        <Figure caption="One red event is the entire configuration">
+          <div className="overflow-hidden rounded-2xl border border-line [&>div]:border-b-0">
+            <WeekArt tidy />
+          </div>
+        </Figure>
         <Prose>
           Everything after those two clicks is automated. We poll your calendar every five minutes through a
           read-only connection, schedule the call for your chosen lead time of 10, 15 or 30 minutes, build a
@@ -99,7 +111,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="06" title="How the call gets through Do Not Disturb">
+      <Section title="How the call gets through Do Not Disturb">
         <Prose>
           Both platforms leave deliberate doors through Do Not Disturb, and both doors are shaped like a
           contact. On iOS, Emergency Bypass is a switch on a contact card that lets that contact ring through
@@ -120,7 +132,7 @@ export default function Page() {
         </Prose>
       </Section>
 
-      <Section n="07" title="Rare on purpose">
+      <Section title="Rare on purpose">
         <Prose>
           One caveat keeps the whole argument honest: the phone call only works because it is rare. The ring
           commands attention today for the same reason the notification no longer does, it has not been abused
